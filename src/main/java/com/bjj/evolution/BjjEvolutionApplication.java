@@ -1,13 +1,13 @@
-package com.bjj.evolution.tracking;
+package com.bjj.evolution;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class TrackingApplication {
+public class BjjEvolutionApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(TrackingApplication.class, args);
+		SpringApplication.run(BjjEvolutionApplication.class, args);
 	}
 
 }

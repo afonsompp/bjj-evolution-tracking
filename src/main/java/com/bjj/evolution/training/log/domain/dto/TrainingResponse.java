@@ -15,6 +15,8 @@ public record TrainingResponse(
         LocalDateTime sessionDate,
         long durationMinutes,
         List<TechniqueSummaryResponse> techniques,
+        List<TechniqueSummaryResponse> submissionTechniques,
+        List<TechniqueSummaryResponse> submissionTechniquesAllowed,
         Integer totalRolls,
         Integer totalRounds,
         long roundLengthMinutes,
@@ -38,6 +40,12 @@ public record TrainingResponse(
                         entity.getSessionDate(),
                         entity.getDuration().toMinutesPart() + entity.getDuration().toHours() * 60,
                         entity.getTechnique().stream()
+                                .map(TechniqueSummaryResponse::fromEntity)
+                                .toList(),
+                        entity.getSubmissionTechniques().stream()
+                                .map(TechniqueSummaryResponse::fromEntity)
+                                .toList(),
+                        entity.getSubmissionTechniquesAllowed().stream()
                                 .map(TechniqueSummaryResponse::fromEntity)
                                 .toList(),
                         entity.getTotalRolls(),

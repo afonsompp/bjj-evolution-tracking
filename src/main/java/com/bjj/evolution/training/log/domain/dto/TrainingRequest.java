@@ -33,6 +33,10 @@ public record TrainingRequest(
 
         List<Long> techniqueIds,
 
+        List<Long> submissionTechniqueIds,
+
+        List<Long> submissionTechniqueAllowedIds,
+
         @NotNull
         @PositiveOrZero
         Integer totalRolls,
@@ -67,7 +71,7 @@ public record TrainingRequest(
         @NotNull @PositiveOrZero Integer guardPasses
 ) {
 
-        public Training toEntity(Long id, List<Technique> techniques, UserProfile profile) {
+        public Training toEntity(Long id, List<Technique> techniques, List<Technique> submissionTechniques, List<Technique> submissionTechniqueAllowed,UserProfile profile) {
                 return Training.builder()
                         .id(id)
                         .userProfile(profile) // Novo parâmetro associado aqui
@@ -88,10 +92,12 @@ public record TrainingRequest(
                         .sweeps(sweeps)
                         .takedowns(takedowns)
                         .guardPasses(guardPasses)
+                        .submissionsTechniques(submissionTechniques)
+                        .submissionsTechniquesAllowed(submissionTechniqueAllowed)
                         .build();
         }
 
-        public Training toEntity(List<Technique> techniques, UserProfile profile) {
-                return toEntity(null, techniques, profile);
+        public Training toEntity(List<Technique> techniques, List<Technique> submissionTechniques, List<Technique> submissionTechniquesAllowed, UserProfile profile) {
+                return toEntity(null, techniques, submissionTechniques, submissionTechniquesAllowed, profile);
         }
 }

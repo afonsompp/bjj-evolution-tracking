@@ -16,6 +16,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.validation.OverridesAttribute;
@@ -40,10 +42,13 @@ public class Training {
     private LocalDateTime sessionDate;
     @Column(nullable = false)
     private Duration duration;
-    @OneToMany(
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )    private List<Technique> technique;
+    @ManyToMany
+    @JoinTable(
+            name = "training_technique",
+            joinColumns = @JoinColumn(name = "training_id"),
+            inverseJoinColumns = @JoinColumn(name = "technique_id")
+    )
+    private List<Technique> technique;
     @Column(nullable = false)
     private Integer totalRolls;
     @Column(nullable = false)
@@ -79,6 +84,20 @@ public class Training {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_profile_id", nullable = false)
     private UserProfile userProfile;
+    @ManyToMany
+    @JoinTable(
+            name = "training_submission_technique",
+            joinColumns = @JoinColumn(name = "training_id"),
+            inverseJoinColumns = @JoinColumn(name = "technique_id")
+    )
+    private List<Technique> submissionTechniques;
+    @ManyToMany
+    @JoinTable(
+            name = "training_submission_technique_allowed",
+            joinColumns = @JoinColumn(name = "training_id"),
+            inverseJoinColumns = @JoinColumn(name = "technique_id")
+    )
+    private List<Technique> submissionTechniquesAllowed;
 
     public Training() {
     }
@@ -159,6 +178,13 @@ public class Training {
         return userProfile;
     }
 
+    public List<Technique> getSubmissionTechniques() {
+        return submissionTechniques;
+    }
+
+    public List<Technique> getSubmissionTechniquesAllowed() {
+        return submissionTechniquesAllowed;
+    }
     private Training(Builder builder) {
         this.id = builder.id;
         this.classType = builder.classType;
@@ -179,6 +205,8 @@ public class Training {
         this.takedowns = builder.takedowns;
         this.guardPasses = builder.guardPasses;
         this.userProfile = builder.userProfile;
+        this.submissionTechniques = builder.submissionTechniques;
+        this.submissionTechniquesAllowed = builder.submissionTechniquesAllowed;
     }
 
     public static Builder builder() {
@@ -192,6 +220,8 @@ public class Training {
         private LocalDateTime sessionDate;
         private Duration duration;
         private List<Technique> technique;
+        private List<Technique> submissionTechniques;
+        private List<Technique> submissionTechniquesAllowed;
         private Integer totalRolls;
         private Integer totalRounds;
         private Duration roundLength;
@@ -298,6 +328,16 @@ public class Training {
 
         public Builder guardPasses(Integer guardPasses) {
             this.guardPasses = guardPasses;
+            return this;
+        }
+
+        public Builder submissionsTechniques(List<Technique> submissionTechniques) {
+            this.submissionTechniques = submissionTechniques;
+            return this;
+        }
+
+        public Builder submissionsTechniquesAllowed(List<Technique> submissionTechniquesAllowed) {
+            this.submissionTechniquesAllowed = submissionTechniquesAllowed;
             return this;
         }
 

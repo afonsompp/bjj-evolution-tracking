@@ -8,9 +8,13 @@ import com.bjj.evolution.training.log.domain.Training;
 import com.bjj.evolution.training.log.domain.dto.TrainingRequest;
 import com.bjj.evolution.training.log.domain.dto.TrainingResponse;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,21 +39,35 @@ public class TrainingService {
                 .orElseThrow(() -> new EntityNotFoundException("UserProfile not found with id: " + userId));
 
         List<Technique> techniques = resolveTechniques(request.techniqueIds());
+        List<Technique> submissionTechniques = resolveTechniques(request.submissionTechniqueIds());
+        List<Technique> submissionTechniquesAllowed = resolveTechniques(request.submissionTechniqueAllowedIds());
 
-        Training saved = trainingRepository.save(request.toEntity(techniques, profile));
+        Training saved = trainingRepository.save(request.toEntity(techniques, submissionTechniques, submissionTechniquesAllowed, profile));
         return TrainingResponse.fromEntity(saved);
     }
 
     @Transactional(readOnly = true)
-    public List<TrainingResponse> findAll(UUID userId) {
-        return trainingRepository.findAllByUserProfileId(userId).stream()
-                .map(TrainingResponse::fromEntity)
-                .toList();
+    public Page<TrainingResponse> findAll(
+            UUID userId,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            Pageable pageable
+    ) {
+        if (startDate != null && endDate != null) {
+            return trainingRepository
+                    .findAllByUserProfileIdAndSessionDateBetween(
+                            userId, startDate, endDate, pageable
+                    )
+                    .map(TrainingResponse::fromEntity);
+        }
+
+        return trainingRepository
+                .findAllByUserProfileId(userId, pageable)
+                .map(TrainingResponse::fromEntity);
     }
 
     @Transactional(readOnly = true)
     public TrainingResponse findById(Long id, UUID userId) {
-        // Verifica se o treino existe E pertence ao usuário
         return trainingRepository.findByIdAndUserProfileId(id, userId)
                 .map(TrainingResponse::fromEntity)
                 .orElseThrow(() -> new EntityNotFoundException("Training not found for user: " + userId));
@@ -57,14 +75,15 @@ public class TrainingService {
 
     @Transactional
     public TrainingResponse update(Long id, TrainingRequest request, UUID userId) {
-        // Validação de existência e propriedade antes de atualizar
         Training existingTraining = trainingRepository.findByIdAndUserProfileId(id, userId)
                 .orElseThrow(() -> new EntityNotFoundException("Training not found or access denied"));
 
         UserProfile profile = existingTraining.getUserProfile();
         List<Technique> techniques = resolveTechniques(request.techniqueIds());
+        List<Technique> subTechniques = resolveTechniques(request.submissionTechniqueIds());
+        List<Technique> subTechniquesAllowed = resolveTechniques(request.submissionTechniqueAllowedIds());
 
-        Training updated = trainingRepository.save(request.toEntity(id, techniques, profile));
+        Training updated = trainingRepository.save(request.toEntity(id, techniques, subTechniques, subTechniquesAllowed,profile));
         return TrainingResponse.fromEntity(updated);
     }
 

@@ -63,4 +63,28 @@ public class UserProfile {
     public LocalDate getStartsIn() {
         return startsIn;
     }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setSecondName(String secondName) {
+        this.secondName = secondName;
+    }
+
+    public void setBelt(Belt belt) {
+        this.belt = belt;
+    }
+
+    public void setStripe(Integer stripe) {
+        this.stripe = stripe;
+    }
+
+    public void setStartsIn(LocalDate startsIn) {
+        this.startsIn = startsIn;
+    }
 }

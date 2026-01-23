@@ -3,12 +3,19 @@ package com.bjj.evolution.training.log;
 import com.bjj.evolution.training.log.domain.dto.TrainingRequest;
 import com.bjj.evolution.training.log.domain.dto.TrainingResponse;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,9 +40,19 @@ public class TrainingController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TrainingResponse>> getAll(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Page<TrainingResponse>> getAll(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime startDate,
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            @RequestParam(required = false) LocalDateTime endDate,
+            Pageable pageable
+    ) {
         UUID userId = extractUserId(jwt);
-        return ResponseEntity.ok(service.findAll(userId));
+        return ResponseEntity.ok(
+                service.findAll(userId, startDate, endDate, pageable)
+        );
     }
 
     @GetMapping("/{id}")

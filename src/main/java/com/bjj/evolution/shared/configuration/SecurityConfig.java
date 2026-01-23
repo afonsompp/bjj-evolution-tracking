@@ -42,16 +42,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Permite o seu frontend (adicionei a 5173 também caso use Vite padrão)
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:5173"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "https://frontend-bjj-evolution.vercel.app"));
 
-        // Permite os métodos HTTP que você usa
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
-        // Permite os headers necessários (principalmente Authorization para o Token)
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
 
-        // Aplica para todas as rotas da API
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

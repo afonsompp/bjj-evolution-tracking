@@ -47,6 +47,7 @@ public class TrainingController {
             LocalDateTime startDate,
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
             @RequestParam(required = false) LocalDateTime endDate,
+            @PageableDefault(size = 10, sort = "name", direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
         UUID userId = extractUserId(jwt);

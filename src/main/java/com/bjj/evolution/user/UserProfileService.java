@@ -4,7 +4,6 @@ import com.bjj.evolution.user.domain.UserProfile;
 import com.bjj.evolution.user.domain.dto.ProfileRequest;
 import com.bjj.evolution.user.domain.dto.ProfileResponse;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -14,11 +13,9 @@ import java.util.UUID;
 public class UserProfileService {
 
     private final UserProfileRepository repository;
-    private final PathPatternRequestMatcher.Builder builder;
 
-    public UserProfileService(UserProfileRepository repository, PathPatternRequestMatcher.Builder builder) {
+    public UserProfileService(UserProfileRepository repository) {
         this.repository = repository;
-        this.builder = builder;
     }
 
     public ProfileResponse saveOrUpdate(Jwt jwt, ProfileRequest request) {

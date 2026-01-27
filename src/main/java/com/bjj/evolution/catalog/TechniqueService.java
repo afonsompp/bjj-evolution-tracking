@@ -5,6 +5,8 @@ import com.bjj.evolution.catalog.domain.Technique;
 import com.bjj.evolution.catalog.domain.dto.TechniqueRequest;
 import com.bjj.evolution.catalog.domain.dto.TechniqueResponse;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,10 +28,18 @@ public class TechniqueService {
         return TechniqueResponse.fromEntity(saved);
     }
 
-    public List<TechniqueResponse> findAll() {
-        return repository.findAll().stream()
-                .map(TechniqueResponse::fromEntity)
-                .toList();
+    public Page<TechniqueResponse> findAll(String query, Pageable pageable) {
+        Page<Technique> techniques;
+
+        if (query != null && !query.isBlank()) {
+            techniques = repository.findByNameContainingIgnoreCaseOrAlternativeNameContainingIgnoreCase(
+                    query, query, pageable);
+        } else {
+            techniques = repository.findAll(pageable);
+        }
+
+        // Converte a Page<Entity> para Page<DTO>
+        return techniques.map(TechniqueResponse::fromEntity);
     }
 
     public TechniqueResponse findById(Long id) {

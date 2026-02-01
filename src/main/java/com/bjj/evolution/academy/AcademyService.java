@@ -3,11 +3,19 @@ package com.bjj.evolution.academy;
 import com.bjj.evolution.academy.domain.Academy;
 import com.bjj.evolution.academy.domain.dto.AcademyRequest;
 import com.bjj.evolution.academy.domain.dto.AcademyResponse;
+import com.bjj.evolution.academy.member.AcademyMemberRepository;
+import com.bjj.evolution.academy.member.domain.AcademyMember;
+import com.bjj.evolution.academy.member.domain.MemberRole;
+import com.bjj.evolution.academy.member.domain.MemberStatus;
+import com.bjj.evolution.shared.utils.SecurityUtils;
 import com.bjj.evolution.user.UserProfileRepository;
 import com.bjj.evolution.user.domain.UserProfile;
+import com.bjj.evolution.user.domain.UserRole;
+import com.nimbusds.jwt.JWT;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,21 +26,39 @@ public class AcademyService {
 
     private final AcademyRepository academyRepository;
     private final UserProfileRepository userProfileRepository;
+    private final AcademyMemberRepository academyMemberRepository;
 
-    public AcademyService(AcademyRepository academyRepository, UserProfileRepository userProfileRepository) {
+    public AcademyService(AcademyRepository academyRepository, UserProfileRepository userProfileRepository, AcademyMemberRepository academyMemberRepository) {
         this.academyRepository = academyRepository;
         this.userProfileRepository = userProfileRepository;
+        this.academyMemberRepository = academyMemberRepository;
     }
 
     @Transactional
-    public AcademyResponse create(AcademyRequest request) {
-        UserProfile owner = userProfileRepository.findById(request.ownerId())
-                .orElseThrow(() -> new EntityNotFoundException("Owner (UserProfile) not found with id: " + request.ownerId()));
+    public AcademyResponse create(Jwt jwt, AcademyRequest request) {
+        UUID userId = UUID.fromString(jwt.getSubject());
 
-        Academy academy = request.toEntity(owner);
-        Academy saved = academyRepository.save(academy);
+        UserProfile currentUser = userProfileRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
 
-        return AcademyResponse.fromEntity(saved);
+        if (SecurityUtils.isNotAdminOrManager(currentUser) || !SecurityUtils.isAcademyOwner(currentUser)) {
+            throw new SecurityException("User must be an admin, manager or academy owner to create an academy");
+        }
+        UserProfile user = userProfileRepository.findById(request.ownerId())
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+
+        Academy academy = new Academy(request.name(), request.address());
+        academy = academyRepository.save(academy);
+
+        AcademyMember ownerMember = new AcademyMember(
+                academy,
+                user,
+                MemberRole.OWNER,
+                MemberStatus.ACTIVE
+        );
+        academyMemberRepository.save(ownerMember);
+
+        return AcademyResponse.fromEntity(academy);
     }
 
     @Transactional(readOnly = true)
@@ -59,12 +85,6 @@ public class AcademyService {
 
         existingAcademy.setName(request.name());
         existingAcademy.setAddress(request.address());
-
-        if (!existingAcademy.getOwner().getId().equals(request.ownerId())) {
-            UserProfile newOwner = userProfileRepository.findById(request.ownerId())
-                    .orElseThrow(() -> new EntityNotFoundException("Owner (UserProfile) not found with id: " + request.ownerId()));
-            existingAcademy.setOwner(newOwner);
-        }
 
         Academy updated = academyRepository.save(existingAcademy);
         return AcademyResponse.fromEntity(updated);

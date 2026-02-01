@@ -1,4 +1,4 @@
-package com.bjj.evolution.academy.domain;
+package com.bjj.evolution.academy.member.domain;
 
 import jakarta.persistence.Embeddable;
 

@@ -1,7 +1,7 @@
 package com.bjj.evolution.academy.domain.dto;
 
 import com.bjj.evolution.academy.domain.Academy;
-import com.bjj.evolution.user.domain.dto.ProfileResponse;
+import com.bjj.evolution.academy.member.domain.AcademyMember;
 
 import java.util.UUID;
 
@@ -9,14 +9,18 @@ public record AcademyResponse(
         UUID id,
         String name,
         String address,
-        ProfileResponse owner
+        AcademyMember owner
 ) {
-    public static AcademyResponse fromEntity(Academy academy) {
+    public static AcademyResponse fromEntity(Academy academy, AcademyMember owner) {
         return new AcademyResponse(
                 academy.getId(),
                 academy.getName(),
                 academy.getAddress(),
-                academy.getOwner() != null ? ProfileResponse.fromEntity(academy.getOwner()) : null
+                owner
         );
+    }
+
+    public static AcademyResponse fromEntity(Academy academy) {
+        return fromEntity(academy, null);
     }
 }

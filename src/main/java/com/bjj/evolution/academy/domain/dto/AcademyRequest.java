@@ -1,7 +1,5 @@
 package com.bjj.evolution.academy.domain.dto;
 
-import com.bjj.evolution.academy.domain.Academy;
-import com.bjj.evolution.user.domain.UserProfile;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -16,8 +14,4 @@ public record AcademyRequest(
 
         @NotNull(message = "Owner ID is required")
         UUID ownerId
-) {
-    public Academy toEntity(UserProfile owner) {
-        return new Academy(name, address, owner);
-    }
-}
+){}

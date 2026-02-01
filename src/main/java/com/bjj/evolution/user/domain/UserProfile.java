@@ -28,16 +28,19 @@ public class UserProfile {
 
     private LocalDate startsIn;
 
+    private UserRole role = UserRole.CUSTOMER;
+
     public UserProfile() {
     }
 
-    public UserProfile(UUID id, String name, String secondName, Belt belt, Integer stripe, LocalDate startsIn) {
+    public UserProfile(UUID id, String name, String secondName, Belt belt, Integer stripe, LocalDate startsIn, UserRole role) {
         this.id = id;
         this.name = name;
         this.secondName = secondName;
         this.belt = belt;
         this.stripe = stripe;
         this.startsIn = startsIn;
+        this.role = role != null ? role : UserRole.CUSTOMER;
     }
 
     public UUID getId() {
@@ -64,6 +67,10 @@ public class UserProfile {
         return startsIn;
     }
 
+    public UserRole getRole() {
+            return role;
+    }
+
     public void setId(UUID id) {
         this.id = id;
     }
@@ -86,5 +93,9 @@ public class UserProfile {
 
     public void setStartsIn(LocalDate startsIn) {
         this.startsIn = startsIn;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
     }
 }

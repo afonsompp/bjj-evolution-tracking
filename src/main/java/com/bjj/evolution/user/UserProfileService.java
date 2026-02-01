@@ -1,6 +1,8 @@
 package com.bjj.evolution.user;
 
+import com.bjj.evolution.shared.utils.SecurityUtils;
 import com.bjj.evolution.user.domain.UserProfile;
+import com.bjj.evolution.user.domain.UserRole;
 import com.bjj.evolution.user.domain.dto.ProfileRequest;
 import com.bjj.evolution.user.domain.dto.ProfileResponse;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -36,10 +38,33 @@ public class UserProfileService {
                         request.secondName(),
                         request.belt(),
                         request.stripe(),
-                        request.startsIn()
+                        request.startsIn(),
+                        UserRole.CUSTOMER
                 ));
 
         UserProfile saved = repository.save(profile);
+        return ProfileResponse.fromEntity(saved);
+    }
+
+    public ProfileResponse updateRole(Jwt jwt, UUID targetUserId, UserRole newRole) {
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+
+        UserProfile currentUser = repository.findById(currentUserId)
+                .orElseThrow(() -> new IllegalStateException("Current user profile not found"));
+
+        if (SecurityUtils.isNotAdminOrManager(currentUser)) {
+            throw new SecurityException("Only admins or managers can update user roles");
+        }
+
+        if (newRole == UserRole.ADMIN && SecurityUtils.isManager(currentUser)){
+            throw new SecurityException("Only admins can set new admins");
+        }
+
+        UserProfile targetUser = repository.findById(targetUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Target user not found"));
+
+        targetUser.setRole(newRole);
+        UserProfile saved = repository.save(targetUser);
         return ProfileResponse.fromEntity(saved);
     }
 

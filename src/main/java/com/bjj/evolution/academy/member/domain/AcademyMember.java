@@ -45,12 +45,21 @@ public class AcademyMember {
     public AcademyMember() {
     }
 
-    public AcademyMember(Academy academy, UserProfile user, Belt belt, Integer stripe, MemberRole role) {
+
+    public AcademyMember(Academy academy, UserProfile user, Belt belt, Integer stripe, MemberRole role, MemberStatus status) {
         this.id = new AcademyMemberId(academy.getId(), user.getId());
         this.academy = academy;
         this.user = user;
         this.belt = belt;
         this.stripe = stripe;
+        this.role = role;
+        this.status = status;
+    }
+
+    public AcademyMember(Academy academy, UserProfile user, MemberRole role) {
+        this.id = new AcademyMemberId(academy.getId(), user.getId());
+        this.academy = academy;
+        this.user = user;
         this.role = role;
     }
 
@@ -60,12 +69,6 @@ public class AcademyMember {
         this.user = user;
         this.role = role;
         this.status = status;
-    }
-
-    public AcademyMember(Academy academy, UserProfile user, MemberRole role) {
-        this.id = new AcademyMemberId(academy.getId(), user.getId());
-        this.academy = academy;
-        this.user = user;
     }
 
     public AcademyMemberId getId() {

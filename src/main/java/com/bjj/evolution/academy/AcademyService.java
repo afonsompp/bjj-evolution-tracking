@@ -5,13 +5,11 @@ import com.bjj.evolution.academy.domain.dto.AcademyRequest;
 import com.bjj.evolution.academy.domain.dto.AcademyResponse;
 import com.bjj.evolution.academy.member.AcademyMemberRepository;
 import com.bjj.evolution.academy.member.domain.AcademyMember;
-import com.bjj.evolution.academy.member.domain.AcademyMemberId;
 import com.bjj.evolution.academy.member.domain.MemberRole;
 import com.bjj.evolution.academy.member.domain.MemberStatus;
 import com.bjj.evolution.shared.utils.SecurityUtils;
 import com.bjj.evolution.user.UserProfileRepository;
 import com.bjj.evolution.user.domain.UserProfile;
-import com.bjj.evolution.user.domain.UserRole;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -51,6 +49,8 @@ public class AcademyService {
         AcademyMember ownerMember = new AcademyMember(
                 savedAcademy,
                 ownerProfile,
+                ownerProfile.getBelt(),
+                ownerProfile.getStripe(),
                 MemberRole.OWNER,
                 MemberStatus.ACTIVE
         );
@@ -87,8 +87,6 @@ public class AcademyService {
         Academy academy = academyRepository.findById(academyId)
                 .orElseThrow(() -> new EntityNotFoundException("Academy not found"));
 
-        verifyPermission(academyId, requesterId, MemberRole.MANAGER, MemberRole.OWNER);
-
         academy.setName(request.name());
         academy.setAddress(request.address());
 
@@ -100,26 +98,7 @@ public class AcademyService {
         if (!academyRepository.existsById(academyId)) {
             throw new EntityNotFoundException("Academy not found");
         }
-
-        verifyPermission(academyId, requesterId, MemberRole.OWNER);
-
         academyRepository.deleteById(academyId);
     }
 
-    private void verifyPermission(UUID academyId, UUID userId, MemberRole... allowedRoles) {
-        AcademyMember member = academyMemberRepository.findById(new AcademyMemberId(academyId, userId))
-                .orElseThrow(() -> new AccessDeniedException("You are not a member of this academy"));
-
-        boolean hasPermission = false;
-        for (MemberRole role : allowedRoles) {
-            if (member.getRole() == role) {
-                hasPermission = true;
-                break;
-            }
-        }
-
-        if (!hasPermission || member.getStatus() != MemberStatus.ACTIVE) {
-            throw new AccessDeniedException("Insufficient permissions to perform this action.");
-        }
-    }
 }

@@ -2,6 +2,7 @@ package com.bjj.evolution.academy.member;
 
 import com.bjj.evolution.academy.member.domain.AcademyMember;
 import com.bjj.evolution.academy.member.domain.AcademyMemberId;
+import com.bjj.evolution.academy.member.domain.MemberRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,4 +19,6 @@ public interface AcademyMemberRepository extends JpaRepository<AcademyMember, Ac
             "AND (LOWER(am.user.name) LIKE LOWER(CONCAT('%', :name, '%')) " +
             "OR LOWER(am.user.secondName) LIKE LOWER(CONCAT('%', :name, '%')))")
     Page<AcademyMember> findByAcademyIdAndUserName(UUID academyId, String name, Pageable pageable);
+
+    long countByAcademyIdAndRole(UUID academyId, MemberRole role);
 }

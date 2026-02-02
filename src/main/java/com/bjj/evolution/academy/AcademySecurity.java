@@ -29,7 +29,7 @@ public class AcademySecurity {
     public boolean isAdmin(Authentication authentication, UUID academyId) {
         UUID userId = extractUserId(authentication);
         return memberRepository.findById(new AcademyMemberId(academyId, userId))
-                .map(member -> member.getStatus() == MemberStatus.ACTIVE && member.getRole() == MemberRole.MANAGER)
+                .map(member -> member.getStatus() == MemberStatus.ACTIVE && (isAdmin(authentication,academyId) || isOwner(authentication,academyId)))
                 .orElse(false);
     }
 
@@ -38,6 +38,13 @@ public class AcademySecurity {
         return memberRepository.findById(new AcademyMemberId(academyId, userId))
                 .map(member -> member.getStatus() == MemberStatus.ACTIVE &&
                         (member.getRole() == MemberRole.INSTRUCTOR || member.getRole() == MemberRole.MANAGER))
+                .orElse(false);
+    }
+
+    public boolean isOwner(Authentication authentication, UUID academyId) {
+        UUID userId = extractUserId(authentication);
+        return memberRepository.findById(new AcademyMemberId(academyId, userId))
+                .map(member -> member.getStatus() == MemberStatus.ACTIVE && member.getRole() == MemberRole.OWNER)
                 .orElse(false);
     }
 

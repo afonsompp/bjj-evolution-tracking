@@ -28,16 +28,23 @@ public class AcademyController {
     @PostMapping
     public ResponseEntity<AcademyResponse> create(@AuthenticationPrincipal Jwt jwt,
                                                   @Valid @RequestBody AcademyRequest request) {
-        AcademyResponse response = service.create(jwt, request);
+        AcademyResponse response = service.create(request, UUID.fromString(jwt.getSubject()));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping
-    public ResponseEntity<Page<AcademyResponse>> getAll(
+    @GetMapping("/search")
+    public ResponseEntity<Page<AcademyResponse>> search(
             @RequestParam(required = false) String query,
-            @PageableDefault(size = 10, sort = "name", direction = Sort.Direction.ASC) Pageable pageable
-    ) {
-        return ResponseEntity.ok(service.findAll(query, pageable));
+            Pageable pageable) {
+        return ResponseEntity.ok(service.findAllPublic(query, pageable));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<AcademyResponse>> getMyAcademies(
+            @AuthenticationPrincipal Jwt jwt,
+            Pageable pageable) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(service.findMyAcademies(userId, pageable));
     }
 
     @GetMapping("/{id}")
@@ -48,14 +55,16 @@ public class AcademyController {
     @PutMapping("/{id}")
     public ResponseEntity<AcademyResponse> update(
             @PathVariable UUID id,
-            @Valid @RequestBody AcademyRequest request
-    ) {
-        return ResponseEntity.ok(service.update(id, request));
+            @RequestBody AcademyRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(service.update(id, request, userId));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        service.delete(id);
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal Jwt jwt,@PathVariable UUID id) {
+        service.delete(id, UUID.fromString(jwt.getSubject()));
         return ResponseEntity.noContent().build();
     }
 }

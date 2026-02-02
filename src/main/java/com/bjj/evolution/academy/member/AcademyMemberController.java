@@ -2,6 +2,8 @@ package com.bjj.evolution.academy.member;
 
 import com.bjj.evolution.academy.member.domain.dto.AcademyMemberRequest;
 import com.bjj.evolution.academy.member.domain.dto.AcademyMemberResponse;
+import com.bjj.evolution.academy.member.domain.MemberRole;
+import com.bjj.evolution.academy.member.domain.MemberStatus;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +12,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -24,13 +28,32 @@ public class AcademyMemberController {
         this.service = service;
     }
 
-
     @PostMapping
-    public ResponseEntity<AcademyMemberResponse> addMember(
+    @PreAuthorize("@academySecurity.isInstructorOrAdmin(authentication, #academyId)")
+    public ResponseEntity<AcademyMemberResponse> addMemberManual(
             @PathVariable UUID academyId,
             @Valid @RequestBody AcademyMemberRequest request) {
 
         AcademyMemberResponse response = service.addOrUpdateMember(academyId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/join")
+    public ResponseEntity<AcademyMemberResponse> requestToJoin(
+            @PathVariable UUID academyId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        UUID userId = UUID.fromString(jwt.getSubject());
+
+        AcademyMemberRequest safeRequest = new AcademyMemberRequest(
+                userId,
+                MemberRole.STUDENT,
+                MemberStatus.PENDING,
+                null,
+                null
+        );
+
+        AcademyMemberResponse response = service.addOrUpdateMember(academyId, safeRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -42,7 +65,7 @@ public class AcademyMemberController {
             @Valid @RequestBody AcademyMemberRequest request) {
 
         if (!userId.equals(request.userId())) {
-            throw new IllegalArgumentException("User ID mismatch");
+            throw new IllegalArgumentException("User ID mismatch between URL and Body");
         }
         return ResponseEntity.ok(service.addOrUpdateMember(academyId, request));
     }
@@ -70,6 +93,7 @@ public class AcademyMemberController {
     public ResponseEntity<Void> removeMember(
             @PathVariable UUID academyId,
             @PathVariable UUID userId) {
+
         service.removeMember(academyId, userId);
         return ResponseEntity.noContent().build();
     }

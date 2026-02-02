@@ -28,6 +28,7 @@ public class UserProfile {
 
     private LocalDate startsIn;
 
+    @Enumerated(EnumType.STRING)
     private UserRole role = UserRole.CUSTOMER;
 
     public UserProfile() {

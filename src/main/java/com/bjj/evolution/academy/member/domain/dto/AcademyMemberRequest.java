@@ -4,6 +4,7 @@ import com.bjj.evolution.academy.domain.Academy;
 import com.bjj.evolution.academy.member.domain.AcademyMember;
 import com.bjj.evolution.academy.member.domain.MemberRole;
 import com.bjj.evolution.academy.member.domain.MemberStatus;
+import com.bjj.evolution.catalog.domain.Belt;
 import com.bjj.evolution.user.domain.UserProfile;
 import jakarta.validation.constraints.NotNull;
 
@@ -16,12 +17,23 @@ public record AcademyMemberRequest(
         @NotNull(message = "Role is required")
         MemberRole role,
 
-        MemberStatus status
+        MemberStatus status,
+
+        Belt belt,
+        Integer stripe
 ) {
-    public AcademyMember toEntityWithStatus(Academy academy, UserProfile user) {
-        return new AcademyMember(academy, user, role, status);
-    }
     public AcademyMember toEntity(Academy academy, UserProfile user) {
-        return new AcademyMember(academy, user, role);
+        Belt initialBelt = (belt != null) ? belt : (user.getBelt() != null ? user.getBelt() : Belt.WHITE);
+        Integer initialStripe = (stripe != null) ? stripe : 0;
+
+        AcademyMember member = new AcademyMember(academy, user, role);
+        member.setBelt(initialBelt);
+        member.setStripe(initialStripe);
+
+        if (status != null) {
+            member.setStatus(status);
+        }
+
+        return member;
     }
 }

@@ -14,7 +14,7 @@ public class SecurityUtils {
     }
 
     public static boolean isNotAdminOrManager(UserProfile profile) {
-        return !isNotAdminOrManager(profile);
+        return !isAdminOrManager(profile);
     }
 
     public static boolean isManager(UserProfile profile) {

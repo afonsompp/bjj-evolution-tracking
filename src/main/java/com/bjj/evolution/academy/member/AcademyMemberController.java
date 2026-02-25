@@ -1,5 +1,6 @@
 package com.bjj.evolution.academy.member;
 
+import com.bjj.evolution.academy.member.domain.MemberStatus;
 import com.bjj.evolution.academy.member.domain.dto.AcademyMemberRequest;
 import com.bjj.evolution.academy.member.domain.dto.AcademyMemberResponse;
 import com.bjj.evolution.academy.member.domain.dto.GraduationRequest;
@@ -46,7 +47,7 @@ public class AcademyMemberController {
     }
 
     @PutMapping("/{userId}")
-    @PreAuthorize("@academySecurity.isInstructorOrAdmin(authentication, #academyId)")
+    @PreAuthorize("@academySecurity.isOwner(authentication, #academyId)")
     public ResponseEntity<AcademyMemberResponse> updateMember(
             @PathVariable UUID academyId,
             @PathVariable UUID userId,
@@ -54,13 +55,17 @@ public class AcademyMemberController {
         return ResponseEntity.ok(service.updateMember(academyId, userId, request));
     }
 
+
     @PostMapping("/{userId}/graduate")
     @PreAuthorize("@academySecurity.isInstructorOrAdmin(authentication, #academyId)")
     public ResponseEntity<AcademyMemberResponse> graduateMember(
             @PathVariable UUID academyId,
             @PathVariable UUID userId,
-            @Valid @RequestBody GraduationRequest request) {
-        return ResponseEntity.ok(service.graduateMember(academyId, userId, request));
+            @Valid @RequestBody GraduationRequest request,
+            @AuthenticationPrincipal Jwt jwt) { // JWT injetado
+
+        UUID promoterId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(service.graduateMember(academyId, userId, request, promoterId));
     }
 
     @PatchMapping("/{userId}/approve")
@@ -71,23 +76,23 @@ public class AcademyMemberController {
         return ResponseEntity.ok(service.approveMember(academyId, userId));
     }
 
-
     @GetMapping
     @PreAuthorize("@academySecurity.hasAccess(authentication, #academyId)")
     public ResponseEntity<Page<AcademyMemberResponse>> getAll(
             @PathVariable UUID academyId,
             @RequestParam(required = false) String query,
+            @RequestParam(required = false) MemberStatus status, // Novo Filtro
             @PageableDefault(size = 20, sort = "user.name", direction = Sort.Direction.ASC) Pageable pageable
     ) {
-        return ResponseEntity.ok(service.findAll(academyId, query, pageable));
+        return ResponseEntity.ok(service.findAll(academyId, query, status, pageable));
     }
 
     @GetMapping("/{userId}")
-    @PreAuthorize("@academySecurity.hasAccess(authentication, #academyId)")
+    @PreAuthorize("@academySecurity.isSameUser(authentication, #userId)")
     public ResponseEntity<AcademyMemberResponse> getMember(
             @PathVariable UUID academyId,
             @PathVariable UUID userId) {
-        return ResponseEntity.ok(service.findById(academyId, userId));
+        return ResponseEntity.ok(service.   findById(academyId, userId));
     }
 
     @DeleteMapping("/{userId}")

@@ -1,11 +1,16 @@
 package com.bjj.evolution.academy.domain;
 
+import com.bjj.evolution.academy.clazz.ScheduledClass;
+import com.bjj.evolution.academy.member.domain.AcademyMember;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -20,6 +25,12 @@ public class Academy {
     private String name;
 
     private String address;
+
+    @OneToMany(mappedBy = "academy", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<AcademyMember> members;
+
+    @OneToMany(mappedBy = "academy", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<ScheduledClass> classes;
 
     public Academy() {}
 

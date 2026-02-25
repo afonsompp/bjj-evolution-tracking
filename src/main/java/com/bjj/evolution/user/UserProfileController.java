@@ -3,6 +3,11 @@ package com.bjj.evolution.user;
 import com.bjj.evolution.user.domain.UserRole;
 import com.bjj.evolution.user.domain.dto.ProfileRequest;
 import com.bjj.evolution.user.domain.dto.ProfileResponse;
+import com.bjj.evolution.user.domain.dto.SearchProfileResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -13,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -33,6 +39,14 @@ public class UserProfileController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<SearchProfileResponse>> searchProfile(@RequestParam String query,
+                                                                     @PageableDefault(size = 10, sort = "nickname", direction = Sort.Direction.ASC)
+                                                      Pageable pageable) {
+        return ResponseEntity.ok(service.searchProfile(query, pageable));
+    }
+
 
     @PostMapping
     public ResponseEntity<ProfileResponse> updateProfile(

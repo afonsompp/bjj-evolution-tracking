@@ -26,6 +26,11 @@ public class AcademySecurity {
                 .orElse(false);
     }
 
+    public boolean isSameUser(Authentication authentication, UUID userId) {
+        UUID authenticatedUserId = extractUserId(authentication);
+        return authenticatedUserId.equals(userId);
+    }
+
     public boolean isAdmin(Authentication authentication, UUID academyId) {
         UUID userId = extractUserId(authentication);
         return memberRepository.findById(new AcademyMemberId(academyId, userId))
@@ -37,7 +42,9 @@ public class AcademySecurity {
         UUID userId = extractUserId(authentication);
         return memberRepository.findById(new AcademyMemberId(academyId, userId))
                 .map(member -> member.getStatus() == MemberStatus.ACTIVE &&
-                        (member.getRole() == MemberRole.INSTRUCTOR || member.getRole() == MemberRole.MANAGER))
+                        (member.getRole() == MemberRole.INSTRUCTOR ||
+                                member.getRole() == MemberRole.MANAGER ||
+                                member.getRole() == MemberRole.OWNER))
                 .orElse(false);
     }
 

@@ -18,7 +18,6 @@ public record TrainingResponse(
         List<TechniqueSummaryResponse> submissionTechniques,
         List<TechniqueSummaryResponse> submissionTechniquesAllowed,
         Integer totalRolls,
-        Integer totalRounds,
         long roundLengthMinutes,
         long restLengthMinutes,
         Integer cardioRating,
@@ -29,8 +28,8 @@ public record TrainingResponse(
         Integer sweeps,
         Integer takedowns,
         Integer guardPasses,
-        ProfileResponse profile
-) {
+        ProfileResponse profile,
+        String description) {
 
         public static TrainingResponse fromEntity(Training entity) {
                 return new TrainingResponse(
@@ -49,7 +48,6 @@ public record TrainingResponse(
                                 .map(TechniqueSummaryResponse::fromEntity)
                                 .toList(),
                         entity.getTotalRolls(),
-                        entity.getTotalRounds(),
                         entity.getRoundLength().toMinutes(),
                         entity.getRestLength().toMinutes(),
                         entity.getCardioRating().getValue(),
@@ -60,7 +58,8 @@ public record TrainingResponse(
                         entity.getSweeps(),
                         entity.getTakedowns(),
                         entity.getGuardPasses(),
-                        ProfileResponse.fromEntity(entity.getUserProfile())
+                        ProfileResponse.fromEntity(entity.getUserProfile()),
+                        entity.getDescription()
                 );
         }
 }

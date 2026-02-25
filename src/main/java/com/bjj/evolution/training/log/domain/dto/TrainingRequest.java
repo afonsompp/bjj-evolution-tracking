@@ -41,9 +41,7 @@ public record TrainingRequest(
         @PositiveOrZero
         Integer totalRolls,
 
-        @NotNull
-        @PositiveOrZero
-        Integer totalRounds,
+        String description,
 
         @NotNull
         @PositiveOrZero
@@ -68,20 +66,19 @@ public record TrainingRequest(
         @NotNull @PositiveOrZero Integer escapes,
         @NotNull @PositiveOrZero Integer sweeps,
         @NotNull @PositiveOrZero Integer takedowns,
-        @NotNull @PositiveOrZero Integer guardPasses
-) {
+        @NotNull @PositiveOrZero Integer guardPasses,
+        Duration duration) {
 
         public Training toEntity(Long id, List<Technique> techniques, List<Technique> submissionTechniques, List<Technique> submissionTechniqueAllowed,UserProfile profile) {
                 return Training.builder()
                         .id(id)
-                        .userProfile(profile) // Novo parâmetro associado aqui
+                        .userProfile(profile)
                         .classType(classType)
                         .trainingType(trainingType)
                         .sessionDate(sessionDate)
                         .duration(Duration.ofMinutes(durationMinutes))
                         .technique(techniques)
                         .totalRolls(totalRolls)
-                        .totalRounds(totalRounds)
                         .roundLength(Duration.ofMinutes(roundLengthMinutes))
                         .restLength(Duration.ofMinutes(restLengthMinutes))
                         .cardioRating(Rating.of(cardioRating))
@@ -94,6 +91,7 @@ public record TrainingRequest(
                         .guardPasses(guardPasses)
                         .submissionsTechniques(submissionTechniques)
                         .submissionsTechniquesAllowed(submissionTechniqueAllowed)
+                        .description(description)
                         .build();
         }
 

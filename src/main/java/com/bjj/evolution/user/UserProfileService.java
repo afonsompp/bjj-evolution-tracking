@@ -5,6 +5,9 @@ import com.bjj.evolution.user.domain.UserProfile;
 import com.bjj.evolution.user.domain.UserRole;
 import com.bjj.evolution.user.domain.dto.ProfileRequest;
 import com.bjj.evolution.user.domain.dto.ProfileResponse;
+import com.bjj.evolution.user.domain.dto.SearchProfileResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
@@ -23,24 +26,24 @@ public class UserProfileService {
     public ProfileResponse saveOrUpdate(Jwt jwt, ProfileRequest request) {
         UUID userId = UUID.fromString(jwt.getSubject());
 
+        if (repository.existsByNickname(request.nickname())) {
+            throw new IllegalArgumentException("Nickname is already taken.");
+        }
         UserProfile profile = repository.findById(userId)
                 .map(existing -> {
+                    if (!existing.getNickname().equals(request.nickname()) &&
+                            repository.existsByNickname(request.nickname())) {
+                        throw new IllegalArgumentException("Nickname is already taken.");
+                    }
                     existing.setName(request.name());
                     existing.setSecondName(request.secondName());
+                    existing.setNickname(request.nickname());
                     existing.setBelt(request.belt());
                     existing.setStripe(request.stripe());
                     existing.setStartsIn(request.startsIn());
                     return existing;
                 })
-                .orElse(new UserProfile(
-                        userId,
-                        request.name(),
-                        request.secondName(),
-                        request.belt(),
-                        request.stripe(),
-                        request.startsIn(),
-                        UserRole.CUSTOMER
-                ));
+                .orElse(request.toEntity(userId));
 
         UserProfile saved = repository.save(profile);
         return ProfileResponse.fromEntity(saved);
@@ -71,6 +74,12 @@ public class UserProfileService {
     public Optional<ProfileResponse> getMyProfile(Jwt jwt) {
         return repository.findById(UUID.fromString(jwt.getSubject()))
                 .map(ProfileResponse::fromEntity);
+    }
+
+    public Page<SearchProfileResponse> searchProfile(String query, Pageable pageable) {
+        Page<UserProfile> users = repository.searchByTerm(query, pageable);
+
+        return users.map(SearchProfileResponse::fromEntity);
     }
 
     public void deleteMyProfile(Jwt jwt) {

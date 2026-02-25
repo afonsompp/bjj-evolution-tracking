@@ -83,7 +83,7 @@ public class AcademyService {
     }
 
     @Transactional
-    public AcademyResponse update(UUID academyId, AcademyRequest request, UUID requesterId) {
+    public AcademyResponse update(UUID academyId, AcademyRequest request) {
         Academy academy = academyRepository.findById(academyId)
                 .orElseThrow(() -> new EntityNotFoundException("Academy not found"));
 
@@ -94,7 +94,7 @@ public class AcademyService {
     }
 
     @Transactional
-    public void delete(UUID academyId, UUID requesterId) {
+    public void delete(UUID academyId) {
         if (!academyRepository.existsById(academyId)) {
             throw new EntityNotFoundException("Academy not found");
         }

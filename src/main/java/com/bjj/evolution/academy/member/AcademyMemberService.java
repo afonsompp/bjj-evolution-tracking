@@ -4,6 +4,7 @@ import com.bjj.evolution.academy.AcademyRepository;
 import com.bjj.evolution.academy.domain.Academy;
 import com.bjj.evolution.academy.member.domain.AcademyMember;
 import com.bjj.evolution.academy.member.domain.AcademyMemberId;
+import com.bjj.evolution.academy.member.domain.GraduationHistory;
 import com.bjj.evolution.academy.member.domain.MemberRole;
 import com.bjj.evolution.academy.member.domain.MemberStatus;
 import com.bjj.evolution.academy.member.domain.dto.AcademyMemberRequest;
@@ -26,13 +27,16 @@ public class AcademyMemberService {
     private final AcademyMemberRepository memberRepository;
     private final AcademyRepository academyRepository;
     private final UserProfileRepository userProfileRepository;
+    private final GraduationHistoryRepository graduationHistoryRepository;
 
     public AcademyMemberService(AcademyMemberRepository memberRepository,
                                 AcademyRepository academyRepository,
-                                UserProfileRepository userProfileRepository) {
+                                UserProfileRepository userProfileRepository,
+                                GraduationHistoryRepository graduationHistoryRepository) {
         this.memberRepository = memberRepository;
         this.academyRepository = academyRepository;
         this.userProfileRepository = userProfileRepository;
+        this.graduationHistoryRepository = graduationHistoryRepository;
     }
 
     @Transactional
@@ -40,18 +44,14 @@ public class AcademyMemberService {
         if (memberRepository.existsById(new AcademyMemberId(academyId, request.userId()))) {
             throw new IllegalArgumentException("User is already a member of this academy.");
         }
-
         Academy academy = academyRepository.findById(academyId)
                 .orElseThrow(() -> new EntityNotFoundException("Academy not found"));
-
         UserProfile user = userProfileRepository.findById(request.userId())
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        // Criação manual já define status ACTIVE por padrão, a menos que especificado
         AcademyMember newMember = request.toEntity(academy, user);
-        newMember.setStatus(MemberStatus.ACTIVE); // Força ativo pois foi criado por instrutor
+        newMember.setStatus(MemberStatus.ACTIVE);
 
-        // Se informou faixa na criação, já sincroniza
         if (request.belt() != null) {
             newMember.setBelt(request.belt());
             newMember.setStripe(request.stripe() != null ? request.stripe() : 0);
@@ -66,50 +66,53 @@ public class AcademyMemberService {
         if (memberRepository.existsById(new AcademyMemberId(academyId, userId))) {
             throw new IllegalArgumentException("User is already a member or has a pending request.");
         }
-
         Academy academy = academyRepository.findById(academyId)
                 .orElseThrow(() -> new EntityNotFoundException("Academy not found"));
-
         UserProfile user = userProfileRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
-
         AcademyMember member = new AcademyMember(academy, user, MemberRole.STUDENT, MemberStatus.PENDING);
-
-        // Usa a faixa atual do usuário como base
         member.setBelt(user.getBelt() != null ? user.getBelt() : Belt.WHITE);
         member.setStripe(user.getStripe() != null ? user.getStripe() : 0);
-
         return AcademyMemberResponse.fromEntity(memberRepository.save(member));
     }
 
     @Transactional
     public AcademyMemberResponse updateMember(UUID academyId, UUID userId, AcademyMemberRequest request) {
         AcademyMember member = findMemberOrThrow(academyId, userId);
-
-        // Atualiza apenas dados administrativos (Role)
-        // Não altera faixa/grau aqui (use graduateMember)
-        // Não altera status aqui (use approveMember)
-
         if (request.role() != null) {
-            // Regra opcional: Impedir alterar role do único OWNER
             if (member.getRole() == MemberRole.OWNER && request.role() != MemberRole.OWNER) {
                 validateOwnerRemoval(academyId);
             }
             member.setRole(request.role());
         }
-
         return AcademyMemberResponse.fromEntity(memberRepository.save(member));
     }
 
+
     @Transactional
-    public AcademyMemberResponse graduateMember(UUID academyId, UUID userId, GraduationRequest request) {
+    public AcademyMemberResponse graduateMember(UUID academyId, UUID userId, GraduationRequest request, UUID promoterId) {
         AcademyMember member = findMemberOrThrow(academyId, userId);
         UserProfile user = member.getUser();
+        UserProfile promoter = userProfileRepository.findById(promoterId)
+                .orElseThrow(() -> new EntityNotFoundException("Promoter not found"));
+
+        Belt oldBelt = member.getBelt();
+        Integer oldStripe = member.getStripe();
 
         member.setBelt(request.newBelt());
         member.setStripe(request.newStripe() != null ? request.newStripe() : 0);
 
-        // Sincroniza sempre (Permite correção/downgrade conforme solicitado)
+        GraduationHistory history = new GraduationHistory(
+                member.getAcademy(),
+                user,
+                promoter,
+                oldBelt,
+                oldStripe,
+                member.getBelt(),
+                member.getStripe()
+        );
+        graduationHistoryRepository.save(history);
+
         syncGlobalProfile(user, member.getBelt(), member.getStripe());
 
         return AcademyMemberResponse.fromEntity(memberRepository.save(member));
@@ -118,11 +121,9 @@ public class AcademyMemberService {
     @Transactional
     public AcademyMemberResponse approveMember(UUID academyId, UUID userId) {
         AcademyMember member = findMemberOrThrow(academyId, userId);
-
         if (member.getStatus() != MemberStatus.PENDING) {
             throw new IllegalStateException("Member is not pending approval.");
         }
-
         member.setStatus(MemberStatus.ACTIVE);
         return AcademyMemberResponse.fromEntity(memberRepository.save(member));
     }
@@ -130,15 +131,33 @@ public class AcademyMemberService {
     @Transactional
     public void removeMember(UUID academyId, UUID userId) {
         AcademyMember member = findMemberOrThrow(academyId, userId);
-
         if (member.getRole() == MemberRole.OWNER) {
             validateOwnerRemoval(academyId);
         }
-
         memberRepository.deleteById(member.getId());
     }
 
-    // --- Helpers ---
+    @Transactional(readOnly = true)
+    public Page<AcademyMemberResponse> findAll(UUID academyId, String query, MemberStatus status, Pageable pageable) {
+        if (!academyRepository.existsById(academyId)) {
+            throw new EntityNotFoundException("Academy not found");
+        }
+
+        if (query != null && !query.isBlank() && status != null) {
+            return memberRepository.findByAcademyIdAndUserNameAndStatus(academyId, query, status, pageable)
+                    .map(AcademyMemberResponse::fromEntity);
+        }
+        else if (query != null && !query.isBlank()) {
+            return memberRepository.findByAcademyIdAndUserName(academyId, query, pageable)
+                    .map(AcademyMemberResponse::fromEntity);
+        }
+        else if (status != null) {
+            return memberRepository.findAllByAcademyIdAndStatus(academyId, status, pageable)
+                    .map(AcademyMemberResponse::fromEntity);
+        }
+        return memberRepository.findAllByAcademyId(academyId, pageable)
+                .map(AcademyMemberResponse::fromEntity);
+    }
 
     private AcademyMember findMemberOrThrow(UUID academyId, UUID userId) {
         return memberRepository.findById(new AcademyMemberId(academyId, userId))
@@ -154,34 +173,17 @@ public class AcademyMemberService {
 
     private void syncGlobalProfile(UserProfile user, Belt newBelt, Integer newStripe) {
         boolean updated = false;
-
         if (newBelt != null && newBelt != user.getBelt()) {
             user.setBelt(newBelt);
             updated = true;
         }
-
         if (newStripe != null && !newStripe.equals(user.getStripe())) {
             user.setStripe(newStripe);
             updated = true;
         }
-
         if (updated) {
             userProfileRepository.save(user);
         }
-    }
-
-    // --- Finders (Mantidos) ---
-    @Transactional(readOnly = true)
-    public Page<AcademyMemberResponse> findAll(UUID academyId, String query, Pageable pageable) {
-        if (!academyRepository.existsById(academyId)) {
-            throw new EntityNotFoundException("Academy not found");
-        }
-        if (query != null && !query.isBlank()) {
-            return memberRepository.findByAcademyIdAndUserName(academyId, query, pageable)
-                    .map(AcademyMemberResponse::fromEntity);
-        }
-        return memberRepository.findAllByAcademyId(academyId, pageable)
-                .map(AcademyMemberResponse::fromEntity);
     }
 
     @Transactional(readOnly = true)

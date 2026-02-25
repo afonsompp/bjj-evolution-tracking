@@ -5,7 +5,6 @@ import com.bjj.evolution.catalog.domain.Technique;
 import com.bjj.evolution.catalog.domain.TrainingType;
 import com.bjj.evolution.user.domain.UserProfile;
 import jakarta.persistence.AttributeOverride;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -19,8 +18,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.validation.OverridesAttribute;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -51,8 +48,6 @@ public class Training {
     private List<Technique> technique;
     @Column(nullable = false)
     private Integer totalRolls;
-    @Column(nullable = false)
-    private Integer totalRounds;
     @Column(nullable = false)
     private Duration roundLength;
     @Column(nullable = false)
@@ -98,6 +93,7 @@ public class Training {
             inverseJoinColumns = @JoinColumn(name = "technique_id")
     )
     private List<Technique> submissionTechniquesAllowed;
+    private String description;
 
     public Training() {
     }
@@ -128,10 +124,6 @@ public class Training {
 
     public Integer getTotalRolls() {
         return totalRolls;
-    }
-
-    public Integer getTotalRounds() {
-        return totalRounds;
     }
 
     public Duration getRoundLength() {
@@ -182,6 +174,10 @@ public class Training {
         return submissionTechniques;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
     public List<Technique> getSubmissionTechniquesAllowed() {
         return submissionTechniquesAllowed;
     }
@@ -193,7 +189,6 @@ public class Training {
         this.duration = builder.duration;
         this.technique = builder.technique;
         this.totalRolls = builder.totalRolls;
-        this.totalRounds = builder.totalRounds;
         this.roundLength = builder.roundLength;
         this.restLength = builder.restLength;
         this.cardioRating = builder.cardioRating;
@@ -207,6 +202,7 @@ public class Training {
         this.userProfile = builder.userProfile;
         this.submissionTechniques = builder.submissionTechniques;
         this.submissionTechniquesAllowed = builder.submissionTechniquesAllowed;
+        this.description = builder.description;
     }
 
     public static Builder builder() {
@@ -223,7 +219,6 @@ public class Training {
         private List<Technique> submissionTechniques;
         private List<Technique> submissionTechniquesAllowed;
         private Integer totalRolls;
-        private Integer totalRounds;
         private Duration roundLength;
         private Duration restLength;
         private Rating cardioRating;
@@ -235,6 +230,7 @@ public class Training {
         private Integer takedowns;
         private Integer guardPasses;
         private UserProfile userProfile;
+        private String description;
 
         public Builder id(Long id) {
             this.id = id;
@@ -273,11 +269,6 @@ public class Training {
 
         public Builder totalRolls(Integer totalRolls) {
             this.totalRolls = totalRolls;
-            return this;
-        }
-
-        public Builder totalRounds(Integer totalRounds) {
-            this.totalRounds = totalRounds;
             return this;
         }
 
@@ -338,6 +329,11 @@ public class Training {
 
         public Builder submissionsTechniquesAllowed(List<Technique> submissionTechniquesAllowed) {
             this.submissionTechniquesAllowed = submissionTechniquesAllowed;
+            return this;
+        }
+
+        public Builder description(String description) {
+            this.description = description;
             return this;
         }
 

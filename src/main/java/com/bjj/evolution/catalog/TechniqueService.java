@@ -38,7 +38,6 @@ public class TechniqueService {
             techniques = repository.findAll(pageable);
         }
 
-        // Converte a Page<Entity> para Page<DTO>
         return techniques.map(TechniqueResponse::fromEntity);
     }
 

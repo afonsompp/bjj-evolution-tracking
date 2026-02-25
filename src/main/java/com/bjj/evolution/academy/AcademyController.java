@@ -5,10 +5,9 @@ import com.bjj.evolution.academy.domain.dto.AcademyResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -53,18 +52,18 @@ public class AcademyController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("@academySecurity.isOwner(authentication, #id)")
     public ResponseEntity<AcademyResponse> update(
             @PathVariable UUID id,
-            @RequestBody AcademyRequest request,
-            @AuthenticationPrincipal Jwt jwt) {
+            @RequestBody AcademyRequest request) {
 
-        UUID userId = UUID.fromString(jwt.getSubject());
-        return ResponseEntity.ok(service.update(id, request, userId));
+        return ResponseEntity.ok(service.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@AuthenticationPrincipal Jwt jwt,@PathVariable UUID id) {
-        service.delete(id, UUID.fromString(jwt.getSubject()));
+    @PreAuthorize("@academySecurity.isOwner(authentication, #id)")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        service.delete(id);
         return ResponseEntity.noContent().build();
     }
 }

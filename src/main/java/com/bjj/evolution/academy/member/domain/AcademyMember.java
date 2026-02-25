@@ -12,7 +12,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
-import jakarta.validation.constraints.NotNull;
 
 @Entity
 public class AcademyMember {

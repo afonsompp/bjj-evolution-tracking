@@ -21,6 +21,9 @@ public class UserProfile {
 
     private String secondName;
 
+    @Column(nullable = false, unique = true)
+    private String nickname;
+
     @Enumerated(EnumType.STRING)
     private Belt belt;
 
@@ -28,16 +31,21 @@ public class UserProfile {
 
     private LocalDate startsIn;
 
+    @Enumerated(EnumType.STRING)
+    private UserRole role = UserRole.CUSTOMER;
+
     public UserProfile() {
     }
 
-    public UserProfile(UUID id, String name, String secondName, Belt belt, Integer stripe, LocalDate startsIn) {
+    public UserProfile(UUID id, String name, String secondName, String nickname, Belt belt, Integer stripe, LocalDate startsIn, UserRole role) {
         this.id = id;
         this.name = name;
         this.secondName = secondName;
+        this.nickname = nickname;
         this.belt = belt;
         this.stripe = stripe;
         this.startsIn = startsIn;
+        this.role = role != null ? role : UserRole.CUSTOMER;
     }
 
     public UUID getId() {
@@ -64,6 +72,10 @@ public class UserProfile {
         return startsIn;
     }
 
+    public UserRole getRole() {
+            return role;
+    }
+
     public void setId(UUID id) {
         this.id = id;
     }
@@ -86,5 +98,17 @@ public class UserProfile {
 
     public void setStartsIn(LocalDate startsIn) {
         this.startsIn = startsIn;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 }

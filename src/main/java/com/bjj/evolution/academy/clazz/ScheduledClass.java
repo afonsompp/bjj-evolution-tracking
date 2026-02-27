@@ -61,13 +61,11 @@ public class ScheduledClass {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ClassStatus status = ClassStatus.SCHEDULED;
+    private ClassStatus status = ClassStatus.PUBLISHED;
 
 
     public ScheduledClass() {
     }
-
-    
 
     public Long getId() {
         return id;

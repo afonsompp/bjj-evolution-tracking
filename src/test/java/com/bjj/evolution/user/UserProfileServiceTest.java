@@ -89,6 +89,7 @@ class UserProfileServiceTest {
 
     @Test
     void saveOrUpdate_shouldThrowException_whenNicknameIsTakenOnCreate() {
+        when(repository.findById(userId)).thenReturn(Optional.empty());
         when(repository.existsByNickname(profileRequest.nickname())).thenReturn(true);
 
         var exception = assertThrows(IllegalArgumentException.class, () -> service.saveOrUpdate(jwt, profileRequest));
@@ -106,6 +107,32 @@ class UserProfileServiceTest {
 
         var exception = assertThrows(IllegalArgumentException.class, () -> service.saveOrUpdate(jwt, profileRequest));
         assertThat(exception.getMessage()).isEqualTo("Nickname is already taken.");
+    }
+
+    @Test
+    void saveOrUpdate_shouldUpdateProfile_whenNicknameIsUnchanged() {
+        // The request updates the belt, but the nickname is the same as the existing profile.
+        ProfileRequest updateRequest = new ProfileRequest("Test", "User", "testuser", Belt.BLUE, 1, "GI");
+
+        UserProfile existingProfile = new UserProfile();
+        existingProfile.setId(userId);
+        existingProfile.setNickname("testuser");
+        existingProfile.setBelt(Belt.WHITE);
+
+        when(repository.findById(userId)).thenReturn(Optional.of(existingProfile));
+        when(repository.save(any(UserProfile.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.saveOrUpdate(jwt, updateRequest);
+
+        // Verify that the nickname uniqueness check was correctly skipped
+        verify(repository, never()).existsByNickname(anyString());
+
+        ArgumentCaptor<UserProfile> userProfileCaptor = ArgumentCaptor.forClass(UserProfile.class);
+        verify(repository).save(userProfileCaptor.capture());
+        UserProfile savedProfile = userProfileCaptor.getValue();
+
+        assertThat(savedProfile.getBelt()).isEqualTo(Belt.BLUE);
+        assertThat(savedProfile.getNickname()).isEqualTo("testuser");
     }
 
     @Test

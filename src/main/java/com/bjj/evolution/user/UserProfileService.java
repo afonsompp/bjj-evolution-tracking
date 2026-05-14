@@ -26,11 +26,9 @@ public class UserProfileService {
     public ProfileResponse saveOrUpdate(Jwt jwt, ProfileRequest request) {
         UUID userId = UUID.fromString(jwt.getSubject());
 
-        if (repository.existsByNickname(request.nickname())) {
-            throw new IllegalArgumentException("Nickname is already taken.");
-        }
         UserProfile profile = repository.findById(userId)
                 .map(existing -> {
+                    // Update logic: check nickname only if it's changing
                     if (!existing.getNickname().equals(request.nickname()) &&
                             repository.existsByNickname(request.nickname())) {
                         throw new IllegalArgumentException("Nickname is already taken.");
@@ -43,7 +41,13 @@ public class UserProfileService {
                     existing.setStartsIn(request.startsIn());
                     return existing;
                 })
-                .orElse(request.toEntity(userId));
+                .orElseGet(() -> {
+                    // Create logic: check if nickname is taken
+                    if (repository.existsByNickname(request.nickname())) {
+                        throw new IllegalArgumentException("Nickname is already taken.");
+                    }
+                    return request.toEntity(userId);
+                });
 
         UserProfile saved = repository.save(profile);
         return ProfileResponse.fromEntity(saved);
@@ -55,7 +59,7 @@ public class UserProfileService {
         UserProfile currentUser = repository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalStateException("Current user profile not found"));
 
-        if (SecurityUtils.isNotAdminOrManager(currentUser)) {
+        if (!SecurityUtils.isAdminOrManager(currentUser)) {
             throw new SecurityException("Only admins or managers can update user roles");
         }
 

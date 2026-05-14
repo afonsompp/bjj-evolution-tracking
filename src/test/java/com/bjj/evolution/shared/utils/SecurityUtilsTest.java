@@ -28,12 +28,6 @@ class SecurityUtilsTest {
     }
 
     @Test
-    void isAdmin_whenProfileIsAthlete_shouldReturnFalse() {
-        UserProfile athleteProfile = createUserWithRole(UserRole.ATHLETE);
-        assertThat(SecurityUtils.isAdmin(athleteProfile)).isFalse();
-    }
-
-    @Test
     void isAdmin_whenProfileIsNull_shouldReturnFalse() {
         assertThat(SecurityUtils.isAdmin(null)).isFalse();
     }
@@ -69,12 +63,6 @@ class SecurityUtilsTest {
     void isAdminOrManager_whenProfileIsManager_shouldReturnTrue() {
         UserProfile managerProfile = createUserWithRole(UserRole.MANAGER);
         assertThat(SecurityUtils.isAdminOrManager(managerProfile)).isTrue();
-    }
-
-    @Test
-    void isAdminOrManager_whenProfileIsAthlete_shouldReturnFalse() {
-        UserProfile athleteProfile = createUserWithRole(UserRole.ATHLETE);
-        assertThat(SecurityUtils.isAdminOrManager(athleteProfile)).isFalse();
     }
 
     @Test

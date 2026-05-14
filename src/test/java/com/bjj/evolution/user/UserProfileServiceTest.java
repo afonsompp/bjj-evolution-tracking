@@ -19,6 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.jwt.Jwt;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,7 +47,7 @@ class UserProfileServiceTest {
         userId = UUID.randomUUID();
         jwt = mock(Jwt.class);
         when(jwt.getSubject()).thenReturn(userId.toString());
-        profileRequest = new ProfileRequest("Test", "User", "testuser", Belt.WHITE, 0, "GI");
+        profileRequest = new ProfileRequest("Test", "User", "testuser", Belt.WHITE, 0, LocalDate.now());
     }
 
     @Test
@@ -112,7 +113,7 @@ class UserProfileServiceTest {
     @Test
     void saveOrUpdate_shouldUpdateProfile_whenNicknameIsUnchanged() {
         // The request updates the belt, but the nickname is the same as the existing profile.
-        ProfileRequest updateRequest = new ProfileRequest("Test", "User", "testuser", Belt.BLUE, 1, "GI");
+        ProfileRequest updateRequest = new ProfileRequest("Test", "User", "testuser", Belt.BLUE, 1, LocalDate.now());
 
         UserProfile existingProfile = new UserProfile();
         existingProfile.setId(userId);

@@ -1,0 +1,74 @@
+
+Swagger UI (após subir o app): `http://localhost:8080/swagger-ui.html`
+
+---
+
+## 4. Code Style & Patterns
+
+### 4.1. DTOs como `record`
+Todos os DTOs (Request/Response) são **Java `record`s**, imutáveis, com factory methods estáticos:
+
+- **Response**: método estático `fromEntity(Entity e)` que converte entidade → DTO.
+  - Ex.: `ProfileResponse.fromEntity(userProfile)`, `ScheduledClassResponse.fromEntity(...)`.
+- **Request**: método de instância `toEntity(...)` que constrói/atualiza a entidade.
+  - Ex.: `ProfileRequest#toEntity(UUID id)`, `AcademyMemberRequest#toEntity(Academy, UserProfile)`.
+
+### 4.2. Entidades JPA
+- Anotadas com `@Entity`, getters/setters tradicionais (não usar Lombok — não está no classpath).
+- Entidades complexas expõem **Builder pattern** estático (ex.: `ScheduledClass.Builder`, `Training.Builder`).
+- Chaves compostas via `@Embeddable` + `@EmbeddedId` (ex.: `AcademyMemberId`).
+- Conversores customizados em `shared/converter` (ex.: `DurationConverter` com `autoApply = true`).
+
+### 4.3. Service Layer
+- Anotada com `@Service`.
+- Métodos de leitura usam `@Transactional(readOnly = true)`.
+- Métodos de escrita usam `@Transactional` (default).
+- Lançam `EntityNotFoundException` (Jakarta) para recursos ausentes.
+- Validação de acesso multi-tenant feita por métodos privados utilitários (ex.: `getScheduledClassAndValidateAcademy`).
+
+### 4.4. Controllers REST
+- Anotados com `@RestController` + `@RequestMapping("/recurso")`.
+- Retornam **`ResponseEntity<T>`** explicitamente.
+- Status HTTP semânticos: `201 Created` em POST, `204 No Content` em DELETE, `200 OK` no padrão.
+- Paginação via `@PageableDefault(size = X, sort = "campo", direction = Sort.Direction.ASC) Pageable pageable` → retorna `Page<T>`.
+- Identidade do usuário extraída via `@AuthenticationPrincipal Jwt jwt` (claim `sub` = userId).
+- Validação via `@Valid @RequestBody`.
+
+### 4.5. Autorização
+- **Method-level** com `@PreAuthorize`, habilitado por `@EnableMethodSecurity` em `SecurityConfig`.
+- Avaliação delegada a um bean nomeado `@academySecurity`:
+  - `@academySecurity.hasAccess(authentication, #academyId)` — qualquer membro da academia.
+  - `@academySecurity.isInstructorOrAdmin(authentication, #academyId)` — papéis privilegiados.
+- Checagens de role globais via `SecurityUtils.isAdmin(...)`, `isManager(...)`, `isAdminOrManager(...)`.
+
+### 4.6. Nomenclatura e Organização
+- Pacote raiz: `com.bjj.evolution`.
+- Organização **por feature (bounded context)**, não por camada técnica:
+  - `academy/` — academias, membros, classes
+  - `catalog/` — técnicas
+  - `training/log/` — log de treinos individuais
+  - `user/` — perfis de usuário
+  - `shared/` — utilitários transversais (security, converters, config)
+- Sub-pacotes típicos por feature: `controller/`, `service/`, `domain/`, `domain/dto/`, `repository/`.
+
+---
+
+## 5. Technical Context
+
+### 5.1. Segurança (JWT / Auth0)
+- Configurada em `SecurityConfig`:
+  - **CSRF desabilitado** (API stateless).
+  - **CORS** restrito a `http://localhost:3000` e `https://frontend-bjj-evolution.vercel.app`.
+  - Endpoints públicos: `/public/**`, `/swagger-ui.html`, `/swagger-ui/**`, `/v3/api-docs/**`.
+  - Todo o resto exige autenticação JWT via `oauth2ResourceServer`.
+- Documentado no `OpenApiConfig` como **Bearer JWT** emitido por **Auth0**.
+- _Placeholder_: a URL do issuer/JWKS deve estar em `application.properties` (arquivo não disponibilizado).
+
+### 5.2. Modelo de Domínio (Multi-tenant)
+- Tenant primário = **`Academy`** (UUID).
+- Todo endpoint operacional é prefixado por `/academies/{academyId}/...`.
+- Relação aluno↔academia modelada em `AcademyMember` com PK composta (`academyId`, `userId`) + role/status/belt/stripe.
+- Aulas (`ScheduledClass`) podem ser geradas a partir de `ClassTemplate` com regras de recorrência.
+- Check-ins (`ClassAttendance`) ligam `UserProfile` a `ScheduledClass` com status (`CheckInStatus`).
+
+### 5.3. Comunicação entre Componentes

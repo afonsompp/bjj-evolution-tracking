@@ -1,0 +1,29 @@
+
+---
+
+## 6. Current Status
+
+### ✅ Implementado
+- **User Profile**: CRUD próprio via JWT, busca paginada, troca de role (admin).
+- **Academy**: entidade, dono, endereço.
+- **Academy Members**: cadastro com role/status/belt/stripe, view paginada.
+- **Class Templates**: templates de aula com técnicas default e regras de recorrência.
+- **Scheduled Classes**: aulas agendadas com instrutor, técnicas, status.
+- **Class Attendance**: check-in, confirmação, cancelamento, listagem paginada.
+- **Technique Catalog**: CRUD de técnicas com tipo e alvo.
+- **Training Log**: registro de treinos individuais (técnicas, submissões, rolls, rating).
+- **Segurança JWT + autorização method-level multi-tenant**.
+- **Swagger UI** documentado com bearer auth.
+
+### 🔜 Próximos Passos Prováveis
+- **Global Exception Handler** (`@RestControllerAdvice`) — atualmente exceções escapam sem formato JSON padronizado.
+- **Configuração externa** (`application.properties` / profiles `dev`/`prod`) — não encontrada no repositório.
+- **Migrations versionadas** (Flyway ou Liquibase) — schema atualmente dependente de `hibernate.ddl-auto`.
+- **Testes de integração** — apenas `BjjEvolutionApplicationTests#contextLoads` está presente.
+- **Observabilidade**: Actuator, métricas, logging estruturado.
+- **DTO de erro padronizado** (RFC 7807 / Problem Details).
+- **Implementação visível do bean `@academySecurity`** — referenciado em `@PreAuthorize`, conferir se está documentado/testado.
+
+---
+
+_Última atualização: gerado automaticamente a partir da análise estática do código-fonte._

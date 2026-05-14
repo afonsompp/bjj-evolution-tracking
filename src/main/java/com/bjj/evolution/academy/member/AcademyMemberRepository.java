@@ -31,4 +31,6 @@ public interface AcademyMemberRepository extends JpaRepository<AcademyMember, Ac
     Page<AcademyMember> findByAcademyIdAndUserNameAndStatus(UUID academyId, String name, MemberStatus status, Pageable pageable);
 
     long countByAcademyIdAndRole(UUID academyId, MemberRole role);
+    
+    boolean existsByUserIdAndRole(UUID userId, MemberRole role);
 }

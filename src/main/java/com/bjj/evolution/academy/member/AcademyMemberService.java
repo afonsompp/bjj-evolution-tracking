@@ -9,6 +9,7 @@ import com.bjj.evolution.academy.member.domain.MemberRole;
 import com.bjj.evolution.academy.member.domain.MemberStatus;
 import com.bjj.evolution.academy.member.domain.dto.AcademyMemberRequest;
 import com.bjj.evolution.academy.member.domain.dto.AcademyMemberResponse;
+import com.bjj.evolution.academy.member.domain.dto.GraduationHistoryResponse;
 import com.bjj.evolution.academy.member.domain.dto.GraduationRequest;
 import com.bjj.evolution.catalog.domain.Belt;
 import com.bjj.evolution.user.UserProfileRepository;
@@ -189,5 +190,21 @@ public class AcademyMemberService {
     @Transactional(readOnly = true)
     public AcademyMemberResponse findById(UUID academyId, UUID userId) {
         return AcademyMemberResponse.fromEntity(findMemberOrThrow(academyId, userId));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<GraduationHistoryResponse> findGraduationHistoryByMember(UUID academyId, UUID userId, Pageable pageable) {
+        findMemberOrThrow(academyId, userId);
+        return graduationHistoryRepository.findByStudentIdOrderByGraduationDateDesc(userId, pageable)
+                .map(GraduationHistoryResponse::fromEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<GraduationHistoryResponse> findGraduationHistoryByAcademy(UUID academyId, Pageable pageable) {
+        if (!academyRepository.existsById(academyId)) {
+            throw new EntityNotFoundException("Academy not found");
+        }
+        return graduationHistoryRepository.findByAcademyIdOrderByGraduationDateDesc(academyId, pageable)
+                .map(GraduationHistoryResponse::fromEntity);
     }
 }

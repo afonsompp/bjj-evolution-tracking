@@ -1,4 +1,4 @@
-package com.bjj.evolution.academy.clazz;
+package com.bjj.evolution.academy.clazz.domain;
 
 import com.bjj.evolution.user.domain.UserProfile;
 import jakarta.persistence.Column;
@@ -35,4 +35,25 @@ public class ClassAttendance {
 
     private LocalDateTime checkInTime;
 
+    protected ClassAttendance() {}
+
+    public ClassAttendance(ScheduledClass scheduledClass, UserProfile student, CheckInStatus status) {
+        this.scheduledClass = scheduledClass;
+        this.student = student;
+        this.status = status;
+    }
+
+    public Long getId() { return id; }
+
+    public ScheduledClass getScheduledClass() { return scheduledClass; }
+
+    public UserProfile getStudent() { return student; }
+
+    public CheckInStatus getStatus() { return status; }
+
+    public void setStatus(CheckInStatus status) { this.status = status; }
+
+    public LocalDateTime getCheckInTime() { return checkInTime; }
+
+    public void setCheckInTime(LocalDateTime checkInTime) { this.checkInTime = checkInTime; }
 }

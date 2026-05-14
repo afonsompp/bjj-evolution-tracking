@@ -1,4 +1,4 @@
-package com.bjj.evolution.academy.clazz;
+package com.bjj.evolution.academy.clazz.domain;
 
 public enum ClassStatus {
     DRAFT,

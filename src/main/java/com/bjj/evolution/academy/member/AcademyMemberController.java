@@ -1,8 +1,12 @@
 package com.bjj.evolution.academy.member;
 
+import com.bjj.evolution.academy.clazz.service.ClassAttendanceService;
+import com.bjj.evolution.academy.clazz.domain.CheckInStatus;
 import com.bjj.evolution.academy.member.domain.MemberStatus;
 import com.bjj.evolution.academy.member.domain.dto.AcademyMemberRequest;
 import com.bjj.evolution.academy.member.domain.dto.AcademyMemberResponse;
+import com.bjj.evolution.academy.member.domain.dto.AcademyMenberClassViewResponse;
+import com.bjj.evolution.academy.member.domain.dto.GraduationHistoryResponse;
 import com.bjj.evolution.academy.member.domain.dto.GraduationRequest;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -23,9 +27,11 @@ import java.util.UUID;
 public class AcademyMemberController {
 
     private final AcademyMemberService service;
+    private final ClassAttendanceService attendanceService;
 
-    public AcademyMemberController(AcademyMemberService service) {
+    public AcademyMemberController(AcademyMemberService service, ClassAttendanceService attendanceService) {
         this.service = service;
+        this.attendanceService = attendanceService;
     }
 
     @PostMapping("/join")
@@ -102,5 +108,32 @@ public class AcademyMemberController {
             @PathVariable UUID userId) {
         service.removeMember(academyId, userId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{userId}/graduations")
+    @PreAuthorize("@academySecurity.isSameUser(authentication, #userId) or @academySecurity.isInstructorOrAdmin(authentication, #academyId)")
+    public ResponseEntity<Page<GraduationHistoryResponse>> getMemberGraduations(
+            @PathVariable UUID academyId,
+            @PathVariable UUID userId,
+            @PageableDefault(size = 20, sort = "graduationDate", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(service.findGraduationHistoryByMember(academyId, userId, pageable));
+    }
+
+    @GetMapping("/graduations")
+    @PreAuthorize("@academySecurity.isInstructorOrAdmin(authentication, #academyId)")
+    public ResponseEntity<Page<GraduationHistoryResponse>> getAcademyGraduations(
+            @PathVariable UUID academyId,
+            @PageableDefault(size = 20, sort = "graduationDate", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(service.findGraduationHistoryByAcademy(academyId, pageable));
+    }
+
+    @GetMapping("/{userId}/attendances")
+    @PreAuthorize("@academySecurity.isSameUser(authentication, #userId) or @academySecurity.isInstructorOrAdmin(authentication, #academyId)")
+    public ResponseEntity<Page<AcademyMenberClassViewResponse>> getMemberAttendances(
+            @PathVariable UUID academyId,
+            @PathVariable UUID userId,
+            @RequestParam(required = false) CheckInStatus status,
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(attendanceService.findClassViewsByStudentAndAcademy(academyId, userId, status, pageable));
     }
 }

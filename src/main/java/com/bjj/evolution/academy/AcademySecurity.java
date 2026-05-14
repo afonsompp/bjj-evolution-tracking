@@ -34,7 +34,8 @@ public class AcademySecurity {
     public boolean isAdmin(Authentication authentication, UUID academyId) {
         UUID userId = extractUserId(authentication);
         return memberRepository.findById(new AcademyMemberId(academyId, userId))
-                .map(member -> member.getStatus() == MemberStatus.ACTIVE && (isAdmin(authentication,academyId) || isOwner(authentication,academyId)))
+                .map(member -> member.getStatus() == MemberStatus.ACTIVE &&
+                        (member.getRole() == MemberRole.MANAGER || member.getRole() == MemberRole.OWNER))
                 .orElse(false);
     }
 
@@ -53,6 +54,11 @@ public class AcademySecurity {
         return memberRepository.findById(new AcademyMemberId(academyId, userId))
                 .map(member -> member.getStatus() == MemberStatus.ACTIVE && member.getRole() == MemberRole.OWNER)
                 .orElse(false);
+    }
+
+    public boolean isStudent(Authentication authentication) {
+        UUID userId = extractUserId(authentication);
+        return memberRepository.existsByUserIdAndRole(userId, MemberRole.STUDENT);
     }
 
     private UUID extractUserId(Authentication authentication) {

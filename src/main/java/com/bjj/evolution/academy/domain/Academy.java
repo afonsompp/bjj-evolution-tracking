@@ -1,6 +1,6 @@
 package com.bjj.evolution.academy.domain;
 
-import com.bjj.evolution.academy.clazz.ScheduledClass;
+import com.bjj.evolution.academy.clazz.domain.ScheduledClass;
 import com.bjj.evolution.academy.member.domain.AcademyMember;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

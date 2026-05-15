@@ -9,9 +9,9 @@ import com.bjj.evolution.academy.clazz.domain.dto.ClassTemplateResponse;
 import com.bjj.evolution.academy.domain.Academy;
 import com.bjj.evolution.catalog.TechniqueRepository;
 import com.bjj.evolution.catalog.domain.Technique;
+import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import com.bjj.evolution.user.UserProfileRepository;
 import com.bjj.evolution.user.domain.UserProfile;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,10 +42,10 @@ public class ClassTemplateService {
     @Transactional
     public ClassTemplateResponse create(UUID academyId, ClassTemplateRequest request) {
         Academy academy = academyRepository.findById(academyId)
-                .orElseThrow(() -> new EntityNotFoundException("Academia não encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Academy", academyId));
 
         UserProfile instructor = userProfileRepository.findById(request.instructorId())
-                .orElseThrow(() -> new EntityNotFoundException("Instrutor não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Instructor", request.instructorId()));
 
         List<Technique> techniques = techniqueRepository.findAllById(request.techniqueIds());
 
@@ -58,7 +58,6 @@ public class ClassTemplateService {
         template.setTrainingType(request.trainingType());
         template.setDefaultTechniques(techniques);
 
-        // Adicionar regras de recorrência
         if (request.recurrenceRules() != null) {
             request.recurrenceRules().forEach(ruleReq -> {
                 ClassRecurrenceRule rule = new ClassRecurrenceRule();
@@ -75,10 +74,10 @@ public class ClassTemplateService {
     @Transactional
     public ClassTemplateResponse update(UUID templateId, ClassTemplateRequest request) {
         ClassTemplate template = repository.findById(templateId)
-                .orElseThrow(() -> new EntityNotFoundException("Template não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Class template", templateId));
 
         UserProfile instructor = userProfileRepository.findById(request.instructorId())
-                .orElseThrow(() -> new EntityNotFoundException("Instrutor não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Instructor", request.instructorId()));
 
         template.setName(request.name());
         template.setInstructor(instructor);
@@ -87,7 +86,6 @@ public class ClassTemplateService {
         template.setTrainingType(request.trainingType());
         template.setDefaultTechniques(techniqueRepository.findAllById(request.techniqueIds()));
 
-        // Atualizar recorrências (limpa e adiciona novas)
         template.getRecurrenceRules().clear();
         request.recurrenceRules().forEach(ruleReq -> {
             ClassRecurrenceRule rule = new ClassRecurrenceRule();
@@ -109,7 +107,7 @@ public class ClassTemplateService {
     @Transactional
     public void delete(UUID templateId) {
         if (!repository.existsById(templateId)) {
-            throw new EntityNotFoundException("Template não encontrado");
+            throw new ResourceNotFoundException("Class template", templateId);
         }
         repository.deleteById(templateId);
     }

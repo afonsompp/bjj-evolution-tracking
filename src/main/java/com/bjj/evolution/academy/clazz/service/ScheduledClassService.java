@@ -9,9 +9,10 @@ import com.bjj.evolution.academy.clazz.domain.dto.ScheduledClassResponse;
 import com.bjj.evolution.academy.domain.Academy;
 import com.bjj.evolution.catalog.TechniqueRepository;
 import com.bjj.evolution.catalog.domain.Technique;
+import com.bjj.evolution.shared.exception.BusinessRuleException;
+import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import com.bjj.evolution.user.UserProfileRepository;
 import com.bjj.evolution.user.domain.UserProfile;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,10 +44,10 @@ public class ScheduledClassService {
     @Transactional
     public ScheduledClassResponse createManualClass(ScheduledClassRequest request) {
         Academy academy = academyRepository.findById(request.academyId())
-                .orElseThrow(() -> new EntityNotFoundException("Academy not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Academy", request.academyId()));
 
         UserProfile instructor = userProfileRepository.findById(request.instructorId())
-                .orElseThrow(() -> new EntityNotFoundException("Instructor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Instructor", request.instructorId()));
 
         List<Technique> techniques = request.techniqueIds() != null ?
                 techniqueRepository.findAllById(request.techniqueIds()) : List.of();
@@ -63,17 +64,18 @@ public class ScheduledClassService {
                 .build();
         return ScheduledClassResponse.fromEntity(repository.save(scheduledClass));
     }
+
     @Transactional
     public ScheduledClassResponse update(Long id, ScheduledClassRequest request) {
         ScheduledClass scheduledClass = repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Aula não encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Class", id));
 
         if (scheduledClass.getStatus() == ClassStatus.COMPLETED || scheduledClass.getStatus() == ClassStatus.CANCELED) {
-            throw new IllegalStateException("Não é possível editar uma aula finalizada ou cancelada");
+            throw new BusinessRuleException("Cannot edit a class that is already completed or canceled.");
         }
 
         UserProfile instructor = userProfileRepository.findById(request.instructorId())
-                .orElseThrow(() -> new EntityNotFoundException("Instrutor não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Instructor", request.instructorId()));
 
         List<Technique> techniques = techniqueRepository.findAllById(request.techniqueIds());
 
@@ -90,10 +92,10 @@ public class ScheduledClassService {
     @Transactional
     public void cancel(Long id) {
         ScheduledClass scheduledClass = repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Aula não encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Class", id));
 
         if (scheduledClass.getStatus() == ClassStatus.COMPLETED) {
-            throw new IllegalStateException("Não é possível cancelar uma aula que já foi concluída");
+            throw new BusinessRuleException("Cannot cancel a class that is already completed.");
         }
 
         scheduledClass.setStatus(ClassStatus.CANCELED);
@@ -110,8 +112,7 @@ public class ScheduledClassService {
         Page<ScheduledClass> classes;
 
         if (startDate != null && endDate != null) {
-            classes = repository.findAllByAcademyIdAndStartTimeBetween(
-                    academyId, startDate, endDate, pageable);
+            classes = repository.findAllByAcademyIdAndStartTimeBetween(academyId, startDate, endDate, pageable);
         } else {
             classes = repository.findAllByAcademyId(academyId, pageable);
         }
@@ -122,10 +123,10 @@ public class ScheduledClassService {
     @Transactional
     public ScheduledClassResponse findById(UUID academyId, Long classId) {
         ScheduledClass scheduledClass = repository.findById(classId)
-                .orElseThrow(() -> new EntityNotFoundException("Class not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Class", classId));
 
         if (!scheduledClass.getAcademy().getId().equals(academyId)) {
-            throw new IllegalArgumentException("Class does not belong to the given academy");
+            throw new BusinessRuleException("Class does not belong to the given academy.");
         }
 
         return ScheduledClassResponse.fromEntity(scheduledClass);

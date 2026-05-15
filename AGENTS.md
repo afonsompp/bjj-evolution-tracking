@@ -89,6 +89,7 @@ Avoid `var` in public API contracts or complex logic; explicit types help the LL
 * **No Lombok**: Keep the code explicit and native to Java 21+ to facilitate static analysis and AI understanding.
 * **No Database in Logic**: Keep business logic in **Services**, not in JPA Entities or Controllers.
 * **No Unrelated Refactors**: Keep PRs focused on the specific feature or bug to minimize AI context noise.
+* ** Do not try to guess the code if they are not in the context; ask for them to be added to the context before generating a solution
 
 ---
 

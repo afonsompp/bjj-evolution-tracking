@@ -2,7 +2,7 @@ package com.bjj.evolution.academy;
 
 import com.bjj.evolution.academy.domain.dto.AcademyRequest;
 import com.bjj.evolution.academy.domain.dto.AcademyResponse;
-import jakarta.persistence.EntityNotFoundException;
+import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -181,12 +181,12 @@ class AcademyControllerTest {
     @DisplayName("GET /academies/{id} should return 404 when academy is not found")
     void getById_whenNotFound_shouldReturn404() throws Exception {
         when(academyService.findById(academyId))
-                .thenThrow(new EntityNotFoundException("Academy not found"));
+                .thenThrow(new ResourceNotFoundException("Academy", academyId));
 
         mockMvc.perform(get("/academies/{id}", academyId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("Academy not found"));
+                .andExpect(jsonPath("$.message").value("Academy not found with id: " + academyId));
 
         verify(academyService).findById(academyId);
     }

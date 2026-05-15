@@ -2,18 +2,17 @@ package com.bjj.evolution.training.log;
 
 import com.bjj.evolution.catalog.TechniqueRepository;
 import com.bjj.evolution.catalog.domain.Technique;
-import com.bjj.evolution.user.UserProfileRepository; // Assumindo o pacote do seu repositório de perfil
+import com.bjj.evolution.shared.exception.ResourceNotFoundException;
+import com.bjj.evolution.user.UserProfileRepository;
 import com.bjj.evolution.user.domain.UserProfile;
 import com.bjj.evolution.training.log.domain.Training;
 import com.bjj.evolution.training.log.domain.dto.TrainingRequest;
 import com.bjj.evolution.training.log.domain.dto.TrainingResponse;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -36,13 +35,14 @@ public class TrainingService {
     @Transactional
     public TrainingResponse create(TrainingRequest request, UUID userId) {
         UserProfile profile = userProfileRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("UserProfile not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
         List<Technique> techniques = resolveTechniques(request.techniqueIds());
         List<Technique> submissionTechniques = resolveTechniques(request.submissionTechniqueIds());
         List<Technique> submissionTechniquesAllowed = resolveTechniques(request.submissionTechniqueAllowedIds());
 
-        Training saved = trainingRepository.save(request.toEntity(techniques, submissionTechniques, submissionTechniquesAllowed, profile));
+        Training saved = trainingRepository.save(
+                request.toEntity(techniques, submissionTechniques, submissionTechniquesAllowed, profile));
         return TrainingResponse.fromEntity(saved);
     }
 
@@ -55,12 +55,9 @@ public class TrainingService {
     ) {
         if (startDate != null && endDate != null) {
             return trainingRepository
-                    .findAllByUserProfileIdAndSessionDateBetween(
-                            userId, startDate, endDate, pageable
-                    )
+                    .findAllByUserProfileIdAndSessionDateBetween(userId, startDate, endDate, pageable)
                     .map(TrainingResponse::fromEntity);
         }
-
         return trainingRepository
                 .findAllByUserProfileId(userId, pageable)
                 .map(TrainingResponse::fromEntity);
@@ -70,27 +67,28 @@ public class TrainingService {
     public TrainingResponse findById(Long id, UUID userId) {
         return trainingRepository.findByIdAndUserProfileId(id, userId)
                 .map(TrainingResponse::fromEntity)
-                .orElseThrow(() -> new EntityNotFoundException("Training not found for user: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("Training", id));
     }
 
     @Transactional
     public TrainingResponse update(Long id, TrainingRequest request, UUID userId) {
         Training existingTraining = trainingRepository.findByIdAndUserProfileId(id, userId)
-                .orElseThrow(() -> new EntityNotFoundException("Training not found or access denied"));
+                .orElseThrow(() -> new ResourceNotFoundException("Training", id));
 
         UserProfile profile = existingTraining.getUserProfile();
         List<Technique> techniques = resolveTechniques(request.techniqueIds());
         List<Technique> subTechniques = resolveTechniques(request.submissionTechniqueIds());
         List<Technique> subTechniquesAllowed = resolveTechniques(request.submissionTechniqueAllowedIds());
 
-        Training updated = trainingRepository.save(request.toEntity(id, techniques, subTechniques, subTechniquesAllowed,profile));
+        Training updated = trainingRepository.save(
+                request.toEntity(id, techniques, subTechniques, subTechniquesAllowed, profile));
         return TrainingResponse.fromEntity(updated);
     }
 
     @Transactional
     public void delete(Long id, UUID userId) {
         if (!trainingRepository.existsByIdAndUserProfileId(id, userId)) {
-            throw new EntityNotFoundException("Training not found or access denied");
+            throw new ResourceNotFoundException("Training", id);
         }
         trainingRepository.deleteById(id);
     }
@@ -101,7 +99,7 @@ public class TrainingService {
         }
         List<Technique> techniques = techniqueRepository.findAllById(techniqueIds);
         if (techniques.size() != techniqueIds.size()) {
-            throw new EntityNotFoundException("One or more techniques not found");
+            throw new ResourceNotFoundException("One or more techniques not found");
         }
         return techniques;
     }

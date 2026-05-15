@@ -11,7 +11,8 @@ import com.bjj.evolution.user.UserProfileRepository;
 import com.bjj.evolution.catalog.domain.Belt;
 import com.bjj.evolution.user.domain.UserProfile;
 import com.bjj.evolution.user.domain.UserRole;
-import jakarta.persistence.EntityNotFoundException;
+import com.bjj.evolution.shared.exception.ForbiddenException;
+import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -23,7 +24,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.Optional;
@@ -81,14 +81,14 @@ class AcademyServiceTest {
     }
 
     @Test
-    void create_whenUserIsNotFound_shouldThrowEntityNotFoundException() {
+    void create_whenUserIsNotFound_shouldThrowResourceNotFoundException() {
         // Arrange
         UUID ownerId = UUID.randomUUID();
         AcademyRequest request = new AcademyRequest("Test Academy", "123 Test St", ownerId);
         when(userProfileRepository.findById(ownerId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> academyService.create(request, ownerId));
+        assertThrows(ResourceNotFoundException.class, () -> academyService.create(request, ownerId));
         verify(academyRepository, never()).save(any());
         verify(academyMemberRepository, never()).save(any());
     }
@@ -107,7 +107,7 @@ class AcademyServiceTest {
             mocked.when(() -> SecurityUtils.isAcademyOwner(userProfile)).thenReturn(false);
 
             // Act & Assert
-            assertThrows(AccessDeniedException.class, () -> academyService.create(request, ownerId));
+            assertThrows(ForbiddenException.class, () -> academyService.create(request, ownerId));
             verify(academyRepository, never()).save(any());
             verify(academyMemberRepository, never()).save(any());
         }
@@ -185,13 +185,13 @@ class AcademyServiceTest {
     }
 
     @Test
-    void findById_whenAcademyDoesNotExist_shouldThrowEntityNotFoundException() {
+    void findById_whenAcademyDoesNotExist_shouldThrowResourceNotFoundException() {
         // Arrange
         UUID academyId = UUID.randomUUID();
         when(academyRepository.findById(academyId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> academyService.findById(academyId));
+        assertThrows(ResourceNotFoundException.class, () -> academyService.findById(academyId));
     }
 
     @Test
@@ -230,7 +230,7 @@ class AcademyServiceTest {
         when(academyRepository.findById(academyId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> academyService.update(academyId, request));
+        assertThrows(ResourceNotFoundException.class, () -> academyService.update(academyId, request));
         verify(academyRepository, never()).save(any());
     }
 
@@ -256,7 +256,7 @@ class AcademyServiceTest {
         when(academyRepository.existsById(academyId)).thenReturn(false);
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> academyService.delete(academyId));
+        assertThrows(ResourceNotFoundException.class, () -> academyService.delete(academyId));
         verify(academyRepository, never()).deleteById(any());
     }
 

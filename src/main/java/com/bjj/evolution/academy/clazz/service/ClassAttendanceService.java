@@ -7,10 +7,11 @@ import com.bjj.evolution.academy.clazz.domain.CheckInStatus;
 import com.bjj.evolution.academy.clazz.domain.ClassStatus;
 import com.bjj.evolution.academy.clazz.domain.ScheduledClass;
 import com.bjj.evolution.academy.clazz.domain.dto.CheckInResponse;
+import com.bjj.evolution.academy.member.domain.dto.AcademyMenberClassViewResponse;
+import com.bjj.evolution.shared.exception.BusinessRuleException;
+import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import com.bjj.evolution.user.UserProfileRepository;
 import com.bjj.evolution.user.domain.UserProfile;
-import com.bjj.evolution.academy.member.domain.dto.AcademyMenberClassViewResponse;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,15 +40,15 @@ public class ClassAttendanceService {
         ScheduledClass scheduledClass = getScheduledClassAndValidateAcademy(academyId, classId);
 
         if (scheduledClass.getStatus() != ClassStatus.PUBLISHED) {
-            throw new IllegalStateException("Só é possível fazer check-in em aulas publicadas");
+            throw new BusinessRuleException("Check-in is only allowed for published classes.");
         }
 
         attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId).ifPresent(a -> {
-            throw new IllegalStateException("Aluno já registrado nesta aula");
+            throw new BusinessRuleException("Student is already registered for this class.");
         });
 
         UserProfile student = userProfileRepository.findById(studentId)
-                .orElseThrow(() -> new EntityNotFoundException("Aluno não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Student", studentId));
 
         ClassAttendance attendance = new ClassAttendance(scheduledClass, student, CheckInStatus.REGISTERED);
         return CheckInResponse.fromEntity(attendanceRepository.save(attendance));
@@ -56,12 +57,12 @@ public class ClassAttendanceService {
     @Transactional
     public CheckInResponse confirm(UUID academyId, Long classId, UUID studentId) {
         getScheduledClassAndValidateAcademy(academyId, classId);
-        
+
         ClassAttendance attendance = attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId)
-                .orElseThrow(() -> new EntityNotFoundException("Registro de presença não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Attendance record not found for student"));
 
         if (attendance.getStatus() == CheckInStatus.CANCELED) {
-            throw new IllegalStateException("Não é possível confirmar um check-in cancelado");
+            throw new BusinessRuleException("Cannot confirm a canceled check-in.");
         }
 
         attendance.setStatus(CheckInStatus.CONFIRMED);
@@ -72,12 +73,12 @@ public class ClassAttendanceService {
     @Transactional
     public CheckInResponse cancel(UUID academyId, Long classId, UUID studentId) {
         getScheduledClassAndValidateAcademy(academyId, classId);
-        
+
         ClassAttendance attendance = attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId)
-                .orElseThrow(() -> new EntityNotFoundException("Registro de presença não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Attendance record not found for student"));
 
         if (attendance.getScheduledClass().getStatus() == ClassStatus.COMPLETED) {
-            throw new IllegalStateException("Não é possível cancelar presença em uma aula já concluída");
+            throw new BusinessRuleException("Cannot cancel attendance for a class that is already completed.");
         }
 
         attendance.setStatus(CheckInStatus.CANCELED);
@@ -86,7 +87,6 @@ public class ClassAttendanceService {
 
     public Page<CheckInResponse> listByClass(UUID academyId, Long classId, Pageable pageable) {
         getScheduledClassAndValidateAcademy(academyId, classId);
-        
         return attendanceRepository.findAllByScheduledClassId(classId, pageable)
                 .map(CheckInResponse::fromEntity);
     }
@@ -108,15 +108,15 @@ public class ClassAttendanceService {
         return attendanceRepository.findByStudentIdAndScheduledClassAcademyId(studentId, academyId, pageable)
                 .map(AcademyMenberClassViewResponse::fromEntity);
     }
-    
+
     private ScheduledClass getScheduledClassAndValidateAcademy(UUID academyId, Long classId) {
         ScheduledClass scheduledClass = scheduledClassRepository.findById(classId)
-                .orElseThrow(() -> new EntityNotFoundException("Aula não encontrada"));
-                
+                .orElseThrow(() -> new ResourceNotFoundException("Class", classId));
+
         if (!scheduledClass.getAcademy().getId().equals(academyId)) {
-            throw new IllegalArgumentException("Aula não pertence a esta academia");
+            throw new BusinessRuleException("Class does not belong to the given academy.");
         }
-        
+
         return scheduledClass;
     }
 }

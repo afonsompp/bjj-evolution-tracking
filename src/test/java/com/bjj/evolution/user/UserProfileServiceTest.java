@@ -1,6 +1,8 @@
 package com.bjj.evolution.user;
 
 import com.bjj.evolution.catalog.domain.Belt;
+import com.bjj.evolution.shared.exception.ConflictException;
+import com.bjj.evolution.shared.exception.ForbiddenException;
 import com.bjj.evolution.user.domain.UserProfile;
 import com.bjj.evolution.user.domain.UserRole;
 import com.bjj.evolution.user.domain.dto.ProfileRequest;
@@ -93,7 +95,7 @@ class UserProfileServiceTest {
         when(repository.findById(userId)).thenReturn(Optional.empty());
         when(repository.existsByNickname(profileRequest.nickname())).thenReturn(true);
 
-        var exception = assertThrows(IllegalArgumentException.class, () -> service.saveOrUpdate(jwt, profileRequest));
+        var exception = assertThrows(ConflictException.class, () -> service.saveOrUpdate(jwt, profileRequest));
         assertThat(exception.getMessage()).isEqualTo("Nickname is already taken.");
     }
 
@@ -106,7 +108,7 @@ class UserProfileServiceTest {
         when(repository.findById(userId)).thenReturn(Optional.of(existingProfile));
         when(repository.existsByNickname(profileRequest.nickname())).thenReturn(true);
 
-        var exception = assertThrows(IllegalArgumentException.class, () -> service.saveOrUpdate(jwt, profileRequest));
+        var exception = assertThrows(ConflictException.class, () -> service.saveOrUpdate(jwt, profileRequest));
         assertThat(exception.getMessage()).isEqualTo("Nickname is already taken.");
     }
 
@@ -161,8 +163,8 @@ class UserProfileServiceTest {
 
         when(repository.findById(userId)).thenReturn(Optional.of(managerUser));
 
-        var exception = assertThrows(SecurityException.class, () -> service.updateRole(jwt, targetUserId, UserRole.ADMIN));
-        assertThat(exception.getMessage()).isEqualTo("Only admins can set new admins");
+        var exception = assertThrows(ForbiddenException.class, () -> service.updateRole(jwt, targetUserId, UserRole.ADMIN));
+        assertThat(exception.getMessage()).isEqualTo("Only admins can assign the ADMIN role.");
     }
 
     @Test
@@ -171,8 +173,8 @@ class UserProfileServiceTest {
 
         when(repository.findById(userId)).thenReturn(Optional.of(normalUser));
 
-        var exception = assertThrows(SecurityException.class, () -> service.updateRole(jwt, userId, UserRole.MANAGER));
-        assertThat(exception.getMessage()).isEqualTo("Only admins or managers can update user roles");
+        var exception = assertThrows(ForbiddenException.class, () -> service.updateRole(jwt, userId, UserRole.MANAGER));
+        assertThat(exception.getMessage()).isEqualTo("Only admins or managers can update user roles.");
     }
 
     @Test

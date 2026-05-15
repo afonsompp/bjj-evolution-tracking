@@ -12,9 +12,11 @@ import com.bjj.evolution.academy.member.domain.dto.AcademyMemberResponse;
 import com.bjj.evolution.academy.member.domain.dto.GraduationHistoryResponse;
 import com.bjj.evolution.academy.member.domain.dto.GraduationRequest;
 import com.bjj.evolution.catalog.domain.Belt;
+import com.bjj.evolution.shared.exception.BusinessRuleException;
+import com.bjj.evolution.shared.exception.ConflictException;
+import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import com.bjj.evolution.user.UserProfileRepository;
 import com.bjj.evolution.user.domain.UserProfile;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -43,12 +45,12 @@ public class AcademyMemberService {
     @Transactional
     public AcademyMemberResponse createMember(UUID academyId, AcademyMemberRequest request) {
         if (memberRepository.existsById(new AcademyMemberId(academyId, request.userId()))) {
-            throw new IllegalArgumentException("User is already a member of this academy.");
+            throw new ConflictException("User is already a member of this academy.");
         }
         Academy academy = academyRepository.findById(academyId)
-                .orElseThrow(() -> new EntityNotFoundException("Academy not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Academy", academyId));
         UserProfile user = userProfileRepository.findById(request.userId())
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", request.userId()));
 
         AcademyMember newMember = request.toEntity(academy, user);
         newMember.setStatus(MemberStatus.ACTIVE);
@@ -65,12 +67,12 @@ public class AcademyMemberService {
     @Transactional
     public AcademyMemberResponse joinAcademy(UUID academyId, UUID userId) {
         if (memberRepository.existsById(new AcademyMemberId(academyId, userId))) {
-            throw new IllegalArgumentException("User is already a member or has a pending request.");
+            throw new ConflictException("User is already a member or has a pending request.");
         }
         Academy academy = academyRepository.findById(academyId)
-                .orElseThrow(() -> new EntityNotFoundException("Academy not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Academy", academyId));
         UserProfile user = userProfileRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
         AcademyMember member = new AcademyMember(academy, user, MemberRole.STUDENT, MemberStatus.PENDING);
         member.setBelt(user.getBelt() != null ? user.getBelt() : Belt.WHITE);
         member.setStripe(user.getStripe() != null ? user.getStripe() : 0);
@@ -89,13 +91,12 @@ public class AcademyMemberService {
         return AcademyMemberResponse.fromEntity(memberRepository.save(member));
     }
 
-
     @Transactional
     public AcademyMemberResponse graduateMember(UUID academyId, UUID userId, GraduationRequest request, UUID promoterId) {
         AcademyMember member = findMemberOrThrow(academyId, userId);
         UserProfile user = member.getUser();
         UserProfile promoter = userProfileRepository.findById(promoterId)
-                .orElseThrow(() -> new EntityNotFoundException("Promoter not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Promoter", promoterId));
 
         Belt oldBelt = member.getBelt();
         Integer oldStripe = member.getStripe();
@@ -123,7 +124,7 @@ public class AcademyMemberService {
     public AcademyMemberResponse approveMember(UUID academyId, UUID userId) {
         AcademyMember member = findMemberOrThrow(academyId, userId);
         if (member.getStatus() != MemberStatus.PENDING) {
-            throw new IllegalStateException("Member is not pending approval.");
+            throw new BusinessRuleException("Member is not pending approval.");
         }
         member.setStatus(MemberStatus.ACTIVE);
         return AcademyMemberResponse.fromEntity(memberRepository.save(member));
@@ -141,18 +142,16 @@ public class AcademyMemberService {
     @Transactional(readOnly = true)
     public Page<AcademyMemberResponse> findAll(UUID academyId, String query, MemberStatus status, Pageable pageable) {
         if (!academyRepository.existsById(academyId)) {
-            throw new EntityNotFoundException("Academy not found");
+            throw new ResourceNotFoundException("Academy", academyId);
         }
 
         if (query != null && !query.isBlank() && status != null) {
             return memberRepository.findByAcademyIdAndUserNameAndStatus(academyId, query, status, pageable)
                     .map(AcademyMemberResponse::fromEntity);
-        }
-        else if (query != null && !query.isBlank()) {
+        } else if (query != null && !query.isBlank()) {
             return memberRepository.findByAcademyIdAndUserName(academyId, query, pageable)
                     .map(AcademyMemberResponse::fromEntity);
-        }
-        else if (status != null) {
+        } else if (status != null) {
             return memberRepository.findAllByAcademyIdAndStatus(academyId, status, pageable)
                     .map(AcademyMemberResponse::fromEntity);
         }
@@ -162,13 +161,13 @@ public class AcademyMemberService {
 
     private AcademyMember findMemberOrThrow(UUID academyId, UUID userId) {
         return memberRepository.findById(new AcademyMemberId(academyId, userId))
-                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found in academy"));
     }
 
     private void validateOwnerRemoval(UUID academyId) {
         long ownersCount = memberRepository.countByAcademyIdAndRole(academyId, MemberRole.OWNER);
         if (ownersCount <= 1) {
-            throw new IllegalStateException("Cannot remove or downgrade the only owner of the academy.");
+            throw new BusinessRuleException("Cannot remove or downgrade the only owner of the academy.");
         }
     }
 
@@ -202,7 +201,7 @@ public class AcademyMemberService {
     @Transactional(readOnly = true)
     public Page<GraduationHistoryResponse> findGraduationHistoryByAcademy(UUID academyId, Pageable pageable) {
         if (!academyRepository.existsById(academyId)) {
-            throw new EntityNotFoundException("Academy not found");
+            throw new ResourceNotFoundException("Academy", academyId);
         }
         return graduationHistoryRepository.findByAcademyIdOrderByGraduationDateDesc(academyId, pageable)
                 .map(GraduationHistoryResponse::fromEntity);

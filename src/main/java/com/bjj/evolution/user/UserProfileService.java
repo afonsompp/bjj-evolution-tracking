@@ -1,11 +1,16 @@
 package com.bjj.evolution.user;
 
+import com.bjj.evolution.shared.exception.ConflictException;
+import com.bjj.evolution.shared.exception.ForbiddenException;
+import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import com.bjj.evolution.shared.utils.SecurityUtils;
 import com.bjj.evolution.user.domain.UserProfile;
 import com.bjj.evolution.user.domain.UserRole;
 import com.bjj.evolution.user.domain.dto.ProfileRequest;
 import com.bjj.evolution.user.domain.dto.ProfileResponse;
 import com.bjj.evolution.user.domain.dto.SearchProfileResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -28,10 +33,9 @@ public class UserProfileService {
 
         UserProfile profile = repository.findById(userId)
                 .map(existing -> {
-                    // Update logic: check nickname only if it's changing
                     if (!existing.getNickname().equals(request.nickname()) &&
                             repository.existsByNickname(request.nickname())) {
-                        throw new IllegalArgumentException("Nickname is already taken.");
+                        throw new ConflictException("Nickname is already taken.");
                     }
                     existing.setName(request.name());
                     existing.setSecondName(request.secondName());
@@ -42,9 +46,8 @@ public class UserProfileService {
                     return existing;
                 })
                 .orElseGet(() -> {
-                    // Create logic: check if nickname is taken
                     if (repository.existsByNickname(request.nickname())) {
-                        throw new IllegalArgumentException("Nickname is already taken.");
+                        throw new ConflictException("Nickname is already taken.");
                     }
                     return request.toEntity(userId);
                 });
@@ -57,18 +60,18 @@ public class UserProfileService {
         UUID currentUserId = UUID.fromString(jwt.getSubject());
 
         UserProfile currentUser = repository.findById(currentUserId)
-                .orElseThrow(() -> new IllegalStateException("Current user profile not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Current user profile not found"));
 
         if (!SecurityUtils.isAdminOrManager(currentUser)) {
-            throw new SecurityException("Only admins or managers can update user roles");
+            throw new ForbiddenException("Only admins or managers can update user roles.");
         }
 
-        if (newRole == UserRole.ADMIN && SecurityUtils.isManager(currentUser)){
-            throw new SecurityException("Only admins can set new admins");
+        if (newRole == UserRole.ADMIN && SecurityUtils.isManager(currentUser)) {
+            throw new ForbiddenException("Only admins can assign the ADMIN role.");
         }
 
         UserProfile targetUser = repository.findById(targetUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Target user not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", targetUserId));
 
         targetUser.setRole(newRole);
         UserProfile saved = repository.save(targetUser);
@@ -81,9 +84,8 @@ public class UserProfileService {
     }
 
     public Page<SearchProfileResponse> searchProfile(String query, Pageable pageable) {
-        Page<UserProfile> users = repository.searchByTerm(query, pageable);
-
-        return users.map(SearchProfileResponse::fromEntity);
+        return repository.searchByTerm(query, pageable)
+                .map(SearchProfileResponse::fromEntity);
     }
 
     public void deleteMyProfile(Jwt jwt) {

@@ -3,7 +3,7 @@ package com.bjj.evolution.catalog;
 import com.bjj.evolution.catalog.domain.Technique;
 import com.bjj.evolution.catalog.domain.dto.TechniqueRequest;
 import com.bjj.evolution.catalog.domain.dto.TechniqueResponse;
-import jakarta.persistence.EntityNotFoundException;
+import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -111,7 +111,7 @@ class TechniqueServiceTest {
         when(techniqueRepository.findById(id)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> techniqueService.findById(id));
+        assertThrows(ResourceNotFoundException.class, () -> techniqueService.findById(id));
     }
 
     @Test
@@ -142,7 +142,7 @@ class TechniqueServiceTest {
         when(techniqueRepository.existsById(id)).thenReturn(false);
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> techniqueService.update(id, request));
+        assertThrows(ResourceNotFoundException.class, () -> techniqueService.update(id, request));
         verify(techniqueRepository, never()).save(any());
     }
 
@@ -167,7 +167,7 @@ class TechniqueServiceTest {
         when(techniqueRepository.existsById(id)).thenReturn(false);
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> techniqueService.delete(id));
+        assertThrows(ResourceNotFoundException.class, () -> techniqueService.delete(id));
         verify(techniqueRepository, never()).deleteById(anyLong());
     }
 }

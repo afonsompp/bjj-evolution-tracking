@@ -1,10 +1,9 @@
 package com.bjj.evolution.catalog;
 
-
 import com.bjj.evolution.catalog.domain.Technique;
 import com.bjj.evolution.catalog.domain.dto.TechniqueRequest;
 import com.bjj.evolution.catalog.domain.dto.TechniqueResponse;
-import jakarta.persistence.EntityNotFoundException;
+import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,10 +20,7 @@ public class TechniqueService {
     }
 
     public TechniqueResponse create(TechniqueRequest request) {
-        Technique technique = request.toEntity();
-
-        Technique saved = repository.save(technique);
-
+        Technique saved = repository.save(request.toEntity());
         return TechniqueResponse.fromEntity(saved);
     }
 
@@ -44,23 +40,20 @@ public class TechniqueService {
     public TechniqueResponse findById(Long id) {
         return repository.findById(id)
                 .map(TechniqueResponse::fromEntity)
-                .orElseThrow(() -> new EntityNotFoundException("Technique not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Technique", id));
     }
 
     public TechniqueResponse update(Long id, TechniqueRequest request) {
         if (!repository.existsById(id)) {
-            throw new EntityNotFoundException("Technique not found with id: " + id);
+            throw new ResourceNotFoundException("Technique", id);
         }
-
-        Technique updatedEntity = request.toEntity(id);
-
-        Technique saved = repository.save(updatedEntity);
+        Technique saved = repository.save(request.toEntity(id));
         return TechniqueResponse.fromEntity(saved);
     }
 
     public void delete(Long id) {
         if (!repository.existsById(id)) {
-            throw new EntityNotFoundException("Technique not found with id: " + id);
+            throw new ResourceNotFoundException("Technique", id);
         }
         repository.deleteById(id);
     }

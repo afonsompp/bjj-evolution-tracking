@@ -32,7 +32,7 @@ class TechniqueServiceTest {
     @Test
     void create_shouldSaveAndReturnTechniqueResponse() {
         // Arrange
-        TechniqueRequest request = new TechniqueRequest("Armbar", "Juji Gatame", null, null, null, null);
+        TechniqueRequest request = new TechniqueRequest("Armbar", "Juji Gatame", null, null);
         Technique techniqueToSave = request.toEntity();
         Technique savedTechnique = request.toEntity(1L);
 
@@ -52,7 +52,7 @@ class TechniqueServiceTest {
     void findAll_whenQueryIsPresent_shouldCallFindByQuery() {
         // Arrange
         Pageable pageable = Pageable.unpaged();
-        Technique technique = new Technique.Builder().id(1L).name("Armbar").build();
+        Technique technique = new Technique(1L, "Armbar", null, null, null);
         Page<Technique> techniquePage = new PageImpl<>(List.of(technique));
         String query = "arm";
 
@@ -73,7 +73,7 @@ class TechniqueServiceTest {
     void findAll_whenQueryIsBlank_shouldCallFindAll() {
         // Arrange
         Pageable pageable = Pageable.unpaged();
-        Technique technique = new Technique.Builder().id(1L).name("Armbar").build();
+        Technique technique = new Technique(1L, "Armbar", null, null, null);
         Page<Technique> techniquePage = new PageImpl<>(List.of(technique));
 
         when(techniqueRepository.findAll(pageable)).thenReturn(techniquePage);
@@ -92,7 +92,7 @@ class TechniqueServiceTest {
     void findById_whenTechniqueExists_shouldReturnTechniqueResponse() {
         // Arrange
         long id = 1L;
-        Technique technique = new Technique.Builder().id(id).name("Kimura").build();
+        Technique technique = new Technique(id, "Kimura", null, null, null);
         when(techniqueRepository.findById(id)).thenReturn(Optional.of(technique));
 
         // Act
@@ -118,7 +118,7 @@ class TechniqueServiceTest {
     void update_whenTechniqueExists_shouldUpdateAndReturnTechniqueResponse() {
         // Arrange
         long id = 1L;
-        TechniqueRequest request = new TechniqueRequest("Updated Name", null, null, null, null, null);
+        TechniqueRequest request = new TechniqueRequest("Updated Name", null, null, null);
         Technique updatedTechnique = request.toEntity(id);
 
         when(techniqueRepository.existsById(id)).thenReturn(true);
@@ -138,7 +138,7 @@ class TechniqueServiceTest {
     void update_whenTechniqueDoesNotExist_shouldThrowEntityNotFoundException() {
         // Arrange
         long id = 1L;
-        TechniqueRequest request = new TechniqueRequest("name", null, null, null, null, null);
+        TechniqueRequest request = new TechniqueRequest("name", null, null, null);
         when(techniqueRepository.existsById(id)).thenReturn(false);
 
         // Act & Assert

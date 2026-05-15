@@ -1,6 +1,6 @@
 package com.bjj.evolution.user;
 
-import com.bjj.evolution.user.domain.Belt;
+import com.bjj.evolution.catalog.domain.Belt;
 import com.bjj.evolution.user.domain.UserProfile;
 import com.bjj.evolution.user.domain.UserRole;
 import com.bjj.evolution.user.domain.dto.ProfileRequest;
@@ -46,7 +46,7 @@ class UserProfileServiceTest {
     void setUp() {
         userId = UUID.randomUUID();
         jwt = mock(Jwt.class);
-        when(jwt.getSubject()).thenReturn(userId.toString());
+        lenient().when(jwt.getSubject()).thenReturn(userId.toString());
         profileRequest = new ProfileRequest("Test", "User", "testuser", Belt.WHITE, 0, LocalDate.now());
     }
 
@@ -140,7 +140,7 @@ class UserProfileServiceTest {
     void updateRole_shouldSucceed_whenUserIsAdmin() {
         UUID targetUserId = UUID.randomUUID();
         UserProfile adminUser = createUserProfile(userId, "admin", UserRole.ADMIN);
-        UserProfile targetUser = createUserProfile(targetUserId, "target", UserRole.USER);
+        UserProfile targetUser = createUserProfile(targetUserId, "target", UserRole.MANAGER);
 
         when(repository.findById(userId)).thenReturn(Optional.of(adminUser));
         when(repository.findById(targetUserId)).thenReturn(Optional.of(targetUser));
@@ -167,18 +167,17 @@ class UserProfileServiceTest {
 
     @Test
     void updateRole_shouldThrowException_whenUserIsNotAdminOrManager() {
-        UUID targetUserId = UUID.randomUUID();
-        UserProfile normalUser = createUserProfile(userId, "user", UserRole.USER);
+        UserProfile normalUser = createUserProfile(userId, "user", UserRole.CUSTOMER);
 
         when(repository.findById(userId)).thenReturn(Optional.of(normalUser));
 
-        var exception = assertThrows(SecurityException.class, () -> service.updateRole(jwt, targetUserId, UserRole.MANAGER));
+        var exception = assertThrows(SecurityException.class, () -> service.updateRole(jwt, userId, UserRole.MANAGER));
         assertThat(exception.getMessage()).isEqualTo("Only admins or managers can update user roles");
     }
 
     @Test
     void getMyProfile_shouldReturnProfile_whenExists() {
-        UserProfile userProfile = createUserProfile(userId, "test", UserRole.USER);
+        UserProfile userProfile = createUserProfile(userId, "test", UserRole.MANAGER);
         when(repository.findById(userId)).thenReturn(Optional.of(userProfile));
 
         Optional<ProfileResponse> response = service.getMyProfile(jwt);
@@ -200,7 +199,7 @@ class UserProfileServiceTest {
     void searchProfile_shouldReturnPagedResults() {
         String query = "test";
         Pageable pageable = PageRequest.of(0, 10);
-        UserProfile user = createUserProfile(UUID.randomUUID(), "testuser", UserRole.USER);
+        UserProfile user = createUserProfile(UUID.randomUUID(), "testuser", UserRole.MANAGER);
         Page<UserProfile> userPage = new PageImpl<>(Collections.singletonList(user), pageable, 1);
 
         when(repository.searchByTerm(query, pageable)).thenReturn(userPage);

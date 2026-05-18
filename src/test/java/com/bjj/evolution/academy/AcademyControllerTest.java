@@ -60,7 +60,7 @@ class AcademyControllerTest {
     void setUp() {
         academyId = UUID.randomUUID();
         academyToken = UUID.randomUUID().toString();
-        sampleResponse = new AcademyResponse(academyId, "Gracie Barra", "123 Main St", null);
+        sampleResponse = new AcademyResponse(academyId, "Gracie Barra", "123 Main St");
 
         when(jwtDecoder.decode(anyString())).thenReturn(MOCK_JWT);
     }

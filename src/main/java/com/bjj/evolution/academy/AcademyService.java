@@ -12,6 +12,8 @@ import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import com.bjj.evolution.shared.utils.SecurityUtils;
 import com.bjj.evolution.user.UserProfileRepository;
 import com.bjj.evolution.user.domain.UserProfile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,8 @@ import java.util.UUID;
 
 @Service
 public class AcademyService {
+
+    private static final Logger log = LoggerFactory.getLogger(AcademyService.class);
 
     private final AcademyRepository academyRepository;
     private final AcademyMemberRepository academyMemberRepository;
@@ -36,15 +40,18 @@ public class AcademyService {
 
     @Transactional
     public AcademyResponse create(AcademyRequest request, UUID ownerId) {
+        log.debug("Attempting to create a new academy '{}' by user {}", request.name(), ownerId);
         UserProfile ownerProfile = userProfileRepository.findById(ownerId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", ownerId));
 
         if (SecurityUtils.isNotAdminOrManager(ownerProfile) && !SecurityUtils.isAcademyOwner(ownerProfile)) {
+            log.warn("User {} attempted to create an academy without sufficient privileges", ownerId);
             throw new ForbiddenException("You do not have permission to create academies.");
         }
 
         Academy academy = new Academy(request.name(), request.address());
         Academy savedAcademy = academyRepository.save(academy);
+        log.info("Successfully created academy '{}' with ID {}", savedAcademy.getName(), savedAcademy.getId());
 
         AcademyMember ownerMember = new AcademyMember(
                 savedAcademy,
@@ -84,20 +91,24 @@ public class AcademyService {
 
     @Transactional
     public AcademyResponse update(UUID academyId, AcademyRequest request) {
+        log.debug("Updating academy with ID {}", academyId);
         Academy academy = academyRepository.findById(academyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Academy", academyId));
 
         academy.setName(request.name());
         academy.setAddress(request.address());
 
+        log.info("Successfully updated academy with ID {}", academyId);
         return AcademyResponse.fromEntity(academyRepository.save(academy));
     }
 
     @Transactional
     public void delete(UUID academyId) {
+        log.debug("Attempting to delete academy with ID {}", academyId);
         if (!academyRepository.existsById(academyId)) {
             throw new ResourceNotFoundException("Academy", academyId);
         }
         academyRepository.deleteById(academyId);
+        log.info("Successfully deleted academy with ID {}", academyId);
     }
 }

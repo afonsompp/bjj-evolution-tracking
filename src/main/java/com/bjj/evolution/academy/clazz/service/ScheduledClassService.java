@@ -14,6 +14,8 @@ import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import com.bjj.evolution.user.UserProfileRepository;
 import com.bjj.evolution.user.domain.UserProfile;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,8 @@ import java.util.UUID;
 
 @Service
 public class ScheduledClassService {
+
+    private static final Logger log = LoggerFactory.getLogger(ScheduledClassService.class);
 
     private final ScheduledClassRepository repository;
     private final AcademyRepository academyRepository;
@@ -44,10 +48,16 @@ public class ScheduledClassService {
     @Transactional
     public ScheduledClassResponse createManualClass(ScheduledClassRequest request) {
         Academy academy = academyRepository.findById(request.academyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Academy", request.academyId()));
+                .orElseThrow(() -> {
+                    log.error("Manual class creation failed: academy not found id={}", request.academyId());
+                    return new ResourceNotFoundException("Academy", request.academyId());
+                });
 
         UserProfile instructor = userProfileRepository.findById(request.instructorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Instructor", request.instructorId()));
+                .orElseThrow(() -> {
+                    log.error("Manual class creation failed: instructor not found id={}", request.instructorId());
+                    return new ResourceNotFoundException("Instructor", request.instructorId());
+                });
 
         List<Technique> techniques = request.techniqueIds() != null ?
                 techniqueRepository.findAllById(request.techniqueIds()) : List.of();
@@ -62,22 +72,36 @@ public class ScheduledClassService {
                 .scheduledTechniques(techniques)
                 .status(ClassStatus.PUBLISHED)
                 .build();
-        return ScheduledClassResponse.fromEntity(repository.save(scheduledClass));
+        ScheduledClass saved = repository.save(scheduledClass);
+        log.info("Scheduled class created: id={} academy={} instructor={} start={} type={} training={} techniques={}",
+                saved.getId(), request.academyId(), request.instructorId(),
+                request.startTime(), request.classType(), request.trainingType(), techniques.size());
+        return ScheduledClassResponse.fromEntity(saved);
     }
 
     @Transactional
     public ScheduledClassResponse update(Long id, ScheduledClassRequest request) {
         ScheduledClass scheduledClass = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Class", id));
+                .orElseThrow(() -> {
+                    log.warn("Class update failed: class not found id={}", id);
+                    return new ResourceNotFoundException("Class", id);
+                });
 
         if (scheduledClass.getStatus() == ClassStatus.COMPLETED || scheduledClass.getStatus() == ClassStatus.CANCELED) {
+            log.warn("Class update denied: class id={} status={}", id, scheduledClass.getStatus());
             throw new BusinessRuleException("Cannot edit a class that is already completed or canceled.");
         }
 
         UserProfile instructor = userProfileRepository.findById(request.instructorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Instructor", request.instructorId()));
+                .orElseThrow(() -> {
+                    log.error("Class update failed: instructor not found id={}", request.instructorId());
+                    return new ResourceNotFoundException("Instructor", request.instructorId());
+                });
 
         List<Technique> techniques = techniqueRepository.findAllById(request.techniqueIds());
+
+        log.info("Updating scheduled class: id={} start={} instructor={} techniques={}",
+                id, request.startTime(), request.instructorId(), techniques.size());
 
         scheduledClass.setInstructor(instructor);
         scheduledClass.setStartTime(request.startTime());
@@ -86,20 +110,28 @@ public class ScheduledClassService {
         scheduledClass.setTrainingType(request.trainingType());
         scheduledClass.setScheduledTechniques(techniques);
 
-        return ScheduledClassResponse.fromEntity(repository.save(scheduledClass));
+        ScheduledClass saved = repository.save(scheduledClass);
+        log.info("Scheduled class updated: id={} start={} instructor={}", saved.getId(), saved.getStartTime(), request.instructorId());
+        return ScheduledClassResponse.fromEntity(saved);
     }
 
     @Transactional
     public void cancel(Long id) {
         ScheduledClass scheduledClass = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Class", id));
+                .orElseThrow(() -> {
+                    log.warn("Class cancellation failed: class not found id={}", id);
+                    return new ResourceNotFoundException("Class", id);
+                });
 
         if (scheduledClass.getStatus() == ClassStatus.COMPLETED) {
+            log.warn("Class cancellation denied: class id={} already completed", id);
             throw new BusinessRuleException("Cannot cancel a class that is already completed.");
         }
 
+        ClassStatus oldStatus = scheduledClass.getStatus();
         scheduledClass.setStatus(ClassStatus.CANCELED);
         repository.save(scheduledClass);
+        log.info("Scheduled class canceled: id={} academy={} wasStatus={}", id, scheduledClass.getAcademy().getId(), oldStatus);
     }
 
     @Transactional
@@ -112,8 +144,11 @@ public class ScheduledClassService {
         Page<ScheduledClass> classes;
 
         if (startDate != null && endDate != null) {
+            log.debug("Listing scheduled classes academy={} range=[{} to {}] page={} size={}",
+                    academyId, startDate, endDate, pageable.getPageNumber(), pageable.getPageSize());
             classes = repository.findAllByAcademyIdAndStartTimeBetween(academyId, startDate, endDate, pageable);
         } else {
+            log.debug("Listing scheduled classes academy={} page={} size={}", academyId, pageable.getPageNumber(), pageable.getPageSize());
             classes = repository.findAllByAcademyId(academyId, pageable);
         }
 
@@ -123,9 +158,14 @@ public class ScheduledClassService {
     @Transactional
     public ScheduledClassResponse findById(UUID academyId, Long classId) {
         ScheduledClass scheduledClass = repository.findById(classId)
-                .orElseThrow(() -> new ResourceNotFoundException("Class", classId));
+                .orElseThrow(() -> {
+                    log.warn("Class lookup failed: class not found id={}", classId);
+                    return new ResourceNotFoundException("Class", classId);
+                });
 
         if (!scheduledClass.getAcademy().getId().equals(academyId)) {
+            log.warn("Class academy mismatch: classId={} belongs to academy={}, requested academy={}",
+                    classId, scheduledClass.getAcademy().getId(), academyId);
             throw new BusinessRuleException("Class does not belong to the given academy.");
         }
 

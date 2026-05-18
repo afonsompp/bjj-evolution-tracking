@@ -14,3 +14,7 @@ spring:
         jwt:
           issuer-uri: https://tpltengabmlhpkhdmqbm.supabase.co/auth/v1
           audiences: authenticated
+
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %highlight(%-5level) [%X{traceId:-no-trace}] [%15.15t] %-40.40logger{39} - %msg%n"

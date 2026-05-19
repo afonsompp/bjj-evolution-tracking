@@ -6,6 +6,7 @@ import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import com.bjj.evolution.training.log.domain.dto.TechniqueSummaryResponse;
 import com.bjj.evolution.training.log.domain.dto.TrainingRequest;
 import com.bjj.evolution.training.log.domain.dto.TrainingResponse;
+import com.bjj.evolution.training.log.domain.dto.TrainingStatsResponse;
 import com.bjj.evolution.user.domain.UserRole;
 import com.bjj.evolution.user.domain.dto.ProfileResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -415,6 +416,89 @@ class TrainingControllerTest {
                 .andExpect(jsonPath("$.message").value("Training not found with id: " + trainingId));
 
         verify(trainingService).delete(eq(trainingId), any(UUID.class));
+    }
+
+    // -------------------------------------------------------
+    // GET /trainings/stats — aggregated stats
+    // -------------------------------------------------------
+
+    @Test
+    @DisplayName("GET /trainings/stats should return aggregated stats without filters")
+    void getStats_withoutFilters_shouldReturnStats() throws Exception {
+        TrainingStatsResponse stats = new TrainingStatsResponse(
+                42, 2520, 3.5, 4.1, 23, 156, 89, 45, 12, 67, 210
+        );
+        when(trainingService.getStats(any(UUID.class), isNull(), isNull()))
+                .thenReturn(stats);
+
+        mockMvc.perform(get("/trainings/stats")
+                        .header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalSessions").value(42))
+                .andExpect(jsonPath("$.totalMinutes").value(2520))
+                .andExpect(jsonPath("$.avgCardioRating").value(3.5))
+                .andExpect(jsonPath("$.avgIntensityRating").value(4.1))
+                .andExpect(jsonPath("$.totalTaps").value(23))
+                .andExpect(jsonPath("$.totalSubmissions").value(156))
+                .andExpect(jsonPath("$.totalEscapes").value(89))
+                .andExpect(jsonPath("$.totalSweeps").value(45))
+                .andExpect(jsonPath("$.totalTakedowns").value(12))
+                .andExpect(jsonPath("$.totalGuardPasses").value(67))
+                .andExpect(jsonPath("$.totalRolls").value(210));
+
+        verify(trainingService).getStats(any(UUID.class), isNull(), isNull());
+    }
+
+    @Test
+    @DisplayName("GET /trainings/stats should return stats with date filters")
+    void getStats_withDateFilters_shouldReturnStats() throws Exception {
+        TrainingStatsResponse stats = new TrainingStatsResponse(
+                10, 600, 4.0, 3.8, 5, 30, 20, 10, 3, 15, 50
+        );
+        when(trainingService.getStats(any(UUID.class), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(stats);
+
+        mockMvc.perform(get("/trainings/stats")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .param("startDate", "2025-05-01T00:00:00")
+                        .param("endDate", "2025-05-31T23:59:59"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalSessions").value(10))
+                .andExpect(jsonPath("$.totalMinutes").value(600))
+                .andExpect(jsonPath("$.avgCardioRating").value(4.0))
+                .andExpect(jsonPath("$.avgIntensityRating").value(3.8));
+
+        verify(trainingService).getStats(any(UUID.class), any(LocalDateTime.class), any(LocalDateTime.class));
+    }
+
+    @Test
+    @DisplayName("GET /trainings/stats should return zeros when no sessions exist")
+    void getStats_whenNoSessions_shouldReturnZeros() throws Exception {
+        TrainingStatsResponse emptyStats = new TrainingStatsResponse(
+                0, 0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0
+        );
+        when(trainingService.getStats(any(UUID.class), isNull(), isNull()))
+                .thenReturn(emptyStats);
+
+        mockMvc.perform(get("/trainings/stats")
+                        .header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalSessions").value(0))
+                .andExpect(jsonPath("$.totalMinutes").value(0))
+                .andExpect(jsonPath("$.avgCardioRating").value(0.0))
+                .andExpect(jsonPath("$.totalTaps").value(0))
+                .andExpect(jsonPath("$.totalRolls").value(0));
+
+        verify(trainingService).getStats(any(UUID.class), isNull(), isNull());
+    }
+
+    @Test
+    @DisplayName("GET /trainings/stats should return 401 when not authenticated")
+    void getStats_withoutAuth_shouldReturn401() throws Exception {
+        mockMvc.perform(get("/trainings/stats"))
+                .andExpect(status().isUnauthorized());
+
+        verify(trainingService, never()).getStats(any(), any(), any());
     }
 
     // -------------------------------------------------------

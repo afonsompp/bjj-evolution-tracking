@@ -8,6 +8,7 @@ import com.bjj.evolution.user.domain.UserProfile;
 import com.bjj.evolution.training.log.domain.Training;
 import com.bjj.evolution.training.log.domain.dto.TrainingRequest;
 import com.bjj.evolution.training.log.domain.dto.TrainingResponse;
+import com.bjj.evolution.training.log.domain.dto.TrainingStatsResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -117,6 +118,13 @@ public class TrainingService {
         }
         trainingRepository.deleteById(id);
         log.info("Training deleted: id={}", id);
+    }
+
+    @Transactional(readOnly = true)
+    public TrainingStatsResponse getStats(UUID userId, LocalDateTime startDate, LocalDateTime endDate) {
+        log.debug("Computing stats for user={} start={} end={}", userId, startDate, endDate);
+        Object[] result = trainingRepository.computeStats(userId, startDate, endDate);
+        return TrainingStatsResponse.fromProjection(result);
     }
 
     private List<Technique> resolveTechniques(List<Long> techniqueIds) {

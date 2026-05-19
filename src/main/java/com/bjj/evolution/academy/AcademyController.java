@@ -55,7 +55,7 @@ public class AcademyController {
     @PreAuthorize("@academySecurity.isOwner(authentication, #id)")
     public ResponseEntity<AcademyResponse> update(
             @PathVariable UUID id,
-            @RequestBody AcademyRequest request) {
+            @Valid @RequestBody AcademyRequest request) {
 
         return ResponseEntity.ok(service.update(id, request));
     }

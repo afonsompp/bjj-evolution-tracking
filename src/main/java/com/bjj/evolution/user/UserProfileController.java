@@ -1,9 +1,10 @@
 package com.bjj.evolution.user;
 
-import com.bjj.evolution.user.domain.UserRole;
 import com.bjj.evolution.user.domain.dto.ProfileRequest;
 import com.bjj.evolution.user.domain.dto.ProfileResponse;
+import com.bjj.evolution.user.domain.dto.RoleUpdateRequest;
 import com.bjj.evolution.user.domain.dto.SearchProfileResponse;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -51,7 +52,7 @@ public class UserProfileController {
     @PostMapping
     public ResponseEntity<ProfileResponse> updateProfile(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestBody ProfileRequest profileRequest) {
+            @Valid @RequestBody ProfileRequest profileRequest) {
         return ResponseEntity.ok(service.saveOrUpdate(jwt, profileRequest));
     }
 
@@ -59,8 +60,8 @@ public class UserProfileController {
     public ResponseEntity<ProfileResponse> updateUserRole(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID userId,
-            @RequestBody UserRole newRole) {
-        return ResponseEntity.ok(service.updateRole(jwt, userId, newRole));
+            @Valid @RequestBody RoleUpdateRequest request) {
+        return ResponseEntity.ok(service.updateRole(jwt, userId, request.role()));
     }
     
     

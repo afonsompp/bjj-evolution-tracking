@@ -5,6 +5,9 @@ import com.bjj.evolution.catalog.domain.TechniqueType;
 import com.bjj.evolution.catalog.domain.dto.TechniqueRequest;
 import com.bjj.evolution.catalog.domain.dto.TechniqueResponse;
 import com.bjj.evolution.shared.exception.ResourceNotFoundException;
+import com.bjj.evolution.user.UserProfileRepository;
+import com.bjj.evolution.user.domain.UserProfile;
+import com.bjj.evolution.user.domain.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,6 +46,9 @@ class TechniqueControllerTest {
     private TechniqueService techniqueService;
 
     @MockitoBean
+    private UserProfileRepository userProfileRepository;
+
+    @MockitoBean
     private JwtDecoder jwtDecoder;
 
     private static final String TOKEN = "test-jwt-token";
@@ -56,10 +62,12 @@ class TechniqueControllerTest {
 
     private Long techniqueId;
     private TechniqueResponse sampleResponse;
+    private UUID userId;
 
     @BeforeEach
     void setUp() {
         techniqueId = 1L;
+        userId = UUID.fromString(MOCK_JWT.getSubject());
         sampleResponse = new TechniqueResponse(
                 techniqueId,
                 "Armbar",
@@ -69,6 +77,11 @@ class TechniqueControllerTest {
         );
 
         when(jwtDecoder.decode(anyString())).thenReturn(MOCK_JWT);
+
+        UserProfile adminProfile = new UserProfile();
+        adminProfile.setId(userId);
+        adminProfile.setRole(UserRole.ADMIN);
+        when(userProfileRepository.findById(userId)).thenReturn(java.util.Optional.of(adminProfile));
     }
 
     // -------------------------------------------------------
@@ -278,5 +291,26 @@ class TechniqueControllerTest {
                 .andExpect(jsonPath("$.message").value("Technique not found with id: " + techniqueId));
 
         verify(techniqueService).delete(techniqueId);
+    }
+
+    @Test
+    @DisplayName("POST /techniques should return 403 when user is not admin")
+    void create_whenNotAdmin_shouldReturn403() throws Exception {
+        UserProfile customerProfile = new UserProfile();
+        customerProfile.setId(userId);
+        customerProfile.setRole(UserRole.CUSTOMER);
+        when(userProfileRepository.findById(userId)).thenReturn(java.util.Optional.of(customerProfile));
+
+        mockMvc.perform(post("/techniques")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "Armbar",
+                                    "type": "SUBMISSION",
+                                    "target": "ARM"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
     }
 }

@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/* ── Theme tokens (no hardcoded colors in components) ──── */
+
+:root {
+  --bg-page: #fafafa;           /* page background */
+  --bg-card: #ffffff;           /* card / surface */
+  --bg-sidebar: #ffffff;        /* sidebar panel */
+  --bg-subtle: #f4f4f5;        /* hover, icon wrap, progress bg */
+  --bg-badge: #e4e4e7;         /* count badge */
+  --bg-select: #ffffff;         /* select/input bg */
+  --bg-row: #fafafa;            /* combat row bg */
+
+  --border-card: #e4e4e7;      /* card borders */
+  --border-card-hover: #d4d4d8;/* card border hover */
+  --border-row: #e4e4e7;       /* combat row borders */
+  --border-select: #d4d4d8;    /* select border */
+  --border-header: #e4e4e7;    /* header/sidebar divider */
+
+  --text-primary: #18181b;     /* headings / main text */
+  --text-muted: #71717a;       /* labels / secondary */
+  --text-subtle: #a1a1aa;      /* subtle / placeholder */
+  --text-link: #52525b;        /* link / back button */
+  --text-link-hover: #18181b;  /* link hover */
+
+  --icon-color: #18181b;       /* icon fill */
+}
+
+.dark {
+  --bg-page: #09090b;
+  --bg-card: #18181b;
+  --bg-sidebar: #09090b;
+  --bg-subtle: #27272a;
+  --bg-badge: #27272a;
+  --bg-select: #09090b;
+  --bg-row: #09090b;
+
+  --border-card: #27272a;
+  --border-card-hover: #3f3f46;
+  --border-row: #27272a;
+  --border-select: #27272a;
+  --border-header: #27272a;
+
+  --text-primary: #f4f4f5;
+  --text-muted: #a1a1aa;
+  --text-subtle: #71717a;
+  --text-link: #a1a1aa;
+  --text-link-hover: #f4f4f5;
+
+  --icon-color: #f4f4f5;
+}

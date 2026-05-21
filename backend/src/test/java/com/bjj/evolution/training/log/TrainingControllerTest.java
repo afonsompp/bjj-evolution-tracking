@@ -251,8 +251,8 @@ class TrainingControllerTest {
 
         mockMvc.perform(get("/trainings")
                         .header("Authorization", "Bearer " + TOKEN)
-                        .param("startDate", "2025-05-01T00:00:00")
-                        .param("endDate", "2025-05-31T23:59:59"))
+                        .param("startDate", "2025-05-01")
+                        .param("endDate", "2025-05-31"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(1))
                 .andExpect(jsonPath("$.totalElements").value(1));
@@ -460,8 +460,8 @@ class TrainingControllerTest {
 
         mockMvc.perform(get("/trainings/stats")
                         .header("Authorization", "Bearer " + TOKEN)
-                        .param("startDate", "2025-05-01T00:00:00")
-                        .param("endDate", "2025-05-31T23:59:59"))
+                        .param("startDate", "2025-05-01")
+                        .param("endDate", "2025-05-31"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalSessions").value(10))
                 .andExpect(jsonPath("$.totalMinutes").value(600))

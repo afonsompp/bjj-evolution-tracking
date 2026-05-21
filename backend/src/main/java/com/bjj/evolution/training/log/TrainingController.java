@@ -3,6 +3,7 @@ package com.bjj.evolution.training.log;
 import com.bjj.evolution.training.log.domain.dto.TrainingRequest;
 import com.bjj.evolution.training.log.domain.dto.TrainingResponse;
 import com.bjj.evolution.training.log.domain.dto.TrainingStatsResponse;
+import com.bjj.evolution.training.log.domain.dto.DashboardResponse;
 import com.bjj.evolution.shared.utils.SecurityUtils;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -46,16 +47,19 @@ public class TrainingController {
     public ResponseEntity<Page<TrainingResponse>> getAll(
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-            LocalDateTime startDate,
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-            @RequestParam(required = false) LocalDateTime endDate,
-            @PageableDefault(size = 10, sort = "name", direction = Sort.Direction.DESC)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @RequestParam(required = false) LocalDate endDate,
+            @PageableDefault(size = 10, sort = "sessionDate", direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
         UUID userId = extractUserId(jwt);
         return ResponseEntity.ok(
-                service.findAll(userId, startDate, endDate, pageable)
+                service.findAll(userId, 
+                        startDate != null ? startDate.atStartOfDay() : null, 
+                        endDate != null ? endDate.atTime(23, 59, 59) : null, 
+                        pageable)
         );
     }
 
@@ -92,13 +96,24 @@ public class TrainingController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<TrainingStatsResponse> getStats(
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-            LocalDateTime startDate,
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-            @RequestParam(required = false) LocalDateTime endDate) {
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @RequestParam(required = false) LocalDate endDate) {
 
         UUID userId = SecurityUtils.getCurrentUserId();
-        return ResponseEntity.ok(service.getStats(userId, startDate, endDate));
+        return ResponseEntity.ok(service.getStats(userId, 
+                startDate != null ? startDate.atStartOfDay() : null, 
+                endDate != null ? endDate.atTime(23, 59, 59) : null));
+    }
+
+    @GetMapping("/dashboard")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<DashboardResponse> getDashboard(
+            @RequestParam(defaultValue = "30") int days) {
+
+        UUID userId = SecurityUtils.getCurrentUserId();
+        return ResponseEntity.ok(service.getDashboardMetrics(userId, days));
     }
 
     private UUID extractUserId(Jwt jwt) {

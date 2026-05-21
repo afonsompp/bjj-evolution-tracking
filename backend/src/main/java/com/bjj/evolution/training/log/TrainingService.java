@@ -9,6 +9,8 @@ import com.bjj.evolution.training.log.domain.Training;
 import com.bjj.evolution.training.log.domain.dto.TrainingRequest;
 import com.bjj.evolution.training.log.domain.dto.TrainingResponse;
 import com.bjj.evolution.training.log.domain.dto.TrainingStatsResponse;
+import com.bjj.evolution.training.log.domain.dto.DashboardResponse;
+import com.bjj.evolution.training.log.domain.dto.TechniqueCount;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -123,8 +125,40 @@ public class TrainingService {
     @Transactional(readOnly = true)
     public TrainingStatsResponse getStats(UUID userId, LocalDateTime startDate, LocalDateTime endDate) {
         log.debug("Computing stats for user={} start={} end={}", userId, startDate, endDate);
-        Object[] result = trainingRepository.computeStats(userId, startDate, endDate);
-        return TrainingStatsResponse.fromProjection(result);
+        List<Object[]> results = trainingRepository.computeStats(userId, startDate, endDate);
+        Object[] row = results.isEmpty() ? new Object[11] : results.getFirst();
+        return TrainingStatsResponse.fromProjection(row);
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardResponse getDashboardMetrics(UUID userId, int days) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime currentStart = now.minusDays(days);
+        LocalDateTime previousEnd = currentStart;
+        LocalDateTime previousStart = previousEnd.minusDays(days);
+
+        TrainingStatsResponse current = getStats(userId, currentStart, now);
+        TrainingStatsResponse previous = getStats(userId, previousStart, previousEnd);
+
+        List<Object[]> attackRows = trainingRepository
+                .findTopAttackTechniques(userId, currentStart, now);
+        List<Object[]> defenseRows = trainingRepository
+                .findTopDefenseTechniques(userId, currentStart, now);
+
+        int maxAttackCount = attackRows.isEmpty() ? 0 : ((Number) attackRows.getFirst()[1]).intValue();
+        int maxDefenseCount = defenseRows.isEmpty() ? 0 : ((Number) defenseRows.getFirst()[1]).intValue();
+
+        List<TechniqueCount> topAttacks = attackRows.stream()
+                .limit(3)
+                .map(row -> TechniqueCount.fromRow(row, maxAttackCount))
+                .toList();
+
+        List<TechniqueCount> topDefenses = defenseRows.stream()
+                .limit(3)
+                .map(row -> TechniqueCount.fromRow(row, maxDefenseCount))
+                .toList();
+
+        return new DashboardResponse(current, previous, topAttacks, topDefenses);
     }
 
     private List<Technique> resolveTechniques(List<Long> techniqueIds) {

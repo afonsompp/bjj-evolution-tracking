@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,11 +33,31 @@ public interface TrainingRepository extends JpaRepository<Training, Long> {
            "SUM(t.taps), SUM(t.submissions), SUM(t.escapes), " +
            "SUM(t.sweeps), SUM(t.takedowns), SUM(t.guardPasses), SUM(t.totalRolls), " +
            "AVG(t.cardioRating.value), AVG(t.intensityRating.value), " +
-           "SUM(t.duration) " +
+           "SUM(t.durationMinutes) " +
            "FROM Training t WHERE t.userProfile.id = :userId " +
-           "AND (:startDate IS NULL OR t.sessionDate >= :startDate) " +
-           "AND (:endDate IS NULL OR t.sessionDate <= :endDate)")
-    Object[] computeStats(@Param("userId") UUID userId,
+           "AND t.sessionDate >= COALESCE(:startDate, t.sessionDate) " +
+           "AND t.sessionDate <= COALESCE(:endDate, t.sessionDate)")
+    List<Object[]> computeStats(@Param("userId") UUID userId,
                           @Param("startDate") LocalDateTime startDate,
                           @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT t.name, COUNT(t) FROM Training tr " +
+           "JOIN tr.submissionTechniques t " +
+           "WHERE tr.userProfile.id = :userId " +
+           "AND tr.sessionDate >= COALESCE(:startDate, tr.sessionDate) " +
+           "AND tr.sessionDate <= COALESCE(:endDate, tr.sessionDate) " +
+           "GROUP BY t.name ORDER BY COUNT(t) DESC")
+    List<Object[]> findTopAttackTechniques(@Param("userId") UUID userId,
+                                            @Param("startDate") LocalDateTime startDate,
+                                            @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT t.name, COUNT(t) FROM Training tr " +
+           "JOIN tr.submissionTechniquesAllowed t " +
+           "WHERE tr.userProfile.id = :userId " +
+           "AND tr.sessionDate >= COALESCE(:startDate, tr.sessionDate) " +
+           "AND tr.sessionDate <= COALESCE(:endDate, tr.sessionDate) " +
+           "GROUP BY t.name ORDER BY COUNT(t) DESC")
+    List<Object[]> findTopDefenseTechniques(@Param("userId") UUID userId,
+                                             @Param("startDate") LocalDateTime startDate,
+                                             @Param("endDate") LocalDateTime endDate);
 }

@@ -10,8 +10,8 @@ class TrainingStatsResponseTest {
     @Test
     @DisplayName("fromProjection should compute all fields correctly from a valid row")
     void fromProjection_shouldComputeAllFields() {
-        // 42 sessions, each 60min = 2520min → nanos = 2520 * 60 * 1_000_000_000
-        long durationNanos = 2520L * 60_000_000_000L;
+        // 42 sessions = 2520 min
+        long durationMinutes = 2520L;
         Object[] row = {
                 42L,                    // [0] count
                 23L,                    // [1] taps
@@ -23,7 +23,7 @@ class TrainingStatsResponseTest {
                 210L,                   // [7] totalRolls
                 3.5,                    // [8] avgCardioRating
                 4.1,                    // [9] avgIntensityRating
-                durationNanos           // [10] sum duration (nanos)
+                durationMinutes         // [10] sum duration (minutes)
         };
 
         TrainingStatsResponse result = TrainingStatsResponse.fromProjection(row);
@@ -75,7 +75,7 @@ class TrainingStatsResponseTest {
                 50L,                    // [7] totalRolls
                 3.0,                    // [8] avgCardioRating
                 null,                   // [9] avgIntensityRating — null
-                300_000_000_000L        // [10] 5min in nanos
+                5L                      // [10] 5 min
         };
 
         TrainingStatsResponse result = TrainingStatsResponse.fromProjection(row);
@@ -94,11 +94,11 @@ class TrainingStatsResponseTest {
     }
 
     @Test
-    @DisplayName("fromProjection should convert nanoseconds to minutes correctly")
-    void fromProjection_shouldConvertNanosToMinutes() {
-        // 1 session, 90 min = 5400 sec = 5_400_000_000_000 ns
-        long nanos = 90L * 60_000_000_000L;
-        Object[] row = { 1L, null, null, null, null, null, null, null, null, null, nanos };
+    @DisplayName("fromProjection should convert minutes correctly")
+    void fromProjection_shouldConvertMinutesCorrectly() {
+        // 1 session, 90 min
+        long minutes = 90L;
+        Object[] row = { 1L, null, null, null, null, null, null, null, null, null, minutes };
 
         TrainingStatsResponse result = TrainingStatsResponse.fromProjection(row);
 
@@ -107,11 +107,11 @@ class TrainingStatsResponseTest {
     }
 
     @Test
-    @DisplayName("fromProjection should round down partial minutes correctly")
-    void fromProjection_shouldRoundDownPartialMinutes() {
-        // 90 seconds = 1.5 min → should be 1 minute (integer division)
-        long nanos = 90L * 1_000_000_000L;
-        Object[] row = { 1L, null, null, null, null, null, null, null, null, null, nanos };
+    @DisplayName("fromProjection should handle minutes directly")
+    void fromProjection_shouldHandleMinutesDirectly() {
+        // 1 minute
+        long minutes = 1L;
+        Object[] row = { 1L, null, null, null, null, null, null, null, null, null, minutes };
 
         TrainingStatsResponse result = TrainingStatsResponse.fromProjection(row);
 

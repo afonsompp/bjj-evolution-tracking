@@ -37,7 +37,7 @@ public record TrainingResponse(
                         entity.getClassType(),
                         entity.getTrainingType(),
                         entity.getSessionDate(),
-                        entity.getDuration().toMinutesPart() + entity.getDuration().toHours() * 60,
+                        entity.getDurationMinutes(),
                         entity.getTechnique().stream()
                                 .map(TechniqueSummaryResponse::fromEntity)
                                 .toList(),
@@ -48,8 +48,8 @@ public record TrainingResponse(
                                 .map(TechniqueSummaryResponse::fromEntity)
                                 .toList(),
                         entity.getTotalRolls(),
-                        entity.getRoundLength().toMinutes(),
-                        entity.getRestLength().toMinutes(),
+                        entity.getRoundLengthMinutes(),
+                        entity.getRestLengthMinutes(),
                         entity.getCardioRating().getValue(),
                         entity.getIntensityRating().getValue(),
                         entity.getTaps(),

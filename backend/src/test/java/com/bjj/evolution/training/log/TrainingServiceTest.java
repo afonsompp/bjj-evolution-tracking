@@ -170,13 +170,13 @@ class TrainingServiceTest {
                 .classType(ClassType.REGULAR)
                 .trainingType(TrainingType.GI)
                 .sessionDate(LocalDateTime.of(2026, 6, 1, 10, 0))
-                .duration(Duration.ofMinutes(90))
+                .durationMinutes(90)
                 .technique(List.of())
                 .submissionsTechniques(List.of())
                 .submissionsTechniquesAllowed(List.of())
                 .totalRolls(5)
-                .roundLength(Duration.ofMinutes(7))
-                .restLength(Duration.ofMinutes(2))
+                .roundLengthMinutes(7)
+                .restLengthMinutes(2)
                 .cardioRating(Rating.of(4))
                 .intensityRating(Rating.of(3))
                 .taps(2)
@@ -373,10 +373,10 @@ class TrainingServiceTest {
                 40L,              // [7] total rolls
                 3.5,              // [8] avg cardio rating
                 2.8,              // [9] avg intensity rating
-                5400000000000L    // [10] total duration in nanoseconds (90 min)
+                90L               // [10] total duration in minutes
         };
 
-        when(trainingRepository.computeStats(userId, start, end)).thenReturn(projection);
+        when(trainingRepository.computeStats(userId, start, end)).thenReturn(List.<Object[]>of(projection));
 
         TrainingStatsResponse stats = service.getStats(userId, start, end);
 
@@ -400,7 +400,7 @@ class TrainingServiceTest {
     void getStats_withNullFields_shouldReturnDefaults() {
         Object[] nullProjection = new Object[]{null, null, null, null, null, null, null, null, null, null, null};
 
-        when(trainingRepository.computeStats(any(UUID.class), any(), any())).thenReturn(nullProjection);
+        when(trainingRepository.computeStats(any(UUID.class), any(), any())).thenReturn(List.<Object[]>of(nullProjection));
 
         TrainingStatsResponse stats = service.getStats(userId, null, null);
 
@@ -421,13 +421,13 @@ class TrainingServiceTest {
                 .classType(ClassType.REGULAR)
                 .trainingType(TrainingType.GI)
                 .sessionDate(LocalDateTime.of(2026, 6, 1, 10, 0))
-                .duration(Duration.ofMinutes(90))
+                .durationMinutes(90)
                 .technique(List.of(technique))
                 .submissionsTechniques(List.of(technique))
                 .submissionsTechniquesAllowed(List.of(technique))
                 .totalRolls(5)
-                .roundLength(Duration.ofMinutes(7))
-                .restLength(Duration.ofMinutes(2))
+                .roundLengthMinutes(7)
+                .restLengthMinutes(2)
                 .cardioRating(Rating.of(4))
                 .intensityRating(Rating.of(3))
                 .taps(2)

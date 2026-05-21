@@ -15,11 +15,11 @@ public record TrainingStatsResponse(
 ) {
     public static TrainingStatsResponse fromProjection(Object[] row) {
         long count = row[0] != null ? ((Number) row[0]).longValue() : 0L;
-        long nanos = row[10] != null ? ((Number) row[10]).longValue() : 0L;
+        long minutes = row[10] != null ? ((Number) row[10]).longValue() : 0L;
 
         return new TrainingStatsResponse(
                 count,
-                nanos / 60_000_000_000L,      // nanoseconds → minutes
+                minutes,
                 row[8] != null ? ((Number) row[8]).doubleValue() : 0.0,
                 row[9] != null ? ((Number) row[9]).doubleValue() : 0.0,
                 row[1] != null ? ((Number) row[1]).intValue() : 0,

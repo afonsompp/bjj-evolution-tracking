@@ -19,7 +19,6 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -38,7 +37,7 @@ public class Training {
     @Column(nullable = false)
     private LocalDateTime sessionDate;
     @Column(nullable = false)
-    private Duration duration;
+    private int durationMinutes;
     @ManyToMany
     @JoinTable(
             name = "training_technique",
@@ -49,9 +48,9 @@ public class Training {
     @Column(nullable = false)
     private Integer totalRolls;
     @Column(nullable = false)
-    private Duration roundLength;
+    private int roundLengthMinutes;
     @Column(nullable = false)
-    private Duration restLength;
+    private int restLengthMinutes;
     @Embedded
     @AttributeOverride(
             name = "value",
@@ -114,8 +113,8 @@ public class Training {
         return sessionDate;
     }
 
-    public Duration getDuration() {
-        return duration;
+    public int getDurationMinutes() {
+        return durationMinutes;
     }
 
     public List<Technique> getTechnique() {
@@ -126,12 +125,12 @@ public class Training {
         return totalRolls;
     }
 
-    public Duration getRoundLength() {
-        return roundLength;
+    public int getRoundLengthMinutes() {
+        return roundLengthMinutes;
     }
 
-    public Duration getRestLength() {
-        return restLength;
+    public int getRestLengthMinutes() {
+        return restLengthMinutes;
     }
 
     public Rating getCardioRating() {
@@ -186,11 +185,11 @@ public class Training {
         this.classType = builder.classType;
         this.trainingType = builder.trainingType;
         this.sessionDate = builder.sessionDate;
-        this.duration = builder.duration;
+        this.durationMinutes = builder.durationMinutes;
         this.technique = builder.technique;
         this.totalRolls = builder.totalRolls;
-        this.roundLength = builder.roundLength;
-        this.restLength = builder.restLength;
+        this.roundLengthMinutes = builder.roundLengthMinutes;
+        this.restLengthMinutes = builder.restLengthMinutes;
         this.cardioRating = builder.cardioRating;
         this.intensityRating = builder.intensityRating;
         this.taps = builder.taps;
@@ -214,13 +213,13 @@ public class Training {
         private ClassType classType;
         private TrainingType trainingType;
         private LocalDateTime sessionDate;
-        private Duration duration;
+        private int durationMinutes;
         private List<Technique> technique;
         private List<Technique> submissionTechniques;
         private List<Technique> submissionTechniquesAllowed;
         private Integer totalRolls;
-        private Duration roundLength;
-        private Duration restLength;
+        private int roundLengthMinutes;
+        private int restLengthMinutes;
         private Rating cardioRating;
         private Rating intensityRating;
         private Integer taps;
@@ -257,8 +256,8 @@ public class Training {
             return this;
         }
 
-        public Builder duration(Duration duration) {
-            this.duration = duration;
+        public Builder durationMinutes(int durationMinutes) {
+            this.durationMinutes = durationMinutes;
             return this;
         }
 
@@ -272,13 +271,13 @@ public class Training {
             return this;
         }
 
-        public Builder roundLength(Duration roundLength) {
-            this.roundLength = roundLength;
+        public Builder roundLengthMinutes(int roundLengthMinutes) {
+            this.roundLengthMinutes = roundLengthMinutes;
             return this;
         }
 
-        public Builder restLength(Duration restLength) {
-            this.restLength = restLength;
+        public Builder restLengthMinutes(int restLengthMinutes) {
+            this.restLengthMinutes = restLengthMinutes;
             return this;
         }
 

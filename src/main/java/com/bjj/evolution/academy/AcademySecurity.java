@@ -4,6 +4,8 @@ import com.bjj.evolution.academy.member.AcademyMemberRepository;
 import com.bjj.evolution.academy.member.domain.AcademyMemberId;
 import com.bjj.evolution.academy.member.domain.MemberRole;
 import com.bjj.evolution.academy.member.domain.MemberStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
@@ -15,48 +17,87 @@ public class AcademySecurity {
 
     private final AcademyMemberRepository memberRepository;
 
+    private static final Logger log = LoggerFactory.getLogger(AcademySecurity.class);
+
     public AcademySecurity(AcademyMemberRepository memberRepository) {
         this.memberRepository = memberRepository;
     }
 
     public boolean hasAccess(Authentication authentication, UUID academyId) {
         UUID userId = extractUserId(authentication);
-        return memberRepository.findById(new AcademyMemberId(academyId, userId))
+        log.debug("hasAccess check: user={} academy={}", userId, academyId);
+        boolean result = memberRepository.findById(new AcademyMemberId(academyId, userId))
                 .map(member -> member.getStatus() == MemberStatus.ACTIVE)
                 .orElse(false);
+        if (!result) {
+            log.warn("hasAccess denied: user={} academy={}", userId, academyId);
+        }
+        return result;
     }
 
     public boolean isSameUser(Authentication authentication, UUID userId) {
         UUID authenticatedUserId = extractUserId(authentication);
-        return authenticatedUserId.equals(userId);
+        boolean result = authenticatedUserId.equals(userId);
+        if (!result) {
+            log.warn("isSameUser denied: authenticated={} target={}", authenticatedUserId, userId);
+        }
+        return result;
     }
 
     public boolean isAdmin(Authentication authentication, UUID academyId) {
         UUID userId = extractUserId(authentication);
-        return memberRepository.findById(new AcademyMemberId(academyId, userId))
-                .map(member -> member.getStatus() == MemberStatus.ACTIVE && (isAdmin(authentication,academyId) || isOwner(authentication,academyId)))
+        log.debug("isAdmin check: user={} academy={}", userId, academyId);
+        boolean result = memberRepository.findById(new AcademyMemberId(academyId, userId))
+                .map(member -> member.getStatus() == MemberStatus.ACTIVE &&
+                        (member.getRole() == MemberRole.MANAGER || member.getRole() == MemberRole.OWNER))
                 .orElse(false);
+        if (!result) {
+            log.warn("isAdmin denied: user={} academy={}", userId, academyId);
+        }
+        return result;
     }
 
     public boolean isInstructorOrAdmin(Authentication authentication, UUID academyId) {
         UUID userId = extractUserId(authentication);
-        return memberRepository.findById(new AcademyMemberId(academyId, userId))
+        log.debug("isInstructorOrAdmin check: user={} academy={}", userId, academyId);
+        boolean result = memberRepository.findById(new AcademyMemberId(academyId, userId))
                 .map(member -> member.getStatus() == MemberStatus.ACTIVE &&
                         (member.getRole() == MemberRole.INSTRUCTOR ||
                                 member.getRole() == MemberRole.MANAGER ||
                                 member.getRole() == MemberRole.OWNER))
                 .orElse(false);
+        if (!result) {
+            log.warn("isInstructorOrAdmin denied: user={} academy={}", userId, academyId);
+        }
+        return result;
     }
 
     public boolean isOwner(Authentication authentication, UUID academyId) {
         UUID userId = extractUserId(authentication);
-        return memberRepository.findById(new AcademyMemberId(academyId, userId))
+        log.debug("isOwner check: user={} academy={}", userId, academyId);
+        boolean result = memberRepository.findById(new AcademyMemberId(academyId, userId))
                 .map(member -> member.getStatus() == MemberStatus.ACTIVE && member.getRole() == MemberRole.OWNER)
                 .orElse(false);
+        if (!result) {
+            log.warn("isOwner denied: user={} academy={}", userId, academyId);
+        }
+        return result;
+    }
+
+    public boolean isStudent(Authentication authentication) {
+        UUID userId = extractUserId(authentication);
+        log.debug("isStudent check: user={}", userId);
+        boolean result = memberRepository.existsByUserIdAndRole(userId, MemberRole.STUDENT);
+        if (!result) {
+            log.warn("isStudent denied: user={}", userId);
+        }
+        return result;
     }
 
     private UUID extractUserId(Authentication authentication) {
         Jwt jwt = (Jwt) authentication.getPrincipal();
-        return UUID.fromString(jwt.getSubject());
+        UUID userId = UUID.fromString(jwt.getSubject());
+        log.trace("Extracted userId={} from JWT", userId);
+        return userId;
     }
 }

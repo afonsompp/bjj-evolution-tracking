@@ -1,0 +1,39 @@
+package com.bjj.evolution.academy.clazz.controller;
+
+import com.bjj.evolution.academy.clazz.domain.CheckInStatus;
+import com.bjj.evolution.academy.clazz.service.ClassAttendanceService;
+import com.bjj.evolution.academy.member.domain.dto.AcademyMenberClassViewResponse;
+import com.bjj.evolution.shared.utils.SecurityUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/attendances")
+public class UserAttendanceController {
+
+    private final ClassAttendanceService classAttendanceService;
+
+    public UserAttendanceController(ClassAttendanceService classAttendanceService) {
+        this.classAttendanceService = classAttendanceService;
+    }
+
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Page<AcademyMenberClassViewResponse>> getMyAttendances(
+            @RequestParam(required = false) CheckInStatus status,
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        UUID userId = SecurityUtils.getCurrentUserId();
+        return ResponseEntity.ok(classAttendanceService.findClassViewsByStudent(userId, status, pageable));
+    }
+}

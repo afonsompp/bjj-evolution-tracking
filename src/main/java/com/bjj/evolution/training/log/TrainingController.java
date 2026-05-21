@@ -2,6 +2,8 @@ package com.bjj.evolution.training.log;
 
 import com.bjj.evolution.training.log.domain.dto.TrainingRequest;
 import com.bjj.evolution.training.log.domain.dto.TrainingResponse;
+import com.bjj.evolution.training.log.domain.dto.TrainingStatsResponse;
+import com.bjj.evolution.shared.utils.SecurityUtils;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,6 +13,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
@@ -83,6 +86,19 @@ public class TrainingController {
         UUID userId = extractUserId(jwt);
         service.delete(id, userId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/stats")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<TrainingStatsResponse> getStats(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime startDate,
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            @RequestParam(required = false) LocalDateTime endDate) {
+
+        UUID userId = SecurityUtils.getCurrentUserId();
+        return ResponseEntity.ok(service.getStats(userId, startDate, endDate));
     }
 
     private UUID extractUserId(Jwt jwt) {

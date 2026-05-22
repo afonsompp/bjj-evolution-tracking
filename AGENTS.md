@@ -156,71 +156,69 @@ Avoid `var` in public API contracts or complex logic; explicit types help the LL
 
 ## 8. Frontend Conventions
 
-### Project Structure
+### Feature-based organization (mandatory)
+
+Each domain lives under `src/features/<domain>/` and owns its own data layer. Pages stay thin and only compose — they must not contain `apiClient`, `useQuery`, or `useMutation` inline.
+
+A feature must follow this shape:
+
 ```
-frontend/src/
-├── api/                    # Per-domain API functions (axios client)
-│   └── client.ts           # Axios instance with auth interceptor
-├── components/ui/          # Shared UI components
-├── features/               # Feature modules (co-locate component + hook + types)
-│   ├── auth/               # AuthContext, LoginForm, RegisterForm
-│   ├── profile/            # ProfileForm
-│   └── dashboard/          # Dashboard components, hooks, utils
-├── layouts/                # AuthLayout (centered), AppLayout (sidebar)
-├── lib/                    # Third-party wrappers and app-level utilities
-│   ├── supabase.ts         # Supabase client
-│   ├── ThemeContext.tsx     # Dark/light theme context + toggle + localStorage persistence
-│   └── i18n/               # Internationalization
-│       ├── translations.ts # en-US / pt-BR dictionaries with typed keys
-│       └── I18nContext.tsx  # React Context provider + useTranslation() hook
-├── pages/                  # Route-level page components
-├── router/                 # Route definitions + layout nesting
-└── types/                  # TypeScript types mirroring backend DTOs
-    └── api.ts              # All backend DTOs and enums as TS types
+features/<domain>/
+  api/
+    keys.ts            # query key factories (single source of truth for cache)
+    <domain>Api.ts     # raw HTTP calls, return typed data only
+  hooks/
+    use<Resource>.ts   # query hooks
+    useManage<Resource>.ts  # mutation hooks (encapsulate invalidation)
+  components/          # domain components reused across pages
+  permissions/         # RBAC hooks + gates (when applicable, see RBAC below)
 ```
 
-### Key patterns
-- **API client**: `apiClient` (Axios) auto-injects `Authorization: Bearer` header from Supabase session via interceptor. All API calls go through this instance.
-- **Pagination response**: `{ content: T[], totalElements, totalPages, number, size, first, last }`
-- **Error shape**: `{ status, error, message, timestamp, violations?: [{field, message}] }`
-- **Date serialization**: `LocalDateTime` → ISO string `"2024-03-15T18:30:00"`. `LocalDate` → `"2024-03-15"`.
-- **Form validation**: Zod + React Hook Form mirroring backend constraints. Use string fields for numeric inputs (like `stripe`) and parse explicitly in a `toRequest()` helper to avoid type mismatches with `zodResolver`.
-- **State management**: React Context for auth (`AuthContext`), React Query for server state (cache key convention: `['resource', id]`).
-- **Profile check**: `GET /profiles` returns 404 if no profile exists. Frontend checks this on dashboard load and redirects to `/onboarding`.
-- **Auth flow**: Supabase handles sign up / sign in. Backend accepts Supabase JWT directly (issuer configured in `application.yaml`).
+Pages live in `src/pages/` and contain UI + local state only. All server I/O goes through feature hooks.
+
+### Data layer rules
+
+- **Single Axios instance**: `apiClient` (from `src/api/client.ts`) auto-injects `Authorization: Bearer` from the Supabase session. Never import `axios` directly in features.
+- **API modules are dumb**: each function takes typed args and returns typed data. No state, no React, no error mapping — let callers handle errors.
+- **Query keys live in `keys.ts`**, never inline. Mutations invalidate via these factories so cache stays consistent. Cross-feature invalidations (e.g. updating a training invalidates `dashboardKeys`) belong inside the mutation hook, not the page.
+- **Mutation hooks encapsulate invalidation**. Pages call `mutation.mutate(...)` and pass `{ onSuccess, onError }` for UI-side effects only (navigate, toast, close modal).
+- **Pagination response shape**: `{ content, totalElements, totalPages, number, size, first, last }`. Pass `page`/`size` as params, never hand-build query strings.
+- **Error shape**: `{ status, error, message, timestamp, violations?: [{field, message}] }`. Read `err?.response?.data?.message` for user-visible text; fall back to a translated default.
+- **Date serialization**: `LocalDateTime` → `"2024-03-15T18:30:00"`. `LocalDate` → `"2024-03-15"`.
+
+### RBAC (per-academy capabilities)
+
+Permissions on the frontend mirror the backend's `@academySecurity` rules. Role is **per-academy**, not global — the same user can be `OWNER` of academy A and `STUDENT` of academy B. Global `ADMIN` is a staff/support bypass.
+
+- **Capability matrix** in `features/academy/permissions/capabilities.ts` is the single source of truth. Add/remove capabilities here, not in components.
+- **`useAcademyPermissions(academyId)`** returns `{ canEditAcademy, canManageMembers, canPromoteMember, canManageBilling, ... }`.
+- **`<AcademyPermissionGate academyId={id} require="canManageMembers">`** for buttons and sections.
+- **`<RequireAcademyCap cap="canEditAcademy">`** for route guards (in `router/index.tsx`).
+- **Components consume capabilities, not roles.** Never write `if (role === 'OWNER')` in a component — the matrix decides.
+- Frontend gating is UX, not security. The backend's `@PreAuthorize` is the real boundary; treat 403 responses as defense in depth.
+
+### Forms
+
+- **React Hook Form + Zod** is the default. Define a `schema`, infer `FormValues`, and write a `toRequest(values)` helper that adapts to the backend DTO.
+- Use string fields for numeric/optional inputs (e.g. `stripe`, `belt`) and parse explicitly in `toRequest()` to avoid `zodResolver` type mismatches.
+- Reset/populate via `useEffect` + `reset(...)` when loading existing entities for edit.
+- Only fall back to plain `useState` when RHF gets in the way (e.g. arrays of selected IDs in pickers). Document why if you do.
+
+### Auth & profile
+
+- Supabase handles sign up / sign in. Backend accepts the Supabase JWT directly (issuer in `application.yaml`).
+- **`useProfile()`** (from `features/profile/useProfile.ts`) is the only way to read the current user's profile. Never re-implement `GET /profiles` inline.
+- **`useUpsertProfile()`** is the only writer; it calls `qc.setQueryData(profileKeys.me, data)` so consumers update without a refetch.
+- `GET /profiles` returns 404 when no profile exists; gated pages redirect to `/onboarding` on `isError`.
 
 ### Internationalization (i18n)
+
 - **No external library** — pure React Context + TypeScript.
-- **Translation files**: `src/lib/i18n/translations.ts` exports typed dictionaries for `en-US` and `pt-BR`. Each dictionary has the same keys with string values. Supports `{param}` interpolation via the `t()` function.
-- **Provider**: `<I18nProvider>` wraps the entire app in `App.tsx`. Detects browser language on mount (`navigator.language` — `pt` → `pt-BR`, anything else → `en-US`). Persists choice to `localStorage` key `'locale'`.
-- **Hook**: `const { translate, locale, setLocale } = useTranslation()`. Usage: `translate('dashboard.sessions')` or `translate('dashboard.subtitle', { days: 30 })`.
-- **Adding a new key**: add the key to both the `en` and `pt` objects in `translations.ts`, then use `translate('your.new.key')` in components. The `TranslationKey` type automatically infers available keys from the `en` object.
-- **Language switcher**: A `<select>` dropdown in `AppLayout.tsx` sidebar (desktop) and top bar (mobile). Calls `setLocale(locale)` which triggers a re-render of all `translate()` calls.
-
-### History Page
-- **Paginated list** via `GET /trainings?page=N&size=M` (default 25). Page size selector (10/25/50 buttons).
-- **Expand/collapse**: Clicking a card toggles detail sections — techniques, submissions made/allowed, combat stats grid, session config, notes.
-- **Quick stats bar**: Always-visible row on each card shows cardio/intensity ratings, roll count, taps, subs, escapes.
-- **Delete**: Trash icon → `ConfirmModal` (confirmation dialog) → `DELETE /trainings/{id}` → invalidates `['trainings']` and `['dashboard']` caches.
-- **Edit**: Pencil icon navigates to `/training/{id}/edit`.
-
-### Training Form (Create + Edit)
-- **Single shared component** (`TrainingFormPage.tsx`) — detects mode from `useParams().id`: create (`/training/new`) or edit (`/training/:id/edit`).
-- **Populate on edit**: `GET /trainings/{id}` fetched when `id` param is present, populates all form fields via `useEffect`.
-- **Plain `useState`** (no React Hook Form) because technique selectors manage `number[]` arrays that don't map cleanly to RHF. Validation is manual via `validate()`.
-- **Technique picker**: `TechniquePicker` subcomponent renders techniques grouped by type (`SUBMISSION`, `POSITION`, etc.), with search/filter, select-all per group checkbox, and selected-count footer. Fetches via `GET /techniques?size=200`.
-- **Three technique selectors**: "Techniques Practiced" (all types), "Submissions Made" (typeFilter=`['SUBMISSION']`), "Submissions Allowed" (typeFilter=`['SUBMISSION']`).
-- **Star ratings**: Clickable inline SVG star buttons for cardio/intensity (1–5). `StarRating` subcomponent.
-- **Submit**: `POST /trainings` on create, `PUT /trainings/{id}` on edit. Both invalidate `['trainings']` and `['dashboard']` caches, then navigate to `/training`.
-- **Date/time**: `<input type="date">` + `<input type="time">` combined into ISO string `{date}T{time}:00`.
-- **Numeric fields**: `NumInput` subcomponent enforces `min=0` and parses to integer.
-
-### Dashboard API
-- **Single endpoint**: `GET /trainings/dashboard?days=30` replaces the old approach of fetching all raw trainings and computing stats client-side.
-- **Response shape**: `DashboardResponse` (`current: TrainingStatsResponse`, `previous: TrainingStatsResponse`, `topAttacks: TechniqueCount[]`, `topDefenses: TechniqueCount[]`).
-- **Period options**: 7, 14, 30, 45, 60, 90, 180, 365 days — defined as `PERIOD_OPTIONS` in the page component.
-- **Derived stats** computed client-side: hours (totalMinutes / 60), sub rate (submissions / totalRolls), defense index (escapes / taps).
-- **Icons**: No external icon library. All icons are inline SVGs defined in an `Icons` const object in the page. No need to install `lucide-react` or similar.
+- **Translations**: `src/lib/i18n/translations.ts` exports typed `en-US` and `pt-BR` dictionaries. Both must have the same keys. `{param}` interpolation is supported.
+- **Hook**: `const { translate, locale, setLocale } = useTranslation()`. Usage: `translate('academy.pending.title')` or `translate('academy.count', { count: 42 })`.
+- **Adding a key**: add it to both `en` and `pt` objects. `TranslationKey` is inferred from the `en` object — TS will error if you forget the other locale.
+- **No user-visible strings inline.** Anything rendered to a user goes through `translate(...)`.
+- Locale persists to `localStorage('locale')`. Initial detection: `navigator.language.startsWith('pt')` → `pt-BR`, else `en-US`.
 
 ### Styling & Theming
 - **No hardcoded CSS color values** in component files. All colors are CSS custom properties defined in `src/index.css` under `:root` (light) and `.dark` (dark) selectors.
@@ -247,3 +245,6 @@ frontend/src/
 - [ ] TypeScript types added in `frontend/src/types/api.ts` for any new backend DTOs/enums.
 - [ ] Translation keys added in `frontend/src/lib/i18n/translations.ts` for any new user-facing text (both en-US and pt-BR).
 - [ ] No hardcoded color values in new frontend components — use CSS variable tokens (`var(--bg-card)`, `var(--text-primary)`, etc.) instead of Tailwind color classes.
+- [ ] No `apiClient`, `useQuery`, or `useMutation` inline in pages — all server I/O goes through `features/<domain>/hooks/*`.
+- [ ] New query keys live in `features/<domain>/api/keys.ts`; mutations invalidate via these factories.
+- [ ] New UI affordances tied to academy roles are wrapped in `<AcademyPermissionGate>` (and routes in `<RequireAcademyCap>`) — capabilities, not roles, are checked.

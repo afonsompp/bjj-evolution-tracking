@@ -2,6 +2,8 @@ package com.bjj.evolution.training.log;
 
 import com.bjj.evolution.catalog.TechniqueRepository;
 import com.bjj.evolution.catalog.domain.Technique;
+import com.bjj.evolution.audit.AuditAction;
+import com.bjj.evolution.audit.annotation.Auditable;
 import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import com.bjj.evolution.user.UserProfileRepository;
 import com.bjj.evolution.user.domain.UserProfile;
@@ -18,7 +20,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -65,8 +68,8 @@ public class TrainingService {
     @Transactional(readOnly = true)
     public Page<TrainingResponse> findAll(
             UUID userId,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
+            Instant startDate,
+            Instant endDate,
             Pageable pageable
     ) {
         if (startDate != null && endDate != null) {
@@ -112,6 +115,7 @@ public class TrainingService {
     }
 
     @Transactional
+    @Auditable(action = AuditAction.TRAINING_DELETED, resourceType = "TRAINING", resourceIdArg = 0)
     public void delete(Long id, UUID userId) {
         log.info("Deleting training id={} for user={}", id, userId);
         if (!trainingRepository.existsByIdAndUserProfileId(id, userId)) {
@@ -123,7 +127,7 @@ public class TrainingService {
     }
 
     @Transactional(readOnly = true)
-    public TrainingStatsResponse getStats(UUID userId, LocalDateTime startDate, LocalDateTime endDate) {
+    public TrainingStatsResponse getStats(UUID userId, Instant startDate, Instant endDate) {
         log.debug("Computing stats for user={} start={} end={}", userId, startDate, endDate);
         List<Object[]> results = trainingRepository.computeStats(userId, startDate, endDate);
         Object[] row = results.isEmpty() ? new Object[11] : results.getFirst();
@@ -132,10 +136,10 @@ public class TrainingService {
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboardMetrics(UUID userId, int days) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime currentStart = now.minusDays(days);
-        LocalDateTime previousEnd = currentStart;
-        LocalDateTime previousStart = previousEnd.minusDays(days);
+        Instant now = Instant.now();
+        Instant currentStart = now.minus(days, ChronoUnit.DAYS);
+        Instant previousEnd = currentStart;
+        Instant previousStart = previousEnd.minus(days, ChronoUnit.DAYS);
 
         TrainingStatsResponse current = getStats(userId, currentStart, now);
         TrainingStatsResponse previous = getStats(userId, previousStart, previousEnd);

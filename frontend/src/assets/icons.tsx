@@ -3,8 +3,6 @@
 // All icons are Lucide-compatible paths with currentColor fill=none.
 // Every icon accepts { size?, className? } defaults to the original pixel size.
 
-import * as React from 'react'
-
 type Props = { size?: number; className?: string }
 
 function s(size: number | undefined, def: number): number {
@@ -53,6 +51,14 @@ export function ChevronLeftIcon({ size, className }: Props) {
   )
 }
 
+export function ChevronRightIcon({ size, className }: Props) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={s(size, 16)} height={s(size, 16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polyline points="9 18 15 12 9 6"/>
+    </svg>
+  )
+}
+
 export function UserIcon({ size, className }: Props) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width={s(size, 16)} height={s(size, 16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -73,6 +79,14 @@ export function LogOutIcon({ size, className }: Props) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width={s(size, 16)} height={s(size, 16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+    </svg>
+  )
+}
+
+export function BuildingIcon({ size, className }: Props) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={s(size, 16)} height={s(size, 16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M6 22V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-2"/><path d="M12 22v-6"/><path d="M12 8a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2 2 2 0 0 1-2-2v0a2 2 0 0 1 2-2z"/>
     </svg>
   )
 }
@@ -255,6 +269,48 @@ export function LoaderIcon({ size, className }: Props) {
   return (
     <svg className={`animate-spin ${className ?? ''}`} xmlns="http://www.w3.org/2000/svg" width={s(size, 16)} height={s(size, 16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+    </svg>
+  )
+}
+
+// ── Academy / Schedule icons ───────────────────────────────
+
+export function CalendarIcon({ size, className }: Props) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={s(size, 16)} height={s(size, 16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  )
+}
+
+export function MapPinIcon({ size, className }: Props) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={s(size, 16)} height={s(size, 16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+    </svg>
+  )
+}
+
+export function UsersIcon({ size, className }: Props) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={s(size, 16)} height={s(size, 16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  )
+}
+
+export function CheckCircleIcon({ size, className }: Props) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={s(size, 16)} height={s(size, 16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+  )
+}
+
+export function HourglassIcon({ size, className }: Props) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={s(size, 16)} height={s(size, 16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>
     </svg>
   )
 }

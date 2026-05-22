@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '../api/client'
 import { useTranslation } from '../lib/i18n/I18nContext'
-import type { AcademyResponse, AcademyMemberResponse, Page } from '../types/api'
+import { useAcademySearch } from '../features/academy/hooks/useAcademySearch'
+import { useMyMemberships } from '../features/academy/hooks/useMyMemberships'
 import {
   SearchIcon,
   BuildingIcon,
@@ -12,35 +11,16 @@ import {
   CheckCircleIcon,
 } from '../assets/icons'
 
+const SIZE = 20
+
 export default function AcademyListPage() {
   const { translate } = useTranslation()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
 
-  const SIZE = 20
-
-  // ── My academies (ACTIVE memberships) ─────────────────────
-  const { data: myMemberships } = useQuery({
-    queryKey: ['academy-memberships', 'ACTIVE'],
-    queryFn: () =>
-      apiClient
-        .get<Page<AcademyMemberResponse>>('/academies/memberships', {
-          params: { status: 'ACTIVE', page: 0, size: 50 },
-        })
-        .then((r) => r.data),
-  })
-
-  // ── Public academy search ──────────────────────────────────
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['academies', search, page],
-    queryFn: () =>
-      apiClient
-        .get<Page<AcademyResponse>>('/academies/search', {
-          params: { query: search || undefined, page, size: SIZE },
-        })
-        .then((r) => r.data),
-  })
+  const { data: myMemberships } = useMyMemberships('ACTIVE')
+  const { data, isLoading, isError } = useAcademySearch(search, page, SIZE)
 
   const totalPages = data?.totalPages ?? 0
   const academies = data?.content ?? []

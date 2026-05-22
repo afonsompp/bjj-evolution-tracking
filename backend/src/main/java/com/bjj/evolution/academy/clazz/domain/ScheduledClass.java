@@ -19,7 +19,7 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Entity
@@ -38,7 +38,7 @@ public class ScheduledClass {
     private UserProfile instructor;
 
     @Column(nullable = false)
-    private LocalDateTime startTime;
+    private Instant startTime;
 
     @Column(nullable = false)
     private Duration duration;
@@ -90,7 +90,7 @@ public class ScheduledClass {
     public static class Builder {
         private Academy academy;
         private UserProfile instructor;
-        private LocalDateTime startTime;
+        private Instant startTime;
         private Duration duration;
         private ClassType classType;
         private TrainingType trainingType;
@@ -111,7 +111,7 @@ public class ScheduledClass {
             return this;
         }
 
-        public Builder startTime(LocalDateTime startTime) {
+        public Builder startTime(Instant startTime) {
             this.startTime = startTime;
             return this;
         }
@@ -163,7 +163,7 @@ public class ScheduledClass {
         return instructor;
     }
 
-    public LocalDateTime getStartTime() {
+    public Instant getStartTime() {
         return startTime;
     }
 
@@ -199,7 +199,7 @@ public class ScheduledClass {
         this.instructor = instructor;
     }
 
-    public void setStartTime(LocalDateTime startTime) {
+    public void setStartTime(Instant startTime) {
         this.startTime = startTime;
     }
 

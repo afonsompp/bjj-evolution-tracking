@@ -9,6 +9,10 @@ import ProfilePage from '../pages/ProfilePage'
 import HistoryPage from '../pages/HistoryPage'
 import TrainingFormPage from '../pages/TrainingFormPage'
 import TechniqueManagePage from '../pages/TechniqueManagePage'
+import AcademyListPage from '../pages/AcademyListPage'
+import AcademyDetailPage from '../pages/AcademyDetailPage'
+import AcademySettingsPage from '../pages/AcademySettingsPage'
+import { RequireAcademyCap } from '../features/academy/permissions/RequireAcademyCap'
 
 export const router = createBrowserRouter([
   {
@@ -32,6 +36,16 @@ export const router = createBrowserRouter([
       { path: '/onboarding', element: <OnboardingPage /> },
       { path: '/profile', element: <ProfilePage /> },
       { path: '/techniques', element: <TechniqueManagePage /> },
+      { path: '/academies', element: <AcademyListPage /> },
+      { path: '/academies/:id', element: <AcademyDetailPage /> },
+      {
+        path: '/academies/:id/settings',
+        element: (
+          <RequireAcademyCap cap="canEditAcademy">
+            <AcademySettingsPage />
+          </RequireAcademyCap>
+        ),
+      },
     ],
   },
 ])

@@ -82,6 +82,15 @@ public class AcademyMemberController {
         return ResponseEntity.ok(service.approveMember(academyId, userId));
     }
 
+    @PatchMapping("/{userId}/reject")
+    @PreAuthorize("@academySecurity.isInstructorOrAdmin(authentication, #academyId)")
+    public ResponseEntity<Void> rejectMember(
+            @PathVariable UUID academyId,
+            @PathVariable UUID userId) {
+        service.rejectMember(academyId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping
     @PreAuthorize("@academySecurity.hasAccess(authentication, #academyId)")
     public ResponseEntity<Page<AcademyMemberResponse>> getAll(
@@ -107,6 +116,15 @@ public class AcademyMemberController {
             @PathVariable UUID academyId,
             @PathVariable UUID userId) {
         service.removeMember(academyId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> leaveAcademy(
+            @PathVariable UUID academyId,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        service.leaveAcademy(academyId, userId);
         return ResponseEntity.noContent().build();
     }
 

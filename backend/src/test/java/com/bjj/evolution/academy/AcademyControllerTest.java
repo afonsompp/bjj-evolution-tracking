@@ -53,13 +53,11 @@ class AcademyControllerTest {
             .build();
 
     private UUID academyId;
-    private String academyToken;
     private AcademyResponse sampleResponse;
 
     @BeforeEach
     void setUp() {
         academyId = UUID.randomUUID();
-        academyToken = UUID.randomUUID().toString();
         sampleResponse = new AcademyResponse(academyId, "Gracie Barra", "123 Main St");
 
         when(jwtDecoder.decode(anyString())).thenReturn(MOCK_JWT);
@@ -75,12 +73,12 @@ class AcademyControllerTest {
         when(academyService.create(any(AcademyRequest.class), any(UUID.class)))
                 .thenReturn(sampleResponse);
 
-        mockMvc.perform(post("/academies")
+        mockMvc.perform(post("/api/v1/academies")
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"name":"Gracie Barra","address":"123 Main St","ownerId":"%s"}
-                                """.formatted(academyToken)))
+                                {"name":"Gracie Barra","address":"123 Main St"}
+                                """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(academyId.toString()))
                 .andExpect(jsonPath("$.name").value("Gracie Barra"))
@@ -92,12 +90,12 @@ class AcademyControllerTest {
     @Test
     @DisplayName("POST /academies should return 400 when request body is invalid")
     void create_whenInvalidBody_shouldReturn400() throws Exception {
-        mockMvc.perform(post("/academies")
+        mockMvc.perform(post("/api/v1/academies")
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"name":"","address":"","ownerId":"%s"}
-                                """.formatted(academyToken)))
+                                {"name":"","address":""}
+                                """))
                 .andExpect(status().isBadRequest());
 
         verify(academyService, never()).create(any(), any());
@@ -113,7 +111,7 @@ class AcademyControllerTest {
         Page<AcademyResponse> page = new PageImpl<>(List.of(sampleResponse), PageRequest.of(0, 10), 1);
         when(academyService.findAllPublic(eq("Gracie"), any())).thenReturn(page);
 
-        mockMvc.perform(get("/academies/search")
+        mockMvc.perform(get("/api/v1/academies/search")
                         .header("Authorization", "Bearer " + TOKEN)
                         .param("query", "Gracie")
                         .param("page", "0")
@@ -131,7 +129,7 @@ class AcademyControllerTest {
         Page<AcademyResponse> page = new PageImpl<>(List.of(sampleResponse), PageRequest.of(0, 10), 1);
         when(academyService.findAllPublic(isNull(), any())).thenReturn(page);
 
-        mockMvc.perform(get("/academies/search")
+        mockMvc.perform(get("/api/v1/academies/search")
                         .header("Authorization", "Bearer " + TOKEN)
                         .param("page", "0")
                         .param("size", "10"))
@@ -151,7 +149,7 @@ class AcademyControllerTest {
         Page<AcademyResponse> page = new PageImpl<>(List.of(sampleResponse), PageRequest.of(0, 10), 1);
         when(academyService.findMyAcademies(any(UUID.class), any())).thenReturn(page);
 
-        mockMvc.perform(get("/academies")
+        mockMvc.perform(get("/api/v1/academies")
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(academyId.toString()));
@@ -168,7 +166,7 @@ class AcademyControllerTest {
     void getById_whenFound_shouldReturnAcademy() throws Exception {
         when(academyService.findById(academyId)).thenReturn(sampleResponse);
 
-        mockMvc.perform(get("/academies/{id}", academyId)
+        mockMvc.perform(get("/api/v1/academies/{id}", academyId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(academyId.toString()))
@@ -183,7 +181,7 @@ class AcademyControllerTest {
         when(academyService.findById(academyId))
                 .thenThrow(new ResourceNotFoundException("Academy", academyId));
 
-        mockMvc.perform(get("/academies/{id}", academyId)
+        mockMvc.perform(get("/api/v1/academies/{id}", academyId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Academy not found with id: " + academyId));
@@ -201,12 +199,12 @@ class AcademyControllerTest {
         when(academySecurity.isOwner(any(), eq(academyId))).thenReturn(true);
         when(academyService.update(eq(academyId), any(AcademyRequest.class))).thenReturn(sampleResponse);
 
-        mockMvc.perform(put("/academies/{id}", academyId)
+        mockMvc.perform(put("/api/v1/academies/{id}", academyId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"name":"Updated Gym","address":"456 Oak St","ownerId":"%s"}
-                                """.formatted(academyToken)))
+                                {"name":"Updated Gym","address":"456 Oak St"}
+                                """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Gracie Barra"));
 
@@ -224,7 +222,7 @@ class AcademyControllerTest {
         when(academySecurity.isOwner(any(), eq(academyId))).thenReturn(true);
         doNothing().when(academyService).delete(academyId);
 
-        mockMvc.perform(delete("/academies/{id}", academyId)
+        mockMvc.perform(delete("/api/v1/academies/{id}", academyId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNoContent());
 

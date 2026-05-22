@@ -107,7 +107,7 @@ class ClassTemplateControllerTest {
         when(classTemplateService.create(eq(academyId), any(ClassTemplateRequest.class)))
                 .thenReturn(sampleResponse);
 
-        mockMvc.perform(post("/academies/{academyId}/templates", academyId)
+        mockMvc.perform(post("/api/v1/academies/{academyId}/templates", academyId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -134,7 +134,7 @@ class ClassTemplateControllerTest {
     @Test
     @DisplayName("POST should return 400 when request body is invalid")
     void create_whenInvalidBody_shouldReturn400() throws Exception {
-        mockMvc.perform(post("/academies/{academyId}/templates", academyId)
+        mockMvc.perform(post("/api/v1/academies/{academyId}/templates", academyId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -156,7 +156,7 @@ class ClassTemplateControllerTest {
     void create_whenNotAuthorized_shouldReturn403() throws Exception {
         when(academySecurity.isInstructorOrAdmin(any(), eq(academyId))).thenReturn(false);
 
-        mockMvc.perform(post("/academies/{academyId}/templates", academyId)
+        mockMvc.perform(post("/api/v1/academies/{academyId}/templates", academyId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -180,7 +180,7 @@ class ClassTemplateControllerTest {
         when(classTemplateService.create(eq(academyId), any(ClassTemplateRequest.class)))
                 .thenReturn(sampleResponse);
 
-        mockMvc.perform(post("/academies/{academyId}/templates", academyId)
+        mockMvc.perform(post("/api/v1/academies/{academyId}/templates", academyId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -214,7 +214,7 @@ class ClassTemplateControllerTest {
                 List.of(sampleResponse), PageRequest.of(0, 20), 1);
         when(classTemplateService.findAll(eq(academyId), any())).thenReturn(page);
 
-        mockMvc.perform(get("/academies/{academyId}/templates", academyId)
+        mockMvc.perform(get("/api/v1/academies/{academyId}/templates", academyId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(templateId.toString()))
@@ -230,7 +230,7 @@ class ClassTemplateControllerTest {
     void getAll_whenNoAccess_shouldReturn403() throws Exception {
         when(academySecurity.hasAccess(any(), eq(academyId))).thenReturn(false);
 
-        mockMvc.perform(get("/academies/{academyId}/templates", academyId)
+        mockMvc.perform(get("/api/v1/academies/{academyId}/templates", academyId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isForbidden());
 
@@ -248,7 +248,7 @@ class ClassTemplateControllerTest {
         when(classTemplateService.update(eq(templateId), any(ClassTemplateRequest.class)))
                 .thenReturn(sampleResponse);
 
-        mockMvc.perform(put("/academies/{academyId}/templates/{templateId}", academyId, templateId)
+        mockMvc.perform(put("/api/v1/academies/{academyId}/templates/{templateId}", academyId, templateId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -274,7 +274,7 @@ class ClassTemplateControllerTest {
         when(classTemplateService.update(eq(templateId), any(ClassTemplateRequest.class)))
                 .thenThrow(new ResourceNotFoundException("Class template", templateId));
 
-        mockMvc.perform(put("/academies/{academyId}/templates/{templateId}", academyId, templateId)
+        mockMvc.perform(put("/api/v1/academies/{academyId}/templates/{templateId}", academyId, templateId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -302,7 +302,7 @@ class ClassTemplateControllerTest {
         when(academySecurity.isInstructorOrAdmin(any(), eq(academyId))).thenReturn(true);
         doNothing().when(classTemplateService).delete(templateId);
 
-        mockMvc.perform(delete("/academies/{academyId}/templates/{templateId}", academyId, templateId)
+        mockMvc.perform(delete("/api/v1/academies/{academyId}/templates/{templateId}", academyId, templateId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNoContent());
 
@@ -316,7 +316,7 @@ class ClassTemplateControllerTest {
         doThrow(new ResourceNotFoundException("Class template", templateId))
                 .when(classTemplateService).delete(templateId);
 
-        mockMvc.perform(delete("/academies/{academyId}/templates/{templateId}", academyId, templateId)
+        mockMvc.perform(delete("/api/v1/academies/{academyId}/templates/{templateId}", academyId, templateId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Class template not found with id: " + templateId));

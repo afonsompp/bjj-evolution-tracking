@@ -12,8 +12,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public record TrainingRequest(
@@ -25,7 +24,7 @@ public record TrainingRequest(
         TrainingType trainingType,
 
         @NotNull
-        LocalDateTime sessionDate,
+        Instant sessionDate,
 
         @NotNull
         @PositiveOrZero
@@ -66,8 +65,7 @@ public record TrainingRequest(
         @NotNull @PositiveOrZero Integer escapes,
         @NotNull @PositiveOrZero Integer sweeps,
         @NotNull @PositiveOrZero Integer takedowns,
-        @NotNull @PositiveOrZero Integer guardPasses,
-        Duration duration) {
+        @NotNull @PositiveOrZero Integer guardPasses) {
 
         public Training toEntity(Long id, List<Technique> techniques, List<Technique> submissionTechniques, List<Technique> submissionTechniqueAllowed,UserProfile profile) {
                 return Training.builder()

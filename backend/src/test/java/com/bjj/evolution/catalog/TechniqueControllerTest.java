@@ -94,7 +94,7 @@ class TechniqueControllerTest {
         when(techniqueService.create(any(TechniqueRequest.class)))
                 .thenReturn(sampleResponse);
 
-        mockMvc.perform(post("/techniques")
+        mockMvc.perform(post("/api/v1/techniques")
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -126,7 +126,7 @@ class TechniqueControllerTest {
                 List.of(sampleResponse), PageRequest.of(0, 10), 1);
         when(techniqueService.findAll(eq("armbar"), any())).thenReturn(page);
 
-        mockMvc.perform(get("/techniques")
+        mockMvc.perform(get("/api/v1/techniques")
                         .header("Authorization", "Bearer " + TOKEN)
                         .param("query", "armbar")
                         .param("page", "0")
@@ -147,7 +147,7 @@ class TechniqueControllerTest {
                 List.of(sampleResponse), PageRequest.of(0, 10), 1);
         when(techniqueService.findAll(isNull(), any())).thenReturn(page);
 
-        mockMvc.perform(get("/techniques")
+        mockMvc.perform(get("/api/v1/techniques")
                         .header("Authorization", "Bearer " + TOKEN)
                         .param("page", "0")
                         .param("size", "10"))
@@ -164,7 +164,7 @@ class TechniqueControllerTest {
                 List.of(), PageRequest.of(0, 10), 0);
         when(techniqueService.findAll(eq("nonexistent"), any())).thenReturn(emptyPage);
 
-        mockMvc.perform(get("/techniques")
+        mockMvc.perform(get("/api/v1/techniques")
                         .header("Authorization", "Bearer " + TOKEN)
                         .param("query", "nonexistent"))
                 .andExpect(status().isOk())
@@ -183,7 +183,7 @@ class TechniqueControllerTest {
     void getById_whenFound_shouldReturn200() throws Exception {
         when(techniqueService.findById(techniqueId)).thenReturn(sampleResponse);
 
-        mockMvc.perform(get("/techniques/{id}", techniqueId)
+        mockMvc.perform(get("/api/v1/techniques/{id}", techniqueId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
@@ -201,7 +201,7 @@ class TechniqueControllerTest {
         when(techniqueService.findById(techniqueId))
                 .thenThrow(new ResourceNotFoundException("Technique", techniqueId));
 
-        mockMvc.perform(get("/techniques/{id}", techniqueId)
+        mockMvc.perform(get("/api/v1/techniques/{id}", techniqueId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
@@ -220,7 +220,7 @@ class TechniqueControllerTest {
         when(techniqueService.update(eq(techniqueId), any(TechniqueRequest.class)))
                 .thenReturn(sampleResponse);
 
-        mockMvc.perform(put("/techniques/{id}", techniqueId)
+        mockMvc.perform(put("/api/v1/techniques/{id}", techniqueId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -244,7 +244,7 @@ class TechniqueControllerTest {
         when(techniqueService.update(eq(techniqueId), any(TechniqueRequest.class)))
                 .thenThrow(new ResourceNotFoundException("Technique", techniqueId));
 
-        mockMvc.perform(put("/techniques/{id}", techniqueId)
+        mockMvc.perform(put("/api/v1/techniques/{id}", techniqueId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -271,7 +271,7 @@ class TechniqueControllerTest {
     void delete_shouldReturn204() throws Exception {
         doNothing().when(techniqueService).delete(techniqueId);
 
-        mockMvc.perform(delete("/techniques/{id}", techniqueId)
+        mockMvc.perform(delete("/api/v1/techniques/{id}", techniqueId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNoContent());
 
@@ -284,7 +284,7 @@ class TechniqueControllerTest {
         doThrow(new ResourceNotFoundException("Technique", techniqueId))
                 .when(techniqueService).delete(techniqueId);
 
-        mockMvc.perform(delete("/techniques/{id}", techniqueId)
+        mockMvc.perform(delete("/api/v1/techniques/{id}", techniqueId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
@@ -301,7 +301,7 @@ class TechniqueControllerTest {
         customerProfile.setRole(UserRole.CUSTOMER);
         when(userProfileRepository.findById(userId)).thenReturn(java.util.Optional.of(customerProfile));
 
-        mockMvc.perform(post("/techniques")
+        mockMvc.perform(post("/api/v1/techniques")
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""

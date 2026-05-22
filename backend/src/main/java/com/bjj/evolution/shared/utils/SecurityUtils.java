@@ -23,20 +23,16 @@ public class SecurityUtils {
         return profile != null && profile.getRole() == UserRole.ADMIN;
     }
 
-    public static boolean isAdminOrManager(UserProfile profile) {
-        return isAdmin(profile) || isManager(profile);
+    public static boolean isAdminOrPlatformManager(UserProfile profile) {
+        return isAdmin(profile) || isPlatformManager(profile);
     }
 
-    public static boolean isNotAdminOrManager(UserProfile profile) {
-        return !isAdminOrManager(profile);
+    public static boolean isNotAdminOrPlatformManager(UserProfile profile) {
+        return !isAdminOrPlatformManager(profile);
     }
 
-    public static boolean isManager(UserProfile profile) {
-        return profile != null && profile.getRole() == UserRole.MANAGER;
-    }
-
-    public static boolean isAcademyOwner(UserProfile profile) {
-        return profile != null && profile.getRole() == UserRole.ACADEMY_OWNER;
+    public static boolean isPlatformManager(UserProfile profile) {
+        return profile != null && profile.getRole() == UserRole.PLATFORM_MANAGER;
     }
 
 }

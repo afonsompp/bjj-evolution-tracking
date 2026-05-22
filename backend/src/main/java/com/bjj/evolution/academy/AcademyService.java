@@ -7,6 +7,8 @@ import com.bjj.evolution.academy.member.AcademyMemberRepository;
 import com.bjj.evolution.academy.member.domain.AcademyMember;
 import com.bjj.evolution.academy.member.domain.MemberRole;
 import com.bjj.evolution.academy.member.domain.MemberStatus;
+import com.bjj.evolution.audit.AuditAction;
+import com.bjj.evolution.audit.annotation.Auditable;
 import com.bjj.evolution.shared.exception.ForbiddenException;
 import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import com.bjj.evolution.shared.utils.SecurityUtils;
@@ -44,7 +46,7 @@ public class AcademyService {
         UserProfile ownerProfile = userProfileRepository.findById(ownerId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", ownerId));
 
-        if (SecurityUtils.isNotAdminOrManager(ownerProfile) && !SecurityUtils.isAcademyOwner(ownerProfile)) {
+        if (SecurityUtils.isNotAdminOrPlatformManager(ownerProfile)) {
             log.warn("User {} attempted to create an academy without sufficient privileges", ownerId);
             throw new ForbiddenException("You do not have permission to create academies.");
         }
@@ -57,7 +59,7 @@ public class AcademyService {
                 savedAcademy,
                 ownerProfile,
                 ownerProfile.getBelt(),
-                ownerProfile.getStripe(),
+                ownerProfile.getBeltStripe(),
                 MemberRole.OWNER,
                 MemberStatus.ACTIVE
         );
@@ -90,6 +92,7 @@ public class AcademyService {
     }
 
     @Transactional
+    @Auditable(action = AuditAction.ACADEMY_UPDATED, resourceType = "ACADEMY", academyIdArg = 0, resourceIdArg = 0)
     public AcademyResponse update(UUID academyId, AcademyRequest request) {
         log.debug("Updating academy with ID {}", academyId);
         Academy academy = academyRepository.findById(academyId)
@@ -103,6 +106,7 @@ public class AcademyService {
     }
 
     @Transactional
+    @Auditable(action = AuditAction.ACADEMY_DELETED, resourceType = "ACADEMY", academyIdArg = 0, resourceIdArg = 0)
     public void delete(UUID academyId) {
         log.debug("Attempting to delete academy with ID {}", academyId);
         if (!academyRepository.existsById(academyId)) {

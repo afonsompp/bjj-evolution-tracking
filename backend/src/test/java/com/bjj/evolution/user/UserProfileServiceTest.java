@@ -142,24 +142,24 @@ class UserProfileServiceTest {
     void updateRole_shouldSucceed_whenUserIsAdmin() {
         UUID targetUserId = UUID.randomUUID();
         UserProfile adminUser = createUserProfile(userId, "admin", UserRole.ADMIN);
-        UserProfile targetUser = createUserProfile(targetUserId, "target", UserRole.MANAGER);
+        UserProfile targetUser = createUserProfile(targetUserId, "target", UserRole.PLATFORM_MANAGER);
 
         when(repository.findById(userId)).thenReturn(Optional.of(adminUser));
         when(repository.findById(targetUserId)).thenReturn(Optional.of(targetUser));
         when(repository.save(any(UserProfile.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.updateRole(jwt, targetUserId, UserRole.MANAGER);
+        service.updateRole(jwt, targetUserId, UserRole.PLATFORM_MANAGER);
 
         ArgumentCaptor<UserProfile> userProfileCaptor = ArgumentCaptor.forClass(UserProfile.class);
         verify(repository).save(userProfileCaptor.capture());
 
-        assertThat(userProfileCaptor.getValue().getRole()).isEqualTo(UserRole.MANAGER);
+        assertThat(userProfileCaptor.getValue().getRole()).isEqualTo(UserRole.PLATFORM_MANAGER);
     }
 
     @Test
     void updateRole_shouldThrowException_whenManagerPromotesToAdmin() {
         UUID targetUserId = UUID.randomUUID();
-        UserProfile managerUser = createUserProfile(userId, "manager", UserRole.MANAGER);
+        UserProfile managerUser = createUserProfile(userId, "manager", UserRole.PLATFORM_MANAGER);
 
         when(repository.findById(userId)).thenReturn(Optional.of(managerUser));
 
@@ -173,13 +173,13 @@ class UserProfileServiceTest {
 
         when(repository.findById(userId)).thenReturn(Optional.of(normalUser));
 
-        var exception = assertThrows(ForbiddenException.class, () -> service.updateRole(jwt, userId, UserRole.MANAGER));
-        assertThat(exception.getMessage()).isEqualTo("Only admins or managers can update user roles.");
+        var exception = assertThrows(ForbiddenException.class, () -> service.updateRole(jwt, userId, UserRole.PLATFORM_MANAGER));
+        assertThat(exception.getMessage()).isEqualTo("Only admins or platform managers can update user roles.");
     }
 
     @Test
     void getMyProfile_shouldReturnProfile_whenExists() {
-        UserProfile userProfile = createUserProfile(userId, "test", UserRole.MANAGER);
+        UserProfile userProfile = createUserProfile(userId, "test", UserRole.PLATFORM_MANAGER);
         when(repository.findById(userId)).thenReturn(Optional.of(userProfile));
 
         Optional<ProfileResponse> response = service.getMyProfile(jwt);
@@ -201,7 +201,7 @@ class UserProfileServiceTest {
     void searchProfile_shouldReturnPagedResults() {
         String query = "test";
         Pageable pageable = PageRequest.of(0, 10);
-        UserProfile user = createUserProfile(UUID.randomUUID(), "testuser", UserRole.MANAGER);
+        UserProfile user = createUserProfile(UUID.randomUUID(), "testuser", UserRole.PLATFORM_MANAGER);
         Page<UserProfile> userPage = new PageImpl<>(Collections.singletonList(user), pageable, 1);
 
         when(repository.searchByTerm(query, pageable)).thenReturn(userPage);

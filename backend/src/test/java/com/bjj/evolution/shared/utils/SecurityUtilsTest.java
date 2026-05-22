@@ -23,7 +23,7 @@ class SecurityUtilsTest {
 
     @Test
     void isAdmin_whenProfileIsManager_shouldReturnFalse() {
-        UserProfile managerProfile = createUserWithRole(UserRole.MANAGER);
+        UserProfile managerProfile = createUserWithRole(UserRole.PLATFORM_MANAGER);
         assertThat(SecurityUtils.isAdmin(managerProfile)).isFalse();
     }
 
@@ -36,19 +36,19 @@ class SecurityUtilsTest {
     //region isManager Tests
     @Test
     void isManager_whenProfileIsManager_shouldReturnTrue() {
-        UserProfile managerProfile = createUserWithRole(UserRole.MANAGER);
-        assertThat(SecurityUtils.isManager(managerProfile)).isTrue();
+        UserProfile managerProfile = createUserWithRole(UserRole.PLATFORM_MANAGER);
+        assertThat(SecurityUtils.isPlatformManager(managerProfile)).isTrue();
     }
 
     @Test
     void isManager_whenProfileIsAdmin_shouldReturnFalse() {
         UserProfile adminProfile = createUserWithRole(UserRole.ADMIN);
-        assertThat(SecurityUtils.isManager(adminProfile)).isFalse();
+        assertThat(SecurityUtils.isPlatformManager(adminProfile)).isFalse();
     }
 
     @Test
     void isManager_whenProfileIsNull_shouldReturnFalse() {
-        assertThat(SecurityUtils.isManager(null)).isFalse();
+        assertThat(SecurityUtils.isPlatformManager(null)).isFalse();
     }
     //endregion
 
@@ -56,18 +56,18 @@ class SecurityUtilsTest {
     @Test
     void isAdminOrManager_whenProfileIsAdmin_shouldReturnTrue() {
         UserProfile adminProfile = createUserWithRole(UserRole.ADMIN);
-        assertThat(SecurityUtils.isAdminOrManager(adminProfile)).isTrue();
+        assertThat(SecurityUtils.isAdminOrPlatformManager(adminProfile)).isTrue();
     }
 
     @Test
     void isAdminOrManager_whenProfileIsManager_shouldReturnTrue() {
-        UserProfile managerProfile = createUserWithRole(UserRole.MANAGER);
-        assertThat(SecurityUtils.isAdminOrManager(managerProfile)).isTrue();
+        UserProfile managerProfile = createUserWithRole(UserRole.PLATFORM_MANAGER);
+        assertThat(SecurityUtils.isAdminOrPlatformManager(managerProfile)).isTrue();
     }
 
     @Test
     void isAdminOrManager_whenProfileIsNull_shouldReturnFalse() {
-        assertThat(SecurityUtils.isAdminOrManager(null)).isFalse();
+        assertThat(SecurityUtils.isAdminOrPlatformManager(null)).isFalse();
     }
     //endregion
 }

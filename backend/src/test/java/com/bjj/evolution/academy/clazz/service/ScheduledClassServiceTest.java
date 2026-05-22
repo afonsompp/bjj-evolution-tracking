@@ -33,8 +33,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -71,14 +71,14 @@ class ScheduledClassServiceTest {
     private UserProfile instructor;
     private Technique technique;
     private ScheduledClassRequest request;
-    private LocalDateTime startTime;
+    private Instant startTime;
 
     @BeforeEach
     void setUp() {
         academyId = UUID.randomUUID();
         instructorId = UUID.randomUUID();
         classId = 1L;
-        startTime = LocalDateTime.of(2026, 6, 1, 10, 0);
+        startTime = Instant.parse("2026-06-01T10:00:00Z");
 
         academy = new Academy("Gracie Barra", "123 Main St");
         academy.setId(academyId);
@@ -305,8 +305,8 @@ class ScheduledClassServiceTest {
     @Test
     @DisplayName("findAll with date range should delegate to findAllByAcademyIdAndStartTimeBetween")
     void findAll_withDateRange_shouldCallBetweenQuery() {
-        LocalDateTime start = LocalDateTime.of(2026, 6, 1, 0, 0);
-        LocalDateTime end = LocalDateTime.of(2026, 6, 30, 23, 59);
+        Instant start = Instant.parse("2026-06-01T00:00:00Z");
+        Instant end = Instant.parse("2026-06-30T23:59:00Z");
         Pageable pageable = PageRequest.of(0, 20);
 
         ScheduledClass scheduledClass = buildScheduledClass(ClassStatus.PUBLISHED, List.of(technique));

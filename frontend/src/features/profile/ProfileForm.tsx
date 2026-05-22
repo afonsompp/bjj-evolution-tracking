@@ -2,10 +2,9 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useNavigate } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
-import { apiClient } from '../../api/client'
 import { useTranslation } from '../../lib/i18n/I18nContext'
-import type { ProfileResponse, ProfileRequest, Belt } from '../../types/api'
+import type { ProfileRequest, Belt } from '../../types/api'
+import { useUpsertProfile } from './useProfile'
 
 const BELTS: { group: string; values: { label: string; value: Belt }[] }[] = [
   {
@@ -42,7 +41,7 @@ const schema = z.object({
   secondName: z.string().optional(),
   nickname: z.string().min(1, 'Nickname is required'),
   belt: z.string().optional(),
-  stripe: z.string().optional(),
+  beltStripe: z.string().optional(),
   startsIn: z.string().optional(),
 })
 
@@ -54,7 +53,7 @@ function toRequest(data: FormValues): ProfileRequest {
     secondName: data.secondName || undefined,
     nickname: data.nickname,
     belt: (data.belt || undefined) as Belt | undefined,
-    stripe: data.stripe ? parseInt(data.stripe, 10) : undefined,
+    beltStripe: data.beltStripe ? parseInt(data.beltStripe, 10) : undefined,
     startsIn: data.startsIn || undefined,
   }
 }
@@ -66,16 +65,12 @@ export default function ProfileForm() {
     resolver: zodResolver(schema),
   })
 
-  const mutation = useMutation({
-    mutationFn: (data: FormValues) =>
-      apiClient.post<ProfileResponse>('/profiles', toRequest(data)).then(r => r.data),
-    onSuccess: () => {
-      navigate('/dashboard')
-    },
-  })
+  const mutation = useUpsertProfile()
+  const submit = (data: FormValues) =>
+    mutation.mutate(toRequest(data), { onSuccess: () => navigate('/dashboard') })
 
   return (
-    <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
+    <form onSubmit={handleSubmit(submit)} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm text-zinc-400">{translate('profile.name')}</label>
@@ -109,8 +104,8 @@ export default function ProfileForm() {
           </select>
         </div>
         <div>
-          <label className="block text-sm text-zinc-400">{translate('profile.stripe')}</label>
-          <input type="number" min={0} max={4} {...register('stripe')} className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white" />
+          <label className="block text-sm text-zinc-400">{translate('profile.beltStripe')}</label>
+          <input type="number" min={0} max={4} {...register('beltStripe')} className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white" />
         </div>
         <div>
           <label className="block text-sm text-zinc-400">{translate('profile.started')}</label>

@@ -12,7 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 public class ClassAttendance {
@@ -33,7 +33,7 @@ public class ClassAttendance {
     @Column(nullable = false)
     private CheckInStatus status;
 
-    private LocalDateTime checkInTime;
+    private Instant checkInTime;
 
     protected ClassAttendance() {}
 
@@ -53,7 +53,7 @@ public class ClassAttendance {
 
     public void setStatus(CheckInStatus status) { this.status = status; }
 
-    public LocalDateTime getCheckInTime() { return checkInTime; }
+    public Instant getCheckInTime() { return checkInTime; }
 
-    public void setCheckInTime(LocalDateTime checkInTime) { this.checkInTime = checkInTime; }
+    public void setCheckInTime(Instant checkInTime) { this.checkInTime = checkInTime; }
 }

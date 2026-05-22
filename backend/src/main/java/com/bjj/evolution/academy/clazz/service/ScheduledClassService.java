@@ -21,7 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -137,8 +137,8 @@ public class ScheduledClassService {
     @Transactional
     public Page<ScheduledClassResponse> findAll(
             UUID academyId,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
+            Instant startDate,
+            Instant endDate,
             Pageable pageable) {
 
         Page<ScheduledClass> classes;

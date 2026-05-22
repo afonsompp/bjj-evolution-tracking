@@ -1,0 +1,21 @@
+import type { MemberStatus } from '../../../types/api'
+
+export const academyKeys = {
+  all: ['academy'] as const,
+  detail: (id: string) => [...academyKeys.all, 'detail', id] as const,
+  schedule: (id: string) => [...academyKeys.all, 'schedule', id] as const,
+  search: (query: string, page: number) =>
+    [...academyKeys.all, 'search', query, page] as const,
+}
+
+export const memberKeys = {
+  all: ['academy-member'] as const,
+  byAcademy: (academyId: string) =>
+    [...memberKeys.all, 'byAcademy', academyId] as const,
+  list: (academyId: string, query: string, status: MemberStatus | undefined, page: number) =>
+    [...memberKeys.byAcademy(academyId), 'list', query, status ?? 'ALL', page] as const,
+  one: (academyId: string, userId: string) =>
+    [...memberKeys.byAcademy(academyId), 'one', userId] as const,
+  myMemberships: (status?: MemberStatus) =>
+    [...memberKeys.all, 'mine', status ?? 'ALL'] as const,
+}

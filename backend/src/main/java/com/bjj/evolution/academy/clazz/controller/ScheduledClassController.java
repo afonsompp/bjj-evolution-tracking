@@ -22,7 +22,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 @RestController
@@ -73,12 +75,15 @@ public class ScheduledClassController {
     public ResponseEntity<Page<ScheduledClassResponse>> getAll(
             @PathVariable UUID academyId,
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @PageableDefault(size = 20, sort = "startTime", direction = Sort.Direction.ASC) Pageable pageable) {
 
-        return ResponseEntity.ok(service.findAll(academyId, startDate, endDate, pageable));
+        return ResponseEntity.ok(service.findAll(academyId,
+                startDate != null ? startDate.atStartOfDay(ZoneOffset.UTC).toInstant() : null,
+                endDate != null ? endDate.atTime(23, 59, 59).toInstant(ZoneOffset.UTC) : null,
+                pageable));
     }
 
     @GetMapping("/{classId}")

@@ -46,7 +46,7 @@ public class UserProfileService {
                     existing.setSecondName(request.secondName());
                     existing.setNickname(request.nickname());
                     existing.setBelt(request.belt());
-                    existing.setStripe(request.stripe());
+                    existing.setBeltStripe(request.beltStripe());
                     existing.setStartsIn(request.startsIn());
                     return existing;
                 })
@@ -75,13 +75,13 @@ public class UserProfileService {
                     return new ResourceNotFoundException("Current user profile not found");
                 });
 
-        if (!SecurityUtils.isAdminOrManager(currentUser)) {
-            log.warn("Role update denied: actor={} lacks admin/manager privileges (role={})",
+        if (!SecurityUtils.isAdminOrPlatformManager(currentUser)) {
+            log.warn("Role update denied: actor={} lacks admin/platform-manager privileges (role={})",
                     currentUserId, currentUser.getRole());
-            throw new ForbiddenException("Only admins or managers can update user roles.");
+            throw new ForbiddenException("Only admins or platform managers can update user roles.");
         }
 
-        if (newRole == UserRole.ADMIN && SecurityUtils.isManager(currentUser)) {
+        if (newRole == UserRole.ADMIN && SecurityUtils.isPlatformManager(currentUser)) {
             log.warn("Role update denied: manager actor={} attempted to assign ADMIN to target={}",
                     currentUserId, targetUserId);
             throw new ForbiddenException("Only admins can assign the ADMIN role.");

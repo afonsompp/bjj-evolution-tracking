@@ -7,7 +7,7 @@ import com.bjj.evolution.catalog.domain.TrainingType;
 import com.bjj.evolution.catalog.domain.dto.TechniqueResponse;
 import com.bjj.evolution.user.domain.dto.ProfileResponse;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,11 +16,11 @@ public record ScheduledClassResponse(
         UUID academyId,
         String academyName,
         ProfileResponse instructor,
-        LocalDateTime startTime,
+        Instant startTime,
         long durationMinutes,
         ClassType classType,
         TrainingType trainingType,
-        List<TechniqueResponse> techniques,
+        List<TechniqueResponse> scheduledTechniques,
         ClassStatus status
 ) {
     public static ScheduledClassResponse fromEntity(ScheduledClass entity) {

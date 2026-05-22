@@ -27,7 +27,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -98,7 +98,7 @@ class ClassAttendanceServiceTest {
         ScheduledClass sc = ScheduledClass.builder()
                 .academy(academy)
                 .instructor(instructor)
-                .startTime(LocalDateTime.of(2025, 6, 1, 10, 0))
+                .startTime(Instant.parse("2025-06-01T10:00:00Z"))
                 .duration(Duration.ofMinutes(90))
                 .classType(com.bjj.evolution.catalog.domain.ClassType.REGULAR)
                 .trainingType(com.bjj.evolution.catalog.domain.TrainingType.GI)
@@ -117,7 +117,7 @@ class ClassAttendanceServiceTest {
     }
 
     private ClassAttendance createAttendance(ScheduledClass scheduledClass, UserProfile student,
-                                              CheckInStatus status, LocalDateTime checkInTime) {
+                                              CheckInStatus status, Instant checkInTime) {
         ClassAttendance attendance = new ClassAttendance(scheduledClass, student, status);
         if (checkInTime != null) {
             attendance.setCheckInTime(checkInTime);
@@ -406,7 +406,7 @@ class ClassAttendanceServiceTest {
             var instructor = createStudent();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
             var student = createStudent();
-            var now = LocalDateTime.of(2025, 6, 1, 10, 30);
+            var now = Instant.parse("2025-06-01T10:30:00Z");
             var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, now);
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
@@ -528,7 +528,7 @@ class ClassAttendanceServiceTest {
             var instructor = createStudent();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
             var student = createStudent();
-            var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, LocalDateTime.now());
+            var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, Instant.now());
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
             when(attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId))
@@ -668,7 +668,7 @@ class ClassAttendanceServiceTest {
             var instructor = createStudent();
             var student = createStudent();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
-            var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, LocalDateTime.now());
+            var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, Instant.now());
             Pageable pageable = PageRequest.of(0, 20);
             Page<ClassAttendance> page = new PageImpl<>(List.of(attendance), pageable, 1);
 
@@ -752,7 +752,7 @@ class ClassAttendanceServiceTest {
             var instructor = createStudent();
             var student = createStudent();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
-            var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, LocalDateTime.now());
+            var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, Instant.now());
             Pageable pageable = PageRequest.of(0, 20);
             Page<ClassAttendance> page = new PageImpl<>(List.of(attendance), pageable, 1);
 

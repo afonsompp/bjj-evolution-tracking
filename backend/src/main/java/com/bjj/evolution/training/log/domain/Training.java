@@ -19,7 +19,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Entity
@@ -35,7 +35,7 @@ public class Training {
     @Enumerated(EnumType.STRING)
     private TrainingType trainingType;
     @Column(nullable = false)
-    private LocalDateTime sessionDate;
+    private Instant sessionDate;
     @Column(nullable = false)
     private int durationMinutes;
     @ManyToMany
@@ -109,7 +109,7 @@ public class Training {
         return trainingType;
     }
 
-    public LocalDateTime getSessionDate() {
+    public Instant getSessionDate() {
         return sessionDate;
     }
 
@@ -212,7 +212,7 @@ public class Training {
         private Long id;
         private ClassType classType;
         private TrainingType trainingType;
-        private LocalDateTime sessionDate;
+        private Instant sessionDate;
         private int durationMinutes;
         private List<Technique> technique;
         private List<Technique> submissionTechniques;
@@ -251,7 +251,7 @@ public class Training {
             return this;
         }
 
-        public Builder sessionDate(LocalDateTime sessionDate) {
+        public Builder sessionDate(Instant sessionDate) {
             this.sessionDate = sessionDate;
             return this;
         }

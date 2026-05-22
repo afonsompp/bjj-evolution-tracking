@@ -25,7 +25,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -78,7 +77,7 @@ class ClassAttendanceControllerTest {
 
         sampleResponse = new CheckInResponse(
                 1L, classId, studentResponse,
-                CheckInStatus.REGISTERED, LocalDateTime.now()
+                CheckInStatus.REGISTERED, Instant.now()
         );
 
         when(jwtDecoder.decode(anyString())).thenReturn(MOCK_JWT);
@@ -95,7 +94,7 @@ class ClassAttendanceControllerTest {
         when(classAttendanceService.register(academyId, classId, studentId))
                 .thenReturn(sampleResponse);
 
-        mockMvc.perform(post("/academies/{aid}/classes/{cid}/attendances", academyId, classId)
+        mockMvc.perform(post("/api/v1/academies/{aid}/classes/{cid}/attendances", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"studentId\":\"%s\"}".formatted(studentId)))
@@ -111,7 +110,7 @@ class ClassAttendanceControllerTest {
     @Test
     @DisplayName("POST register should return 400 when request body is invalid")
     void register_whenInvalidBody_shouldReturn400() throws Exception {
-        mockMvc.perform(post("/academies/{aid}/classes/{cid}/attendances", academyId, classId)
+        mockMvc.perform(post("/api/v1/academies/{aid}/classes/{cid}/attendances", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
@@ -125,7 +124,7 @@ class ClassAttendanceControllerTest {
     void register_whenNoAccess_shouldReturn403() throws Exception {
         when(academySecurity.hasAccess(any(), eq(academyId))).thenReturn(false);
 
-        mockMvc.perform(post("/academies/{aid}/classes/{cid}/attendances", academyId, classId)
+        mockMvc.perform(post("/api/v1/academies/{aid}/classes/{cid}/attendances", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"studentId\":\"%s\"}".formatted(studentId)))
@@ -142,13 +141,13 @@ class ClassAttendanceControllerTest {
     @DisplayName("PATCH confirm should return 200 when confirmed successfully")
     void confirm_shouldReturn200() throws Exception {
         CheckInResponse confirmedResponse = new CheckInResponse(
-                1L, classId, studentResponse, CheckInStatus.CONFIRMED, LocalDateTime.now());
+                1L, classId, studentResponse, CheckInStatus.CONFIRMED, Instant.now());
 
         when(academySecurity.isInstructorOrAdmin(any(), eq(academyId))).thenReturn(true);
         when(classAttendanceService.confirm(academyId, classId, studentId))
                 .thenReturn(confirmedResponse);
 
-        mockMvc.perform(patch("/academies/{aid}/classes/{cid}/attendances/{sid}/confirm", academyId, classId, studentId)
+        mockMvc.perform(patch("/api/v1/academies/{aid}/classes/{cid}/attendances/{sid}/confirm", academyId, classId, studentId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CONFIRMED"));
@@ -161,7 +160,7 @@ class ClassAttendanceControllerTest {
     void confirm_whenNotAuthorized_shouldReturn403() throws Exception {
         when(academySecurity.isInstructorOrAdmin(any(), eq(academyId))).thenReturn(false);
 
-        mockMvc.perform(patch("/academies/{aid}/classes/{cid}/attendances/{sid}/confirm", academyId, classId, studentId)
+        mockMvc.perform(patch("/api/v1/academies/{aid}/classes/{cid}/attendances/{sid}/confirm", academyId, classId, studentId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isForbidden());
 
@@ -175,7 +174,7 @@ class ClassAttendanceControllerTest {
         when(classAttendanceService.confirm(academyId, classId, studentId))
                 .thenThrow(new ResourceNotFoundException("Attendance record not found for student"));
 
-        mockMvc.perform(patch("/academies/{aid}/classes/{cid}/attendances/{sid}/confirm", academyId, classId, studentId)
+        mockMvc.perform(patch("/api/v1/academies/{aid}/classes/{cid}/attendances/{sid}/confirm", academyId, classId, studentId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Attendance record not found for student"));
@@ -190,7 +189,7 @@ class ClassAttendanceControllerTest {
         when(classAttendanceService.confirm(academyId, classId, studentId))
                 .thenThrow(new BusinessRuleException("Cannot confirm a canceled check-in."));
 
-        mockMvc.perform(patch("/academies/{aid}/classes/{cid}/attendances/{sid}/confirm", academyId, classId, studentId)
+        mockMvc.perform(patch("/api/v1/academies/{aid}/classes/{cid}/attendances/{sid}/confirm", academyId, classId, studentId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.message").value("Cannot confirm a canceled check-in."));
@@ -212,7 +211,7 @@ class ClassAttendanceControllerTest {
         when(classAttendanceService.cancel(academyId, classId, studentId))
                 .thenReturn(canceledResponse);
 
-        mockMvc.perform(patch("/academies/{aid}/classes/{cid}/attendances/{sid}/cancel", academyId, classId, studentId)
+        mockMvc.perform(patch("/api/v1/academies/{aid}/classes/{cid}/attendances/{sid}/cancel", academyId, classId, studentId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELED"));
@@ -225,7 +224,7 @@ class ClassAttendanceControllerTest {
     void cancel_whenNoAccess_shouldReturn403() throws Exception {
         when(academySecurity.hasAccess(any(), eq(academyId))).thenReturn(false);
 
-        mockMvc.perform(patch("/academies/{aid}/classes/{cid}/attendances/{sid}/cancel", academyId, classId, studentId)
+        mockMvc.perform(patch("/api/v1/academies/{aid}/classes/{cid}/attendances/{sid}/cancel", academyId, classId, studentId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isForbidden());
 
@@ -239,7 +238,7 @@ class ClassAttendanceControllerTest {
         when(classAttendanceService.cancel(academyId, classId, studentId))
                 .thenThrow(new ResourceNotFoundException("Attendance record not found for student"));
 
-        mockMvc.perform(patch("/academies/{aid}/classes/{cid}/attendances/{sid}/cancel", academyId, classId, studentId)
+        mockMvc.perform(patch("/api/v1/academies/{aid}/classes/{cid}/attendances/{sid}/cancel", academyId, classId, studentId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Attendance record not found for student"));
@@ -259,7 +258,7 @@ class ClassAttendanceControllerTest {
                 List.of(sampleResponse), PageRequest.of(0, 20), 1);
         when(classAttendanceService.listByClass(eq(academyId), eq(classId), any())).thenReturn(page);
 
-        mockMvc.perform(get("/academies/{aid}/classes/{cid}/attendances", academyId, classId)
+        mockMvc.perform(get("/api/v1/academies/{aid}/classes/{cid}/attendances", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(1))
@@ -276,7 +275,7 @@ class ClassAttendanceControllerTest {
     void listByClass_whenNotAuthorized_shouldReturn403() throws Exception {
         when(academySecurity.isInstructorOrAdmin(any(), eq(academyId))).thenReturn(false);
 
-        mockMvc.perform(get("/academies/{aid}/classes/{cid}/attendances", academyId, classId)
+        mockMvc.perform(get("/api/v1/academies/{aid}/classes/{cid}/attendances", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isForbidden());
 

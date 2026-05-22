@@ -1,12 +1,14 @@
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { apiClient } from '../api/client'
 import { useTranslation } from '../lib/i18n/I18nContext'
+import { useProfile } from '../features/profile/useProfile'
+import { useTechniqueSearch } from '../features/technique/hooks/useTechniques'
+import { useCreateTechnique } from '../features/technique/hooks/useManageTechnique'
+import { useTraining } from '../features/training/hooks/useTrainings'
+import { useCreateTraining, useUpdateTraining } from '../features/training/hooks/useManageTraining'
 import type {
-  TrainingResponse, TechniqueResponse, TrainingRequest,
+  TechniqueResponse, TrainingRequest,
   ClassType, TrainingType, TechniqueType, TechniqueTarget,
-  ProfileResponse, UserRole, Page,
 } from '../types/api'
 import {
   StarIcon,
@@ -150,22 +152,7 @@ function TechniquePicker({
     isFetchingNextPage,
     isLoading,
     isFetching,
-  } = useInfiniteQuery({
-    queryKey: ['techniques', 'search', debouncedSearch],
-    queryFn: ({ pageParam = 0 }) =>
-      apiClient
-        .get<Page<TechniqueResponse>>('/techniques', {
-          params: {
-            query: debouncedSearch || undefined,
-            page: pageParam,
-            size: TECHNIQUE_PAGE_SIZE,
-          },
-        })
-        .then((r) => r.data),
-    getNextPageParam: (lastPage) =>
-      lastPage.last ? undefined : lastPage.number + 1,
-    initialPageParam: 0,
-  })
+  } = useTechniqueSearch(debouncedSearch, TECHNIQUE_PAGE_SIZE)
 
   // ── IntersectionObserver: load more on scroll ───────────
   useEffect(() => {
@@ -389,23 +376,18 @@ function CreateTechniqueModal({
   onCreated: (id: number) => void
 }) {
   const { translate } = useTranslation()
-  const queryClient = useQueryClient()
   const [name, setName] = useState('')
   const [type, setType] = useState<TechniqueType>('SUBMISSION')
   const [target, setTarget] = useState<TechniqueTarget>('ARM')
   const [error, setError] = useState<string | null>(null)
 
-  const mutation = useMutation({
-    mutationFn: (data: { name: string; type: TechniqueType; target: TechniqueTarget }) =>
-      apiClient.post<TechniqueResponse>('/techniques', data).then((r) => r.data),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['techniques'] })
-      onCreated(data.id)
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.message ?? translate('technique.failedCreate'))
-    },
-  })
+  const mutation = useCreateTechnique()
+  const submit = (data: { name: string; type: TechniqueType; target: TechniqueTarget }) =>
+    mutation.mutate(data, {
+      onSuccess: (created) => onCreated(created.id),
+      onError: (err: any) =>
+        setError(err?.response?.data?.message ?? translate('technique.failedCreate')),
+    })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
@@ -417,7 +399,7 @@ function CreateTechniqueModal({
           onSubmit={(e) => {
             e.preventDefault()
             if (!name.trim()) return
-            mutation.mutate({ name: name.trim(), type, target })
+            submit({ name: name.trim(), type, target })
           }}
           className="space-y-4"
         >
@@ -492,15 +474,10 @@ export default function TrainingFormPage() {
   const { id } = useParams()
   const isEdit = Boolean(id)
   const { translate } = useTranslation()
-  const queryClient = useQueryClient()
 
   // ── Role check (for "+ New Technique" button) ───────────
-  const { data: profile, isError: profileError } = useQuery<ProfileResponse>({
-    queryKey: ['profile'],
-    queryFn: () => apiClient.get<ProfileResponse>('/profiles').then((r) => r.data),
-    retry: false,
-  })
-  const canCreateTechnique = profile?.role === 'ADMIN' || profile?.role === 'MANAGER'
+  const { data: profile, isError: profileError } = useProfile()
+  const canCreateTechnique = profile?.role === 'ADMIN' || profile?.role === 'PLATFORM_MANAGER'
 
   useEffect(() => {
     if (profileError) {
@@ -509,12 +486,7 @@ export default function TrainingFormPage() {
   }, [profileError, navigate])
 
   // ── Fetch existing training for edit ────────────────────
-  const { data: existing } = useQuery({
-    queryKey: ['training', id],
-    queryFn: () =>
-      apiClient.get<TrainingResponse>(`/trainings/${id}`).then((r) => r.data),
-    enabled: isEdit,
-  })
+  const { data: existing } = useTraining(id, isEdit)
 
   // ── Form state ─────────────────────────────────────────
   const today = new Date().toISOString().slice(0, 10)
@@ -589,21 +561,16 @@ export default function TrainingFormPage() {
   }
 
   // ── Mutation ────────────────────────────────────────────
-  const mutation = useMutation({
-    mutationFn: (data: TrainingRequest) =>
-      isEdit
-        ? apiClient.put<TrainingResponse>(`/trainings/${id}`, data).then((r) => r.data)
-        : apiClient.post<TrainingResponse>('/trainings', data).then((r) => r.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trainings'] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-      queryClient.invalidateQueries({ queryKey: ['training', id] })
-      navigate(isEdit ? '/' : '/training')
-    },
-    onError: (err: any) => {
-      setErrors({ form: err?.response?.data?.message ?? 'Failed to save training.' })
-    },
-  })
+  const createMutation = useCreateTraining()
+  const updateMutation = useUpdateTraining(id)
+  const mutation = isEdit ? updateMutation : createMutation
+
+  const save = (data: TrainingRequest) =>
+    mutation.mutate(data, {
+      onSuccess: () => navigate(isEdit ? '/' : '/training'),
+      onError: (err: any) =>
+        setErrors({ form: err?.response?.data?.message ?? 'Failed to save training.' }),
+    })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -631,7 +598,7 @@ export default function TrainingFormPage() {
       escapes,
       description: description.trim() || undefined,
     }
-    mutation.mutate(payload)
+    save(payload)
   }
 
   const handleCreatedTechnique = (id: number) => {

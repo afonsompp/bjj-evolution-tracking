@@ -19,7 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -82,7 +82,7 @@ public class ClassAttendanceService {
 
         CheckInStatus oldStatus = attendance.getStatus();
         attendance.setStatus(CheckInStatus.CONFIRMED);
-        attendance.setCheckInTime(LocalDateTime.now());
+        attendance.setCheckInTime(Instant.now());
         ClassAttendance saved = attendanceRepository.save(attendance);
         log.info("Check-in confirmed: classId={} student={} academy={} wasStatus={} confirmedAt={}",
                 classId, studentId, academyId, oldStatus, saved.getCheckInTime());

@@ -3,11 +3,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '../api/client'
 import { useTranslation } from '../lib/i18n/I18nContext'
-import type { ProfileResponse, ProfileRequest, Belt } from '../types/api'
-import { useAuth } from '../features/auth/AuthContext'
+import type { ProfileRequest, Belt } from '../types/api'
+import { useProfile, useUpsertProfile } from '../features/profile/useProfile'
 
 const BELTS: { group: string; values: { label: string; value: Belt }[] }[] = [
   {
@@ -44,7 +42,7 @@ const schema = z.object({
   secondName: z.string().optional(),
   nickname: z.string().min(1, 'Nickname is required'),
   belt: z.string().optional(),
-  stripe: z.string().optional(),
+  beltStripe: z.string().optional(),
   startsIn: z.string().optional(),
 })
 
@@ -56,23 +54,16 @@ function toRequest(data: FormValues): ProfileRequest {
     secondName: data.secondName || undefined,
     nickname: data.nickname,
     belt: (data.belt || undefined) as Belt | undefined,
-    stripe: data.stripe ? parseInt(data.stripe, 10) : undefined,
+    beltStripe: data.beltStripe ? parseInt(data.beltStripe, 10) : undefined,
     startsIn: data.startsIn || undefined,
   }
 }
 
 export default function ProfilePage() {
-  const { user } = useAuth()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const { translate } = useTranslation()
 
-  const { data: profile, isLoading, isError: profileError } = useQuery({
-    queryKey: ['profile', user?.id],
-    queryFn: () =>
-      apiClient.get<ProfileResponse>('/profiles').then(r => r.data),
-    retry: false,
-  })
+  const { data: profile, isLoading, isError: profileError } = useProfile()
 
   useEffect(() => {
     if (profileError) {
@@ -88,19 +79,14 @@ export default function ProfilePage() {
           secondName: profile.secondName ?? '',
           nickname: profile.nickname,
           belt: profile.belt ?? '',
-          stripe: profile.stripe?.toString() ?? '',
+          beltStripe: profile.beltStripe?.toString() ?? '',
           startsIn: profile.startsIn ?? '',
         }
       : undefined,
   })
 
-  const mutation = useMutation({
-    mutationFn: (data: FormValues) =>
-      apiClient.post<ProfileResponse>('/profiles', toRequest(data)).then(r => r.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile', user?.id] })
-    },
-  })
+  const mutation = useUpsertProfile()
+  const submit = (data: FormValues) => mutation.mutate(toRequest(data))
 
   if (isLoading) {
     return (
@@ -117,7 +103,7 @@ export default function ProfilePage() {
         {translate('profile.title')}
       </h1>
 
-      <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-6">
+      <form onSubmit={handleSubmit(submit)} className="space-y-6">
         {/* Name fields */}
         <div className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] p-6">
           <div className="grid grid-cols-2 gap-5">
@@ -168,12 +154,12 @@ export default function ProfilePage() {
               </select>
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-[var(--text-muted)]">{translate('profile.stripe')}</label>
+              <label className="mb-1.5 block text-sm font-medium text-[var(--text-muted)]">{translate('profile.beltStripe')}</label>
               <input
                 type="number"
                 min={0}
                 max={4}
-                {...register('stripe')}
+                {...register('beltStripe')}
                 className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
               />
             </div>

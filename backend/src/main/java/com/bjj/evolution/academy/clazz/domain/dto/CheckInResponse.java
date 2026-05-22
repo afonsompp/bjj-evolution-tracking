@@ -4,14 +4,14 @@ import com.bjj.evolution.academy.clazz.domain.ClassAttendance;
 import com.bjj.evolution.academy.clazz.domain.CheckInStatus;
 import com.bjj.evolution.user.domain.dto.ProfileResponse;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record CheckInResponse(
         Long id,
         Long classId,
         ProfileResponse student,
         CheckInStatus status,
-        LocalDateTime checkInTime
+        Instant checkInTime
 ) {
     public static CheckInResponse fromEntity(ClassAttendance entity) {
         return new CheckInResponse(

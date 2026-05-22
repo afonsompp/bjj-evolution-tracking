@@ -52,7 +52,7 @@ class AcademyServiceTest {
     void create_whenUserIsAdmin_shouldCreateAcademyAndOwner() {
         // Arrange
         UUID ownerId = UUID.randomUUID();
-        AcademyRequest request = new AcademyRequest("Test Academy", "123 Test St", ownerId);
+        AcademyRequest request = new AcademyRequest("Test Academy", "123 Test St");
         UserProfile adminProfile = createUserProfile(ownerId, UserRole.ADMIN);
 
         Academy savedAcademy = new Academy(request.name(), request.address());
@@ -62,7 +62,7 @@ class AcademyServiceTest {
         when(academyRepository.save(any(Academy.class))).thenReturn(savedAcademy);
 
         try (MockedStatic<SecurityUtils> mocked = mockStatic(SecurityUtils.class)) {
-            mocked.when(() -> SecurityUtils.isNotAdminOrManager(adminProfile)).thenReturn(false);
+            mocked.when(() -> SecurityUtils.isNotAdminOrPlatformManager(adminProfile)).thenReturn(false);
 
             // Act
             AcademyResponse response = academyService.create(request, ownerId);
@@ -84,7 +84,7 @@ class AcademyServiceTest {
     void create_whenUserIsNotFound_shouldThrowResourceNotFoundException() {
         // Arrange
         UUID ownerId = UUID.randomUUID();
-        AcademyRequest request = new AcademyRequest("Test Academy", "123 Test St", ownerId);
+        AcademyRequest request = new AcademyRequest("Test Academy", "123 Test St");
         when(userProfileRepository.findById(ownerId)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -97,14 +97,13 @@ class AcademyServiceTest {
     void create_whenUserIsNotAuthorized_shouldThrowAccessDeniedException() {
         // Arrange
         UUID ownerId = UUID.randomUUID();
-        AcademyRequest request = new AcademyRequest("Test Academy", "123 Test St", ownerId);
+        AcademyRequest request = new AcademyRequest("Test Academy", "123 Test St");
         UserProfile userProfile = createUserProfile(ownerId, UserRole.CUSTOMER);
 
         when(userProfileRepository.findById(ownerId)).thenReturn(Optional.of(userProfile));
 
         try (MockedStatic<SecurityUtils> mocked = mockStatic(SecurityUtils.class)) {
-            mocked.when(() -> SecurityUtils.isNotAdminOrManager(userProfile)).thenReturn(true);
-            mocked.when(() -> SecurityUtils.isAcademyOwner(userProfile)).thenReturn(false);
+            mocked.when(() -> SecurityUtils.isNotAdminOrPlatformManager(userProfile)).thenReturn(true);
 
             // Act & Assert
             assertThrows(ForbiddenException.class, () -> academyService.create(request, ownerId));
@@ -198,8 +197,7 @@ class AcademyServiceTest {
     void update_whenAcademyExists_shouldUpdateAndReturnAcademy() {
         // Arrange
         UUID academyId = UUID.randomUUID();
-        UUID dummyOwnerId = UUID.randomUUID(); // Add a dummy ownerId for the constructor
-        AcademyRequest request = new AcademyRequest("Updated Name", "Updated Address", dummyOwnerId);
+        AcademyRequest request = new AcademyRequest("Updated Name", "Updated Address");
         Academy existingAcademy = new Academy("Old Name", "Old Address");
         existingAcademy.setId(academyId);
 
@@ -225,8 +223,7 @@ class AcademyServiceTest {
     void update_whenAcademyDoesNotExist_shouldThrowEntityNotFoundException() {
         // Arrange
         UUID academyId = UUID.randomUUID();
-        UUID dummyOwnerIdForNotFound = UUID.randomUUID(); // Add a dummy ownerId for the constructor
-        AcademyRequest request = new AcademyRequest("Updated Name", "Updated Address", dummyOwnerIdForNotFound);
+        AcademyRequest request = new AcademyRequest("Updated Name", "Updated Address");
         when(academyRepository.findById(academyId)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -265,7 +262,7 @@ class AcademyServiceTest {
         userProfile.setId(id);
         userProfile.setRole(role);
         userProfile.setBelt(Belt.BLACK);
-        userProfile.setStripe(4);
+        userProfile.setBeltStripe(4);
         return userProfile;
     }
 }

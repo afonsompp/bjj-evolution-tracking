@@ -88,14 +88,14 @@ class UserProfileControllerTest {
     void getProfile_shouldReturn200_whenProfileExists() throws Exception {
         when(userProfileService.getMyProfile(any(Jwt.class))).thenReturn(Optional.of(sampleResponse));
 
-        mockMvc.perform(get("/profiles")
+        mockMvc.perform(get("/api/v1/profiles")
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(userId.toString()))
                 .andExpect(jsonPath("$.name").value("John"))
                 .andExpect(jsonPath("$.nickname").value("jiujitsu_john"))
                 .andExpect(jsonPath("$.belt").value("PURPLE"))
-                .andExpect(jsonPath("$.stripe").value(2))
+                .andExpect(jsonPath("$.beltStripe").value(2))
                 .andExpect(jsonPath("$.role").value("CUSTOMER"));
 
         verify(userProfileService).getMyProfile(any(Jwt.class));
@@ -106,7 +106,7 @@ class UserProfileControllerTest {
     void getProfile_shouldReturn404_whenProfileNotFound() throws Exception {
         when(userProfileService.getMyProfile(any(Jwt.class))).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/profiles")
+        mockMvc.perform(get("/api/v1/profiles")
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNotFound());
 
@@ -124,7 +124,7 @@ class UserProfileControllerTest {
                 List.of(sampleSearchResponse), PageRequest.of(0, 10), 1);
         when(userProfileService.searchProfile(eq("john"), any())).thenReturn(page);
 
-        mockMvc.perform(get("/profiles/search")
+        mockMvc.perform(get("/api/v1/profiles/search")
                         .header("Authorization", "Bearer " + TOKEN)
                         .param("query", "john")
                         .param("page", "0")
@@ -144,7 +144,7 @@ class UserProfileControllerTest {
                 List.of(), PageRequest.of(0, 10), 0);
         when(userProfileService.searchProfile(eq("nonexistent"), any())).thenReturn(emptyPage);
 
-        mockMvc.perform(get("/profiles/search")
+        mockMvc.perform(get("/api/v1/profiles/search")
                         .header("Authorization", "Bearer " + TOKEN)
                         .param("query", "nonexistent"))
                 .andExpect(status().isOk())
@@ -164,7 +164,7 @@ class UserProfileControllerTest {
         when(userProfileService.saveOrUpdate(any(Jwt.class), any(ProfileRequest.class)))
                 .thenReturn(sampleResponse);
 
-        mockMvc.perform(post("/profiles")
+        mockMvc.perform(post("/api/v1/profiles")
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -173,7 +173,7 @@ class UserProfileControllerTest {
                                     "secondName": "Doe",
                                     "nickname": "jiujitsu_john",
                                     "belt": "PURPLE",
-                                    "stripe": 2,
+                                    "beltStripe": 2,
                                     "startsIn": "2023-01-15"
                                 }
                                 """))
@@ -181,7 +181,7 @@ class UserProfileControllerTest {
                 .andExpect(jsonPath("$.id").value(userId.toString()))
                 .andExpect(jsonPath("$.nickname").value("jiujitsu_john"))
                 .andExpect(jsonPath("$.belt").value("PURPLE"))
-                .andExpect(jsonPath("$.stripe").value(2));
+                .andExpect(jsonPath("$.beltStripe").value(2));
 
         verify(userProfileService).saveOrUpdate(any(Jwt.class), any(ProfileRequest.class));
     }
@@ -193,7 +193,7 @@ class UserProfileControllerTest {
         when(userProfileService.saveOrUpdate(any(Jwt.class), any(ProfileRequest.class)))
                 .thenThrow(conflict);
 
-        mockMvc.perform(post("/profiles")
+        mockMvc.perform(post("/api/v1/profiles")
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -221,40 +221,40 @@ class UserProfileControllerTest {
         ProfileResponse updatedResponse = new ProfileResponse(
                 targetUserId, "Jane", "Doe", "jiujitsu_jane",
                 Belt.BLUE, 1, LocalDate.of(2024, 6, 1),
-                UserRole.MANAGER
+                UserRole.PLATFORM_MANAGER
         );
 
-        when(userProfileService.updateRole(any(Jwt.class), eq(targetUserId), eq(UserRole.MANAGER)))
+        when(userProfileService.updateRole(any(Jwt.class), eq(targetUserId), eq(UserRole.PLATFORM_MANAGER)))
                 .thenReturn(updatedResponse);
 
-        mockMvc.perform(patch("/profiles/{userId}/role", targetUserId)
+        mockMvc.perform(patch("/api/v1/profiles/{userId}/role", targetUserId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"role\":\"MANAGER\"}"))
+                        .content("{\"role\":\"PLATFORM_MANAGER\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(targetUserId.toString()))
-                .andExpect(jsonPath("$.role").value("MANAGER"));
+                .andExpect(jsonPath("$.role").value("PLATFORM_MANAGER"));
 
-        verify(userProfileService).updateRole(any(Jwt.class), eq(targetUserId), eq(UserRole.MANAGER));
+        verify(userProfileService).updateRole(any(Jwt.class), eq(targetUserId), eq(UserRole.PLATFORM_MANAGER));
     }
 
     @Test
     @DisplayName("PATCH /profiles/{userId}/role should return 403 when actor lacks privileges")
     void updateRole_shouldReturn403_whenActorLacksPrivileges() throws Exception {
         UUID targetUserId = UUID.randomUUID();
-        when(userProfileService.updateRole(any(Jwt.class), eq(targetUserId), eq(UserRole.MANAGER)))
-                .thenThrow(new ForbiddenException("Only admins or managers can update user roles."));
+        when(userProfileService.updateRole(any(Jwt.class), eq(targetUserId), eq(UserRole.PLATFORM_MANAGER)))
+                .thenThrow(new ForbiddenException("Only admins or platform managers can update user roles."));
 
-        mockMvc.perform(patch("/profiles/{userId}/role", targetUserId)
+        mockMvc.perform(patch("/api/v1/profiles/{userId}/role", targetUserId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"role\":\"MANAGER\"}"))
+                        .content("{\"role\":\"PLATFORM_MANAGER\"}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403))
                 .andExpect(jsonPath("$.message")
-                        .value("Only admins or managers can update user roles."));
+                        .value("Only admins or platform managers can update user roles."));
 
-        verify(userProfileService).updateRole(any(Jwt.class), eq(targetUserId), eq(UserRole.MANAGER));
+        verify(userProfileService).updateRole(any(Jwt.class), eq(targetUserId), eq(UserRole.PLATFORM_MANAGER));
     }
 
     @Test
@@ -264,7 +264,7 @@ class UserProfileControllerTest {
         when(userProfileService.updateRole(any(Jwt.class), eq(targetUserId), eq(UserRole.ADMIN)))
                 .thenThrow(new ForbiddenException("Only admins can assign the ADMIN role."));
 
-        mockMvc.perform(patch("/profiles/{userId}/role", targetUserId)
+        mockMvc.perform(patch("/api/v1/profiles/{userId}/role", targetUserId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"role\":\"ADMIN\"}"))
@@ -283,10 +283,10 @@ class UserProfileControllerTest {
         when(userProfileService.updateRole(any(Jwt.class), eq(targetUserId), any(UserRole.class)))
                 .thenThrow(new ResourceNotFoundException("Current user profile not found"));
 
-        mockMvc.perform(patch("/profiles/{userId}/role", targetUserId)
+        mockMvc.perform(patch("/api/v1/profiles/{userId}/role", targetUserId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"role\":\"MANAGER\"}"))
+                        .content("{\"role\":\"PLATFORM_MANAGER\"}"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").value("Current user profile not found"));
@@ -301,10 +301,10 @@ class UserProfileControllerTest {
         when(userProfileService.updateRole(any(Jwt.class), eq(targetUserId), any(UserRole.class)))
                 .thenThrow(new ResourceNotFoundException("User", targetUserId));
 
-        mockMvc.perform(patch("/profiles/{userId}/role", targetUserId)
+        mockMvc.perform(patch("/api/v1/profiles/{userId}/role", targetUserId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"role\":\"MANAGER\"}"))
+                        .content("{\"role\":\"PLATFORM_MANAGER\"}"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").value("User not found with id: " + targetUserId));
@@ -321,7 +321,7 @@ class UserProfileControllerTest {
     void delete_shouldReturn204() throws Exception {
         doNothing().when(userProfileService).deleteMyProfile(any(Jwt.class));
 
-        mockMvc.perform(delete("/profiles")
+        mockMvc.perform(delete("/api/v1/profiles")
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNoContent());
 

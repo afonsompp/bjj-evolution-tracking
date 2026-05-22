@@ -4,7 +4,7 @@ import com.bjj.evolution.academy.member.domain.GraduationHistory;
 import com.bjj.evolution.catalog.domain.Belt;
 import com.bjj.evolution.user.domain.dto.ProfileResponse;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record GraduationHistoryResponse(
@@ -16,7 +16,7 @@ public record GraduationHistoryResponse(
         Integer oldStripe,
         Belt newBelt,
         Integer newStripe,
-        LocalDateTime graduationDate
+        Instant graduationDate
 ) {
     public static GraduationHistoryResponse fromEntity(GraduationHistory entity) {
         return new GraduationHistoryResponse(

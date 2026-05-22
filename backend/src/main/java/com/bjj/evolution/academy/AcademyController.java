@@ -2,6 +2,9 @@ package com.bjj.evolution.academy;
 
 import com.bjj.evolution.academy.domain.dto.AcademyRequest;
 import com.bjj.evolution.academy.domain.dto.AcademyResponse;
+import com.bjj.evolution.academy.member.AcademyMemberService;
+import com.bjj.evolution.academy.member.domain.MemberStatus;
+import com.bjj.evolution.academy.member.domain.dto.AcademyMemberResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,9 +22,11 @@ import java.util.UUID;
 public class AcademyController {
 
     private final AcademyService service;
+    private final AcademyMemberService memberService;
 
-    public AcademyController(AcademyService service) {
+    public AcademyController(AcademyService service, AcademyMemberService memberService) {
         this.service = service;
+        this.memberService = memberService;
     }
 
     @PostMapping
@@ -44,6 +49,15 @@ public class AcademyController {
             Pageable pageable) {
         UUID userId = UUID.fromString(jwt.getSubject());
         return ResponseEntity.ok(service.findMyAcademies(userId, pageable));
+    }
+
+    @GetMapping("/memberships")
+    public ResponseEntity<Page<AcademyMemberResponse>> getMyMemberships(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(required = false) MemberStatus status,
+            Pageable pageable) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(memberService.findMyMemberships(userId, status, pageable));
     }
 
     @GetMapping("/{id}")

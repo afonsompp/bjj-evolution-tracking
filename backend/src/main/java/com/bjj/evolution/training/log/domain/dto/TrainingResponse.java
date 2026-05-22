@@ -5,14 +5,14 @@ import com.bjj.evolution.catalog.domain.TrainingType;
 import com.bjj.evolution.training.log.domain.Training;
 import com.bjj.evolution.user.domain.dto.ProfileResponse;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public record TrainingResponse(
         Long id,
         ClassType classType,
         TrainingType trainingType,
-        LocalDateTime sessionDate,
+        Instant sessionDate,
         long durationMinutes,
         List<TechniqueSummaryResponse> techniques,
         List<TechniqueSummaryResponse> submissionTechniques,

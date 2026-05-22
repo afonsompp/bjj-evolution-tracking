@@ -27,7 +27,7 @@ public class UserProfile {
     @Enumerated(EnumType.STRING)
     private Belt belt;
 
-    private Integer stripe;
+    private Integer beltStripe;
 
     private LocalDate startsIn;
 
@@ -37,13 +37,13 @@ public class UserProfile {
     public UserProfile() {
     }
 
-    public UserProfile(UUID id, String name, String secondName, String nickname, Belt belt, Integer stripe, LocalDate startsIn, UserRole role) {
+    public UserProfile(UUID id, String name, String secondName, String nickname, Belt belt, Integer beltStripe, LocalDate startsIn, UserRole role) {
         this.id = id;
         this.name = name;
         this.secondName = secondName;
         this.nickname = nickname;
         this.belt = belt;
-        this.stripe = stripe;
+        this.beltStripe = beltStripe;
         this.startsIn = startsIn;
         this.role = role != null ? role : UserRole.CUSTOMER;
     }
@@ -64,8 +64,8 @@ public class UserProfile {
         return belt;
     }
 
-    public Integer getStripe() {
-        return stripe;
+    public Integer getBeltStripe() {
+        return beltStripe;
     }
 
     public LocalDate getStartsIn() {
@@ -92,8 +92,8 @@ public class UserProfile {
         this.belt = belt;
     }
 
-    public void setStripe(Integer stripe) {
-        this.stripe = stripe;
+    public void setBeltStripe(Integer beltStripe) {
+        this.beltStripe = beltStripe;
     }
 
     public void setStartsIn(LocalDate startsIn) {

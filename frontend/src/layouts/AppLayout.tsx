@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '../api/client'
 import { useAuth } from '../features/auth/AuthContext'
+import { useProfile } from '../features/profile/useProfile'
 import { useTranslation } from '../lib/i18n/I18nContext'
 import { useTheme } from '../lib/ThemeContext'
 import type { Locale } from '../lib/i18n/translations'
-import type { ProfileResponse } from '../types/api'
 import {
   SunIcon,
   MoonIcon,
@@ -23,7 +21,7 @@ const languages: { code: Locale; labelKey: string }[] = [
 ]
 
 export default function AppLayout() {
-  const { user, signOut } = useAuth()
+  const { signOut } = useAuth()
   const navigate = useNavigate()
   const { locale, setLocale, translate } = useTranslation()
   const { theme, toggle } = useTheme()
@@ -31,12 +29,7 @@ export default function AppLayout() {
   const location = useLocation()
 
   // ── Profile fetch (for role check) ──────────────────────
-  const { data: profile, isError: profileError } = useQuery({
-    queryKey: ['profile'],
-    queryFn: () =>
-      apiClient.get<ProfileResponse>('/profiles').then(r => r.data),
-    retry: false,
-  })
+  const { data: profile, isError: profileError } = useProfile()
   const isAdmin = profile?.role === 'ADMIN'
 
   // ── Redirect to onboarding when profile is missing ──────
@@ -50,6 +43,7 @@ export default function AppLayout() {
   const navItems: { to: string; labelKey: string; end?: boolean }[] = [
     { to: '/dashboard', labelKey: 'nav.dashboard' },
     { to: '/training', labelKey: 'nav.training', end: true },
+    { to: '/academies', labelKey: 'nav.academies' },
     ...(isAdmin ? [{ to: '/techniques', labelKey: 'nav.techniques' } as const] : []),
   ]
 

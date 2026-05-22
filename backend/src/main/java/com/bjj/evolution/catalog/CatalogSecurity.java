@@ -28,7 +28,7 @@ public class CatalogSecurity {
             UUID userId = SecurityUtils.getCurrentUserId();
             return userProfileRepository.findById(userId)
                     .map(profile -> {
-                        boolean authorized = SecurityUtils.isAdminOrManager(profile);
+                        boolean authorized = SecurityUtils.isAdminOrPlatformManager(profile);
                         if (!authorized) {
                             log.warn("Global admin access denied: user={} role={}", userId, profile.getRole());
                         }

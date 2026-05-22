@@ -1,10 +1,9 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import type { Session, User } from '@supabase/supabase-js'
-import { supabase } from '../../lib/supabase'
+import { authClient, type AuthUser, type AuthSession } from '../../lib/auth/authClient'
 
 interface AuthContextValue {
-  user: User | null
-  session: Session | null
+  user: AuthUser | null
+  session: AuthSession | null
   loading: boolean
   signOut: () => Promise<void>
 }
@@ -17,27 +16,27 @@ const AuthContext = createContext<AuthContextValue>({
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [session, setSession] = useState<AuthSession | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    authClient.getSession().then(({ session }) => {
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { unsubscribe } = authClient.onAuthStateChange((session) => {
       setSession(session)
       setUser(session?.user ?? null)
     })
 
-    return () => subscription.unsubscribe()
+    return () => unsubscribe()
   }, [])
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    await authClient.signOut()
   }
 
   return (

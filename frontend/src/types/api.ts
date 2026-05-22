@@ -14,7 +14,9 @@ export type TechniqueTarget =
   | 'KNEE' | 'HIP' | 'BACK' | 'SPINE' | 'ARM' | 'ELBOW' | 'WRIST' | 'HAND'
   | 'GUARD_PASS' | 'GUARD_POSITION' | 'PIN' | 'TAKEDOWN' | 'SWEEP' | 'ESCAPE'
 export type CheckInStatus = 'REGISTERED' | 'CONFIRMED' | 'CANCELED'
-export type UserRole = 'ACADEMY_OWNER' | 'CUSTOMER' | 'MANAGER' | 'ADMIN'
+export type UserRole = 'CUSTOMER' | 'PLATFORM_MANAGER' | 'ADMIN'
+export type MemberRole = 'OWNER' | 'MANAGER' | 'INSTRUCTOR' | 'STUDENT'
+export type MemberStatus = 'ACTIVE' | 'PENDING' | 'INACTIVE'
 export type ClassStatus = 'DRAFT' | 'PUBLISHED' | 'COMPLETED' | 'CANCELED'
 
 // ── Generic ──────────────────────────────────────────────
@@ -40,7 +42,6 @@ export interface ApiError {
 export interface AcademyRequest {
   name: string
   address: string
-  ownerId: string
 }
 
 export interface AcademyResponse {
@@ -49,13 +50,24 @@ export interface AcademyResponse {
   address: string
 }
 
+export interface AcademyMemberResponse {
+  academyId: string
+  academyName: string
+  academyAddress?: string
+  user: ProfileResponse
+  role: MemberRole
+  status: MemberStatus
+  belt?: Belt
+  beltStripe?: number
+}
+
 // ── Profile ──────────────────────────────────────────────
 export interface ProfileRequest {
   name: string
   secondName?: string
   nickname: string
   belt?: Belt
-  stripe?: number
+  beltStripe?: number
   startsIn?: string
 }
 
@@ -65,7 +77,7 @@ export interface ProfileResponse {
   secondName?: string
   nickname: string
   belt?: Belt
-  stripe?: number
+  beltStripe?: number
   startsIn?: string
   role: UserRole
 }
@@ -76,7 +88,7 @@ export interface SearchProfileResponse {
   secondName?: string
   nickname: string
   belt?: Belt
-  stripe?: number
+  beltStripe?: number
   startsIn?: string
 }
 
@@ -140,6 +152,18 @@ export interface AcademyMenberClassViewResponse {
   scheduledClass: ScheduledClassResponse
   status: CheckInStatus
   checkInTime: string | null
+}
+
+export interface GraduationHistoryResponse {
+  id: number
+  academyId: string
+  student: ProfileResponse
+  promotedBy: ProfileResponse
+  oldBelt: Belt
+  oldStripe: number
+  newBelt: Belt
+  newStripe: number
+  graduationDate: string
 }
 
 // ── Training ──────────────────────────────────────────────

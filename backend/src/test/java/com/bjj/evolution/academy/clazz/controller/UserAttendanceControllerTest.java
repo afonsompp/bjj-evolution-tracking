@@ -29,7 +29,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -74,7 +73,7 @@ class UserAttendanceControllerTest {
 
         ProfileResponse instructor = new ProfileResponse(
                 UUID.randomUUID(), "Carlos", "Gracie", "carlos_gracie",
-                null, null, null, UserRole.MANAGER
+                null, null, null, UserRole.PLATFORM_MANAGER
         );
 
         ScheduledClassResponse scheduledClass = new ScheduledClassResponse(
@@ -82,7 +81,7 @@ class UserAttendanceControllerTest {
                 UUID.randomUUID(),
                 "Gracie Barra",
                 instructor,
-                LocalDateTime.of(2025, 5, 17, 10, 0),
+                Instant.parse("2025-05-17T10:00:00Z"),
                 90L,
                 ClassType.REGULAR,
                 TrainingType.GI,
@@ -94,7 +93,7 @@ class UserAttendanceControllerTest {
                 1L,
                 scheduledClass,
                 CheckInStatus.CONFIRMED,
-                LocalDateTime.of(2025, 5, 17, 10, 0)
+                Instant.parse("2025-05-17T10:00:00Z")
         );
 
         when(jwtDecoder.decode(anyString())).thenReturn(MOCK_JWT);
@@ -112,7 +111,7 @@ class UserAttendanceControllerTest {
         when(classAttendanceService.findClassViewsByStudent(eq(userId), isNull(), any()))
                 .thenReturn(page);
 
-        mockMvc.perform(get("/attendances")
+        mockMvc.perform(get("/api/v1/attendances")
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(1))
@@ -134,7 +133,7 @@ class UserAttendanceControllerTest {
         when(classAttendanceService.findClassViewsByStudent(eq(userId), eq(CheckInStatus.CONFIRMED), any()))
                 .thenReturn(page);
 
-        mockMvc.perform(get("/attendances")
+        mockMvc.perform(get("/api/v1/attendances")
                         .header("Authorization", "Bearer " + TOKEN)
                         .param("status", "CONFIRMED"))
                 .andExpect(status().isOk())
@@ -152,7 +151,7 @@ class UserAttendanceControllerTest {
         when(classAttendanceService.findClassViewsByStudent(eq(userId), isNull(), any()))
                 .thenReturn(emptyPage);
 
-        mockMvc.perform(get("/attendances")
+        mockMvc.perform(get("/api/v1/attendances")
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isEmpty())
@@ -164,7 +163,7 @@ class UserAttendanceControllerTest {
     @Test
     @DisplayName("GET /attendances should return 401 when not authenticated")
     void getAll_withoutAuth_shouldReturn401() throws Exception {
-        mockMvc.perform(get("/attendances"))
+        mockMvc.perform(get("/api/v1/attendances"))
                 .andExpect(status().isUnauthorized());
 
         verify(classAttendanceService, never()).findClassViewsByStudent(any(), any(), any());

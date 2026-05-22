@@ -15,11 +15,11 @@ public record ProfileRequest(
         @NotBlank
         String nickname,
         Belt belt,
-        Integer stripe,
+        Integer beltStripe,
         LocalDate startsIn
 ) {
 
     public UserProfile toEntity(UUID id){
-        return new UserProfile(id, name, secondName, nickname, belt, stripe, startsIn, UserRole.CUSTOMER);
+        return new UserProfile(id, name, secondName, nickname, belt, beltStripe, startsIn, UserRole.CUSTOMER);
     }
 }

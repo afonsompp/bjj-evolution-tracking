@@ -11,10 +11,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import java.time.Instant;
 
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"scheduled_class_id", "student_id"}))
 public class ClassAttendance {
 
     @Id

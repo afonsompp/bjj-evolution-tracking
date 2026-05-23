@@ -17,6 +17,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import org.hibernate.annotations.Check;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -59,6 +60,7 @@ public class ScheduledClass {
     )
     private List<Technique> scheduledTechniques;
 
+    @Check(constraints = "status IN ('DRAFT', 'PUBLISHED', 'COMPLETED', 'CANCELED')")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ClassStatus status = ClassStatus.PUBLISHED;

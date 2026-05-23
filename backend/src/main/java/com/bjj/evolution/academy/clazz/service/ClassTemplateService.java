@@ -2,13 +2,19 @@ package com.bjj.evolution.academy.clazz.service;
 
 import com.bjj.evolution.academy.AcademyRepository;
 import com.bjj.evolution.academy.clazz.ClassTemplateRepository;
+import com.bjj.evolution.academy.clazz.ScheduledClassRepository;
 import com.bjj.evolution.academy.clazz.domain.ClassRecurrenceRule;
+import com.bjj.evolution.academy.clazz.domain.ClassStatus;
 import com.bjj.evolution.academy.clazz.domain.ClassTemplate;
+import com.bjj.evolution.academy.clazz.domain.ScheduledClass;
 import com.bjj.evolution.academy.clazz.domain.dto.ClassTemplateRequest;
 import com.bjj.evolution.academy.clazz.domain.dto.ClassTemplateResponse;
+import com.bjj.evolution.academy.clazz.domain.dto.GenerateClassesRequest;
+import com.bjj.evolution.academy.clazz.domain.dto.ScheduledClassResponse;
 import com.bjj.evolution.academy.domain.Academy;
 import com.bjj.evolution.catalog.TechniqueRepository;
 import com.bjj.evolution.catalog.domain.Technique;
+import com.bjj.evolution.shared.exception.BusinessRuleException;
 import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import com.bjj.evolution.user.UserProfileRepository;
 import com.bjj.evolution.user.domain.UserProfile;
@@ -20,6 +26,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,15 +38,18 @@ public class ClassTemplateService {
     private static final Logger log = LoggerFactory.getLogger(ClassTemplateService.class);
 
     private final ClassTemplateRepository repository;
+    private final ScheduledClassRepository scheduledClassRepository;
     private final AcademyRepository academyRepository;
     private final UserProfileRepository userProfileRepository;
     private final TechniqueRepository techniqueRepository;
 
     public ClassTemplateService(ClassTemplateRepository repository,
+                                ScheduledClassRepository scheduledClassRepository,
                                 AcademyRepository academyRepository,
                                 UserProfileRepository userProfileRepository,
                                 TechniqueRepository techniqueRepository) {
         this.repository = repository;
+        this.scheduledClassRepository = scheduledClassRepository;
         this.academyRepository = academyRepository;
         this.userProfileRepository = userProfileRepository;
         this.techniqueRepository = techniqueRepository;
@@ -57,7 +69,9 @@ public class ClassTemplateService {
                     return new ResourceNotFoundException("Instructor", request.instructorId());
                 });
 
-        List<Technique> techniques = techniqueRepository.findAllById(request.techniqueIds());
+        List<Technique> techniques = request.techniqueIds() != null
+                ? techniqueRepository.findAllById(request.techniqueIds())
+                : List.of();
 
         ClassTemplate template = new ClassTemplate();
         template.setAcademy(academy);
@@ -109,7 +123,9 @@ public class ClassTemplateService {
         template.setDuration(Duration.ofMinutes(request.durationMinutes()));
         template.setClassType(request.classType());
         template.setTrainingType(request.trainingType());
-        template.setDefaultTechniques(techniqueRepository.findAllById(request.techniqueIds()));
+        template.setDefaultTechniques(request.techniqueIds() != null
+                ? techniqueRepository.findAllById(request.techniqueIds())
+                : List.of());
 
         template.getRecurrenceRules().clear();
         request.recurrenceRules().forEach(ruleReq -> {
@@ -130,6 +146,58 @@ public class ClassTemplateService {
         log.debug("Listing class templates academy={} page={} size={}", academyId, pageable.getPageNumber(), pageable.getPageSize());
         return repository.findAllByAcademyId(academyId, pageable)
                 .map(ClassTemplateResponse::fromEntity);
+    }
+
+    public ClassTemplateResponse findById(UUID academyId, UUID templateId) {
+        ClassTemplate template = repository.findById(templateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Class template", templateId));
+        if (!template.getAcademy().getId().equals(academyId)) {
+            throw new BusinessRuleException("Template does not belong to the given academy.");
+        }
+        return ClassTemplateResponse.fromEntity(template);
+    }
+
+    @Transactional
+    public List<ScheduledClassResponse> generateClasses(UUID academyId, UUID templateId, GenerateClassesRequest request) {
+        ClassTemplate template = repository.findById(templateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Class template", templateId));
+
+        if (!template.getAcademy().getId().equals(academyId)) {
+            throw new BusinessRuleException("Template does not belong to the given academy.");
+        }
+
+        if (request.endDate().isBefore(request.startDate())) {
+            throw new BusinessRuleException("End date must be after start date.");
+        }
+
+        List<ScheduledClass> toCreate = new ArrayList<>();
+        LocalDate cursor = request.startDate();
+
+        while (!cursor.isAfter(request.endDate())) {
+            final LocalDate day = cursor;
+            for (ClassRecurrenceRule rule : template.getRecurrenceRules()) {
+                if (rule.getDayOfWeek() == day.getDayOfWeek()) {
+                    ScheduledClass sc = ScheduledClass.builder()
+                            .academy(template.getAcademy())
+                            .instructor(template.getInstructor())
+                            .startTime(day.atTime(rule.getStartTime()).toInstant(ZoneOffset.UTC))
+                            .duration(template.getDuration())
+                            .classType(template.getClassType())
+                            .trainingType(template.getTrainingType())
+                            .scheduledTechniques(new ArrayList<>(template.getDefaultTechniques()))
+                            .status(ClassStatus.PUBLISHED)
+                            .template(template)
+                            .build();
+                    toCreate.add(sc);
+                }
+            }
+            cursor = cursor.plusDays(1);
+        }
+
+        List<ScheduledClass> saved = scheduledClassRepository.saveAll(toCreate);
+        log.info("Generated {} classes from template id={} academy={} range=[{} to {}]",
+                saved.size(), templateId, academyId, request.startDate(), request.endDate());
+        return saved.stream().map(ScheduledClassResponse::fromEntity).toList();
     }
 
     @Transactional

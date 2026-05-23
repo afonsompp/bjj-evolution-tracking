@@ -21,6 +21,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -61,7 +62,7 @@ public class ClassTemplate {
         private List<Technique> defaultTechniques;
 
         @OneToMany(mappedBy = "template", cascade = CascadeType.ALL, orphanRemoval = true)
-        private List<ClassRecurrenceRule> recurrenceRules;
+        private List<ClassRecurrenceRule> recurrenceRules = new ArrayList<>();
 
 
         public UUID getId() {

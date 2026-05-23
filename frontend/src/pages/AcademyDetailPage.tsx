@@ -1,25 +1,30 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import type { AcademyMenberClassViewResponse } from '../types/api'
 import { useTranslation } from '../lib/i18n/I18nContext'
 import { useProfile } from '../features/profile/useProfile'
 import { useAcademy } from '../features/academy/hooks/useAcademy'
 import { useMembership } from '../features/academy/hooks/useMembership'
 import { useAcademySchedule } from '../features/academy/hooks/useAcademySchedule'
 import { useJoinAcademy, useLeaveAcademy } from '../features/academy/hooks/useJoinAcademy'
+import { useMyAttendances } from '../features/academy/hooks/useAttendance'
+import { useSelfCheckIn, useCancelMyCheckIn } from '../features/academy/hooks/useAttendanceMutations'
 import { AcademyPermissionGate } from '../features/academy/permissions/AcademyPermissionGate'
 import { PendingRequestsPanel } from '../features/academy/components/PendingRequestsPanel'
 import {
   BuildingIcon,
+  CalendarIcon,
   ChevronLeftIcon,
+  ClockIcon,
+  DownloadIcon,
   LoaderIcon,
   MapPinIcon,
-  CalendarIcon,
-  ClockIcon,
   CheckCircleIcon,
   HourglassIcon,
   UsersIcon,
   LogOutIcon,
   PencilIcon,
+  XIcon,
 } from '../assets/icons'
 
 type Tab = 'info' | 'schedule'
@@ -38,8 +43,18 @@ export default function AcademyDetailPage() {
 
   const isMember = membership?.status === 'ACTIVE'
   const isPending = membership?.status === 'PENDING'
+  const isOwner = membership?.role === 'OWNER'
 
   const { data: schedulePage, isLoading: scheduleLoading } = useAcademySchedule(id, isMember)
+  const { data: myAttendancesPage } = useMyAttendances(id, isMember)
+  const myAttendanceMap = useMemo(() => {
+    const map: Record<number, AcademyMenberClassViewResponse> = {}
+    myAttendancesPage?.content.forEach((a) => { map[a.scheduledClass.id] = a })
+    return map
+  }, [myAttendancesPage])
+
+  const selfCheckIn = useSelfCheckIn(id ?? '')
+  const cancelCheckIn = useCancelMyCheckIn(id ?? '')
 
   const joinMutation = useJoinAcademy(id)
   const leaveMutation = useLeaveAcademy(id)
@@ -132,21 +147,23 @@ export default function AcademyDetailPage() {
                     <CheckCircleIcon size={14} />
                     {translate('academy.alreadyMember')}
                   </span>
-                  <button
-                    onClick={() => {
-                      setActionError('')
-                      setShowLeaveConfirm(true)
-                    }}
-                    disabled={leaveMutation.isPending}
-                    className="inline-flex items-center gap-1 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-xs text-rose-400 hover:bg-rose-500/20 disabled:opacity-50"
-                  >
-                    {leaveMutation.isPending ? (
-                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-rose-400 border-t-transparent" />
-                    ) : (
-                      <LogOutIcon size={12} />
-                    )}
-                    {translate('academy.leave')}
-                  </button>
+                  {!isOwner && (
+                    <button
+                      onClick={() => {
+                        setActionError('')
+                        setShowLeaveConfirm(true)
+                      }}
+                      disabled={leaveMutation.isPending}
+                      className="inline-flex items-center gap-1 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-xs text-rose-400 hover:bg-rose-500/20 disabled:opacity-50"
+                    >
+                      {leaveMutation.isPending ? (
+                        <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-rose-400 border-t-transparent" />
+                      ) : (
+                        <LogOutIcon size={12} />
+                      )}
+                      {translate('academy.leave')}
+                    </button>
+                  )}
                 </>
               ) : isPending ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400">
@@ -242,10 +259,32 @@ export default function AcademyDetailPage() {
             </div>
           )}
 
+          {/* Management section — only for users with canManageClasses */}
+          {id && (
+            <AcademyPermissionGate academyId={id} require="canManageClasses">
+              <button
+                onClick={() => navigate(`/academies/${id}/classes`)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-card)] bg-[var(--bg-page)] px-3 py-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+              >
+                <CalendarIcon size={12} />
+                {translate('academy.manageClasses')}
+              </button>
+            </AcademyPermissionGate>
+          )}
+
           {/* Management section — only for users with canManageMembers */}
           {id && (
             <AcademyPermissionGate academyId={id} require="canManageMembers">
-              <PendingRequestsPanel academyId={id} />
+              <div className="space-y-4">
+                <button
+                  onClick={() => navigate(`/academies/${id}/members`)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-card)] bg-[var(--bg-page)] px-3 py-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                >
+                  <UsersIcon size={12} />
+                  {translate('members.manageMembers')}
+                </button>
+                <PendingRequestsPanel academyId={id} />
+              </div>
             </AcademyPermissionGate>
           )}
 
@@ -301,7 +340,78 @@ export default function AcademyDetailPage() {
                           </span>
                           <span>{c.durationMinutes} {translate('form.minutes')}</span>
                         </div>
+                        {/* Check-in status */}
+                        <div className="mt-2">
+                          {(() => {
+                            const att = myAttendanceMap[c.id]
+                            if (att?.status === 'CONFIRMED') {
+                              return (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
+                                  <CheckCircleIcon size={11} />
+                                  {translate('attendance.status.CONFIRMED')}
+                                </span>
+                              )
+                            }
+                            if (att?.status === 'REGISTERED') {
+                              return (
+                                <span className="inline-flex items-center gap-2">
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs text-amber-400">
+                                    <HourglassIcon size={11} />
+                                    {translate('attendance.status.REGISTERED')}
+                                  </span>
+                                  <button
+                                    onClick={() => cancelCheckIn.mutate(c.id)}
+                                    disabled={cancelCheckIn.isPending && cancelCheckIn.variables === c.id}
+                                    className="flex items-center gap-0.5 text-xs text-[var(--text-muted)] hover:text-rose-400"
+                                  >
+                                    <XIcon size={11} />
+                                    {translate('attendance.cancelCheckIn')}
+                                  </button>
+                                </span>
+                              )
+                            }
+                            if (att?.status === 'CANCELED') {
+                              return (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-zinc-500/10 px-2 py-0.5 text-xs text-zinc-400">
+                                  {translate('attendance.status.CANCELED')}
+                                </span>
+                              )
+                            }
+                            return (
+                              <button
+                                onClick={() => selfCheckIn.mutate(c.id)}
+                                disabled={selfCheckIn.isPending && selfCheckIn.variables === c.id}
+                                className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-card)] bg-[var(--bg-page)] px-2 py-0.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-50"
+                              >
+                                {selfCheckIn.isPending && selfCheckIn.variables === c.id ? (
+                                  <LoaderIcon size={11} className="animate-spin" />
+                                ) : (
+                                  <CheckCircleIcon size={11} />
+                                )}
+                                {translate('attendance.checkIn')}
+                              </button>
+                            )
+                          })()}
+                        </div>
                       </div>
+                      <button
+                        onClick={() => navigate('/training/new', {
+                          state: {
+                            fromClass: {
+                              classType: c.classType,
+                              trainingType: c.trainingType,
+                              durationMinutes: c.durationMinutes,
+                              startTime: c.startTime,
+                              techniqueIds: c.scheduledTechniques.map((t) => t.id),
+                            },
+                          },
+                        })}
+                        className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-[var(--border-card)] bg-[var(--bg-page)] px-2.5 py-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                        title={translate('class.importToTraining')}
+                      >
+                        <DownloadIcon size={12} />
+                        {translate('class.importToTraining')}
+                      </button>
                     </div>
                   ))}
                 </div>

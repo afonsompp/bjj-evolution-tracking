@@ -3,6 +3,8 @@ package com.bjj.evolution.academy.clazz.controller;
 import com.bjj.evolution.academy.clazz.service.ClassTemplateService;
 import com.bjj.evolution.academy.clazz.domain.dto.ClassTemplateRequest;
 import com.bjj.evolution.academy.clazz.domain.dto.ClassTemplateResponse;
+import com.bjj.evolution.academy.clazz.domain.dto.GenerateClassesRequest;
+import com.bjj.evolution.academy.clazz.domain.dto.ScheduledClassResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -36,6 +39,23 @@ public class ClassTemplateController {
             @PathVariable UUID academyId,
             @Valid @RequestBody ClassTemplateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(academyId, request));
+    }
+
+    @GetMapping("/{templateId}")
+    @PreAuthorize("@academySecurity.hasAccess(authentication, #academyId)")
+    public ResponseEntity<ClassTemplateResponse> getById(
+            @PathVariable UUID academyId,
+            @PathVariable UUID templateId) {
+        return ResponseEntity.ok(service.findById(academyId, templateId));
+    }
+
+    @PostMapping("/{templateId}/generate")
+    @PreAuthorize("@academySecurity.isInstructorOrAdmin(authentication, #academyId)")
+    public ResponseEntity<List<ScheduledClassResponse>> generate(
+            @PathVariable UUID academyId,
+            @PathVariable UUID templateId,
+            @Valid @RequestBody GenerateClassesRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.generateClasses(academyId, templateId, request));
     }
 
     @GetMapping

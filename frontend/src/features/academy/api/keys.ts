@@ -6,6 +6,15 @@ export const academyKeys = {
   schedule: (id: string) => [...academyKeys.all, 'schedule', id] as const,
   search: (query: string, page: number) =>
     [...academyKeys.all, 'search', query, page] as const,
+  classes: (academyId: string) => [...academyKeys.all, 'classes', academyId] as const,
+  templates: (academyId: string) => [...academyKeys.all, 'templates', academyId] as const,
+}
+
+export const attendanceKeys = {
+  forClass: (classId: number | string) =>
+    ['attendance', 'class', classId.toString()] as const,
+  myAttendances: (academyId?: string) =>
+    ['attendance', 'mine', academyId ?? 'all'] as const,
 }
 
 export const memberKeys = {

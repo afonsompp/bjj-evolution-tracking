@@ -1,6 +1,8 @@
 import { apiClient } from '../../../api/client'
 import type {
+  AcademyMemberRequest,
   AcademyMemberResponse,
+  GraduationRequest,
   MemberStatus,
   Page,
 } from '../../../types/api'
@@ -48,4 +50,14 @@ export const membersApi = {
     apiClient
       .delete(`/academies/${academyId}/members/${userId}`)
       .then(() => undefined),
+
+  graduate: (academyId: string, userId: string, body: GraduationRequest) =>
+    apiClient
+      .post<AcademyMemberResponse>(`/academies/${academyId}/members/${userId}/graduate`, body)
+      .then((r) => r.data),
+
+  updateMember: (academyId: string, userId: string, body: AcademyMemberRequest) =>
+    apiClient
+      .put<AcademyMemberResponse>(`/academies/${academyId}/members/${userId}`, body)
+      .then((r) => r.data),
 }

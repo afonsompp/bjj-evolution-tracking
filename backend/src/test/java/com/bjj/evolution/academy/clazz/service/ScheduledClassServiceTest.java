@@ -119,8 +119,8 @@ class ScheduledClassServiceTest {
         assertEquals(ClassType.REGULAR, result.classType());
         assertEquals(TrainingType.GI, result.trainingType());
         assertEquals(ClassStatus.PUBLISHED, result.status());
-        assertEquals(1, result.techniques().size());
-        assertEquals("Armbar", result.techniques().get(0).name());
+        assertEquals(1, result.scheduledTechniques().size());
+        assertEquals("Armbar", result.scheduledTechniques().get(0).name());
 
         verify(repository).save(classCaptor.capture());
         ScheduledClass captured = classCaptor.getValue();
@@ -168,7 +168,7 @@ class ScheduledClassServiceTest {
         ScheduledClassResponse result = service.createManualClass(requestNoTechs);
 
         assertNotNull(result);
-        assertTrue(result.techniques().isEmpty());
+        assertTrue(result.scheduledTechniques().isEmpty());
         verify(techniqueRepository, never()).findAllById(any());
     }
 

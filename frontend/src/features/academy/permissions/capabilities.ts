@@ -2,6 +2,7 @@ import type { MemberRole, UserRole } from '../../../types/api'
 
 export type AcademyCapabilities = {
   canViewSchedule: boolean
+  canManageClasses: boolean
   canManageMembers: boolean
   canEditAcademy: boolean
   canPromoteMember: boolean
@@ -14,6 +15,7 @@ export type EffectiveRole = MemberRole | 'ADMIN' | 'GUEST'
 
 const FULL_ACCESS: AcademyCapabilities = {
   canViewSchedule: true,
+  canManageClasses: true,
   canManageMembers: true,
   canEditAcademy: true,
   canPromoteMember: true,
@@ -22,6 +24,7 @@ const FULL_ACCESS: AcademyCapabilities = {
 
 const NO_ACCESS: AcademyCapabilities = {
   canViewSchedule: false,
+  canManageClasses: false,
   canManageMembers: false,
   canEditAcademy: false,
   canPromoteMember: false,
@@ -33,6 +36,7 @@ const CAPABILITY_MATRIX: Record<EffectiveRole, AcademyCapabilities> = {
   OWNER: FULL_ACCESS,
   MANAGER: {
     canViewSchedule: true,
+    canManageClasses: true,
     canManageMembers: true,
     canEditAcademy: false,
     canPromoteMember: false,
@@ -40,6 +44,7 @@ const CAPABILITY_MATRIX: Record<EffectiveRole, AcademyCapabilities> = {
   },
   INSTRUCTOR: {
     canViewSchedule: true,
+    canManageClasses: true,
     canManageMembers: true,
     canEditAcademy: false,
     canPromoteMember: false,
@@ -47,6 +52,7 @@ const CAPABILITY_MATRIX: Record<EffectiveRole, AcademyCapabilities> = {
   },
   STUDENT: {
     canViewSchedule: true,
+    canManageClasses: false,
     canManageMembers: false,
     canEditAcademy: false,
     canPromoteMember: false,

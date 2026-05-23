@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import axios from 'axios'
 import { useAuth } from '../features/auth/AuthContext'
 import { useProfile } from '../features/profile/useProfile'
 import { useTranslation } from '../lib/i18n/I18nContext'
@@ -29,12 +30,14 @@ export default function AppLayout() {
   const location = useLocation()
 
   // ── Profile fetch (for role check) ──────────────────────
-  const { data: profile, isError: profileError } = useProfile()
+  const { data: profile, error: profileError } = useProfile()
   const isAdmin = profile?.role === 'ADMIN'
 
-  // ── Redirect to onboarding when profile is missing ──────
+  // ── Redirect to onboarding only when profile does not exist (404) ──
   useEffect(() => {
-    if (profileError && location.pathname !== '/onboarding') {
+    const isNotFound =
+      axios.isAxiosError(profileError) && profileError.response?.status === 404
+    if (isNotFound && location.pathname !== '/onboarding') {
       navigate('/onboarding', { replace: true })
     }
   }, [profileError, location.pathname, navigate])

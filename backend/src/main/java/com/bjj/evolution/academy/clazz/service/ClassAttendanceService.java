@@ -20,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -115,6 +116,24 @@ public class ClassAttendanceService {
         log.debug("Listing check-ins classId={} academy={} page={} size={}", classId, academyId, pageable.getPageNumber(), pageable.getPageSize());
         return attendanceRepository.findAllByScheduledClassId(classId, pageable)
                 .map(CheckInResponse::fromEntity);
+    }
+
+    public Optional<CheckInResponse> getMyAttendance(UUID academyId, Long classId, UUID studentId) {
+        getScheduledClassAndValidateAcademy(academyId, classId);
+        return attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId)
+                .map(CheckInResponse::fromEntity);
+    }
+
+    @Transactional
+    public void deleteAttendance(UUID academyId, Long classId, UUID studentId) {
+        getScheduledClassAndValidateAcademy(academyId, classId);
+        ClassAttendance attendance = attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId)
+                .orElseThrow(() -> {
+                    log.warn("Attendance delete failed: record not found classId={} student={}", classId, studentId);
+                    return new ResourceNotFoundException("Attendance record not found for student");
+                });
+        attendanceRepository.delete(attendance);
+        log.info("Attendance deleted: classId={} student={} academy={}", classId, studentId, academyId);
     }
 
     public Page<AcademyMenberClassViewResponse> findClassViewsByStudent(UUID studentId, CheckInStatus status, Pageable pageable) {

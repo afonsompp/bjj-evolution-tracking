@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '../lib/i18n/I18nContext'
 import { useAcademySearch } from '../features/academy/hooks/useAcademySearch'
 import { useMyMemberships } from '../features/academy/hooks/useMyMemberships'
+import { useProfile } from '../features/profile/useProfile'
 import {
   SearchIcon,
   BuildingIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CheckCircleIcon,
+  PlusIcon,
 } from '../assets/icons'
 
 const SIZE = 20
@@ -19,8 +21,11 @@ export default function AcademyListPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
 
+  const { data: profile } = useProfile()
   const { data: myMemberships } = useMyMemberships('ACTIVE')
   const { data, isLoading, isError } = useAcademySearch(search, page, SIZE)
+
+  const canCreate = profile?.role === 'PLATFORM_MANAGER' || profile?.role === 'ADMIN'
 
   const totalPages = data?.totalPages ?? 0
   const academies = data?.content ?? []
@@ -79,6 +84,15 @@ export default function AcademyListPage() {
                 : translate('academy.loading')}
             </p>
           </div>
+          {canCreate && (
+            <button
+              onClick={() => navigate('/academies/new')}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--text-primary)] px-4 py-2 text-sm font-medium text-[var(--bg-page)] hover:opacity-90"
+            >
+              <PlusIcon size={14} />
+              {translate('academy.createButton')}
+            </button>
+          )}
         </div>
 
         <div className="relative">

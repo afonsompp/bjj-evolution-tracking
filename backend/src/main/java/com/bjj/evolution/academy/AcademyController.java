@@ -30,6 +30,7 @@ public class AcademyController {
     }
 
     @PostMapping
+    @PreAuthorize("@academySecurity.isPlatformManager(authentication)")
     public ResponseEntity<AcademyResponse> create(@AuthenticationPrincipal Jwt jwt,
                                                   @Valid @RequestBody AcademyRequest request) {
         AcademyResponse response = service.create(request, UUID.fromString(jwt.getSubject()));

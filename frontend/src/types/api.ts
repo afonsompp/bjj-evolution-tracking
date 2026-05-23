@@ -18,6 +18,7 @@ export type UserRole = 'CUSTOMER' | 'PLATFORM_MANAGER' | 'ADMIN'
 export type MemberRole = 'OWNER' | 'MANAGER' | 'INSTRUCTOR' | 'STUDENT'
 export type MemberStatus = 'ACTIVE' | 'PENDING' | 'INACTIVE'
 export type ClassStatus = 'DRAFT' | 'PUBLISHED' | 'COMPLETED' | 'CANCELED'
+export type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY'
 
 // ── Generic ──────────────────────────────────────────────
 export interface Page<T> {
@@ -50,6 +51,14 @@ export interface AcademyResponse {
   address: string
 }
 
+export interface AcademyMemberRequest {
+  userId: string
+  role: MemberRole
+  status?: MemberStatus
+  belt?: Belt
+  beltStripe?: number
+}
+
 export interface AcademyMemberResponse {
   academyId: string
   academyName: string
@@ -59,6 +68,11 @@ export interface AcademyMemberResponse {
   status: MemberStatus
   belt?: Belt
   beltStripe?: number
+}
+
+export interface GraduationRequest {
+  newBelt: Belt
+  newStripe: number
 }
 
 // ── Profile ──────────────────────────────────────────────
@@ -246,21 +260,33 @@ export interface DashboardResponse {
 }
 
 // ── Template ─────────────────────────────────────────────
+export interface ClassRecurrenceRule {
+  dayOfWeek: DayOfWeek
+  startTime: string  // "HH:mm:ss"
+}
+
+export interface GenerateClassesRequest {
+  startDate: string  // "YYYY-MM-DD"
+  endDate: string
+}
+
 export interface ClassTemplateRequest {
-  academyId: string
   name: string
+  instructorId: string
   classType: ClassType
   trainingType: TrainingType
   durationMinutes: number
   techniqueIds?: number[]
+  recurrenceRules: ClassRecurrenceRule[]
 }
 
 export interface ClassTemplateResponse {
-  id: number
-  academyId: string
+  id: string
   name: string
+  instructor: ProfileResponse
   classType: ClassType
   trainingType: TrainingType
   durationMinutes: number
   techniques: TechniqueResponse[]
+  recurrenceRules: ClassRecurrenceRule[]
 }

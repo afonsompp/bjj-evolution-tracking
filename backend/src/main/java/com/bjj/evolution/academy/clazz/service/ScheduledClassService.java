@@ -98,7 +98,9 @@ public class ScheduledClassService {
                     return new ResourceNotFoundException("Instructor", request.instructorId());
                 });
 
-        List<Technique> techniques = techniqueRepository.findAllById(request.techniqueIds());
+        List<Technique> techniques = request.techniqueIds() != null
+                ? techniqueRepository.findAllById(request.techniqueIds())
+                : List.of();
 
         log.info("Updating scheduled class: id={} start={} instructor={} techniques={}",
                 id, request.startTime(), request.instructorId(), techniques.size());
@@ -132,6 +134,30 @@ public class ScheduledClassService {
         scheduledClass.setStatus(ClassStatus.CANCELED);
         repository.save(scheduledClass);
         log.info("Scheduled class canceled: id={} academy={} wasStatus={}", id, scheduledClass.getAcademy().getId(), oldStatus);
+    }
+
+    @Transactional
+    public void close(UUID academyId, Long classId) {
+        ScheduledClass scheduledClass = repository.findById(classId)
+                .orElseThrow(() -> {
+                    log.warn("Class close failed: class not found id={}", classId);
+                    return new ResourceNotFoundException("Class", classId);
+                });
+
+        if (!scheduledClass.getAcademy().getId().equals(academyId)) {
+            log.warn("Class close denied: academy mismatch classId={} belongs={} requested={}",
+                    classId, scheduledClass.getAcademy().getId(), academyId);
+            throw new BusinessRuleException("Class does not belong to the given academy.");
+        }
+
+        if (scheduledClass.getStatus() != ClassStatus.PUBLISHED) {
+            log.warn("Class close denied: classId={} status={}", classId, scheduledClass.getStatus());
+            throw new BusinessRuleException("Only published classes can be closed.");
+        }
+
+        scheduledClass.setStatus(ClassStatus.COMPLETED);
+        repository.save(scheduledClass);
+        log.info("Scheduled class closed (COMPLETED): id={} academy={}", classId, academyId);
     }
 
     @Transactional

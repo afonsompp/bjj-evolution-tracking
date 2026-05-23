@@ -70,6 +70,16 @@ public class ScheduledClassController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/{classId}/close")
+    @PreAuthorize("@academySecurity.isInstructorOrAdmin(authentication, #academyId)")
+    public ResponseEntity<Void> close(
+            @PathVariable UUID academyId,
+            @PathVariable Long classId) {
+
+        service.close(academyId, classId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping
     @PreAuthorize("@academySecurity.hasAccess(authentication, #academyId)")
     public ResponseEntity<Page<ScheduledClassResponse>> getAll(

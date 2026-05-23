@@ -49,6 +49,11 @@ public class ClassAttendanceService {
             throw new BusinessRuleException("Check-in is only allowed for published classes.");
         }
 
+        if (scheduledClass.getInstructor().getId().equals(studentId)) {
+            log.warn("Check-in registration denied: instructor is already confirmed in the class classId={} instructorId={}", classId, studentId);
+            throw new BusinessRuleException("The instructor is already confirmed as the teacher of this class.");
+        }
+
         attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId).ifPresent(a -> {
             log.warn("Check-in registration denied: duplicate classId={} student={} existingStatus={}", classId, studentId, a.getStatus());
             throw new BusinessRuleException("Student is already registered for this class.");

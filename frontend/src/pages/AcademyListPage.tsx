@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from '../lib/i18n/I18nContext'
 import { useAcademySearch } from '../features/academy/hooks/useAcademySearch'
 import { useMyMemberships } from '../features/academy/hooks/useMyMemberships'
@@ -44,9 +44,10 @@ export default function AcademyListPage() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {myAcademies.map((m) => (
-              <div
+              <Link
                 key={m.academyId}
-                className="flex items-start gap-3 rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] p-4 shadow-sm"
+                to={`/academies/${m.academyId}`}
+                className="flex items-start gap-3 rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] p-4 shadow-sm transition-colors hover:border-[var(--border-card-hover)]"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-subtle)] text-[var(--text-muted)]">
                   <BuildingIcon size={20} />
@@ -57,15 +58,7 @@ export default function AcademyListPage() {
                     <p className="mt-0.5 text-xs text-[var(--text-muted)]">{m.academyAddress}</p>
                   )}
                 </div>
-                <div className="flex shrink-0 flex-col gap-1.5">
-                  <button
-                    onClick={() => navigate(`/academies/${m.academyId}`)}
-                    className="rounded-lg border border-[var(--border-card)] bg-[var(--bg-page)] px-3 py-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                  >
-                    {translate('academy.viewSchedule')}
-                  </button>
-                </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -139,9 +132,9 @@ export default function AcademyListPage() {
         {!isLoading && academies.length > 0 && (
           <div className="space-y-3">
             {academies.map((a) => (
-              <button
+              <Link
                 key={a.id}
-                onClick={() => navigate(`/academies/${a.id}`)}
+                to={`/academies/${a.id}`}
                 className="flex w-full items-start gap-4 rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] px-5 py-4 text-left shadow-sm transition-colors hover:border-[var(--border-card-hover)]"
               >
                 <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-subtle)] text-[var(--text-muted)]">
@@ -154,7 +147,7 @@ export default function AcademyListPage() {
                   )}
                 </div>
                 <ChevronRightIcon size={16} className="mt-2.5 shrink-0 text-[var(--text-subtle)]" />
-              </button>
+              </Link>
             ))}
           </div>
         )}

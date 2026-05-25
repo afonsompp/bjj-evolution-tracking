@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../features/auth/AuthContext'
 import { useProfile } from '../features/profile/useProfile'
@@ -74,7 +74,9 @@ export default function AppLayout() {
     <div className="flex min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)] transition-colors">
       {/* Sidebar */}
       <aside className="sticky top-0 hidden h-screen w-56 flex-col border-r border-[var(--border-header)] bg-[var(--bg-sidebar)] p-4 md:flex">
-        <h2 className="mb-6 text-lg font-bold text-[var(--text-primary)]">BJJ Evolution</h2>
+        <Link to="/" className="mb-6 inline-block text-lg font-bold text-[var(--text-primary)] hover:opacity-80">
+          BJJ Evolution
+        </Link>
         <nav className="flex flex-col gap-1">
           {navItems.map(({ to, labelKey, end }) => (
             <NavLink key={to} to={to} end={end} className={linkClass}>
@@ -152,7 +154,7 @@ export default function AppLayout() {
       {/* Mobile header + main */}
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-[var(--border-header)] bg-[var(--bg-page)] p-4 md:hidden">
-          <h2 className="text-sm font-bold">BJJ Evolution</h2>
+          <Link to="/" className="text-sm font-bold hover:opacity-80">BJJ Evolution</Link>
           <div className="relative">
             <button
               onClick={() => setAccountOpen((o) => !o)}

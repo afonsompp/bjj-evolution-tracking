@@ -132,6 +132,23 @@ export default function AcademyDetailPage() {
                   </div>
                 )}
               </div>
+              {isMember && !isOwner && (
+                <button
+                  onClick={() => {
+                    setActionError('')
+                    setShowLeaveConfirm(true)
+                  }}
+                  disabled={leaveMutation.isPending}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-xs text-rose-400 hover:bg-rose-500/20 disabled:opacity-50"
+                >
+                  {leaveMutation.isPending ? (
+                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-rose-400 border-t-transparent" />
+                  ) : (
+                    <LogOutIcon size={12} />
+                  )}
+                  {translate('academy.leave')}
+                </button>
+              )}
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -140,28 +157,9 @@ export default function AcademyDetailPage() {
                   <LoaderIcon size={14} className="inline" />
                 </span>
               ) : isMember ? (
-                <>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
-                    {translate('academy.alreadyMember')}
-                  </span>
-                  {!isOwner && (
-                    <button
-                      onClick={() => {
-                        setActionError('')
-                        setShowLeaveConfirm(true)
-                      }}
-                      disabled={leaveMutation.isPending}
-                      className="inline-flex items-center gap-1 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-xs text-rose-400 hover:bg-rose-500/20 disabled:opacity-50"
-                    >
-                      {leaveMutation.isPending ? (
-                        <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-rose-400 border-t-transparent" />
-                      ) : (
-                        <LogOutIcon size={12} />
-                      )}
-                      {translate('academy.leave')}
-                    </button>
-                  )}
-                </>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
+                  {translate('academy.alreadyMember')}
+                </span>
               ) : isPending ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400">
                   <HourglassIcon size={14} />

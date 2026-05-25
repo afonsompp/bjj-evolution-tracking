@@ -12,10 +12,7 @@ import type {
 } from '../types/api'
 import {
   StarIcon,
-  CheckIcon,
-  XIcon,
   ChevronLeftIcon,
-  LoaderIcon,
 } from '../assets/icons'
 
 // ── Constants ────────────────────────────────────────────

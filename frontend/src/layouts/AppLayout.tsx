@@ -153,28 +153,60 @@ export default function AppLayout() {
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-[var(--border-header)] bg-[var(--bg-page)] p-4 md:hidden">
           <h2 className="text-sm font-bold">BJJ Evolution</h2>
-          <div className="flex items-center gap-2">
+          <div className="relative">
             <button
-              onClick={toggle}
-              className="rounded p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              onClick={() => setAccountOpen((o) => !o)}
+              className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+              title={translate('nav.myAccount')}
+              aria-label={translate('nav.myAccount')}
             >
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+              <UserIcon />
             </button>
-            <select
-              value={locale}
-              onChange={(e) => setLocale(e.target.value as Locale)}
-              className="rounded border border-[var(--border-select)] bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-muted)]"
-            >
-              {languages.map(({ code, labelKey }) => (
-                <option key={code} value={code}>
-                  {translate(labelKey)}
-                </option>
-              ))}
-            </select>
-            <button onClick={handleSignOut} className="text-xs text-[var(--text-subtle)] hover:text-[var(--text-primary)]">
-              {translate('nav.signOut')}
-            </button>
+            {accountOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setAccountOpen(false)}
+                />
+                <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-[var(--border-header)] bg-[var(--bg-page)] p-1 shadow-lg">
+                  <button
+                    onClick={() => { setAccountOpen(false); navigate('/profile') }}
+                    className={accountBtnClass}
+                  >
+                    <UserIcon />
+                    <span>{translate('nav.profile')}</span>
+                  </button>
+                  <div className={accountBtnClass} onClick={(e) => e.stopPropagation()}>
+                    <GlobeIcon />
+                    <select
+                      value={locale}
+                      onChange={(e) => setLocale(e.target.value as Locale)}
+                      className="flex-1 bg-transparent text-sm text-[var(--text-muted)] outline-none"
+                    >
+                      {languages.map(({ code, labelKey }) => (
+                        <option key={code} value={code}>
+                          {translate(labelKey)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={() => { toggle() }}
+                    className={accountBtnClass}
+                  >
+                    {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+                    <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+                  </button>
+                  <button
+                    onClick={() => { setAccountOpen(false); handleSignOut() }}
+                    className={accountBtnClass + ' text-rose-500 hover:text-rose-400'}
+                  >
+                    <LogOutIcon />
+                    <span>{translate('nav.signOut')}</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-6">

@@ -30,10 +30,10 @@ export const academyApi = {
     apiClient.put<AcademyResponse>(`/academies/${id}`, body).then((r) => r.data),
 
   // ── Classes ──────────────────────────────────────────────
-  getSchedule: (id: string, startDate: string, endDate: string, size = 20) =>
+  getSchedule: (id: string, startDate: string, endDate: string, page = 0, size = 20) =>
     apiClient
       .get<Page<ScheduledClassResponse>>(`/academies/${id}/classes`, {
-        params: { startDate, endDate, size },
+        params: { startDate, endDate, page, size },
       })
       .then((r) => r.data),
 

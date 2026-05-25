@@ -39,7 +39,7 @@ export function AttendanceModal({ academyId, cls, onClose }: Props) {
   const attendees = attendancePage?.content ?? []
   const registeredIds = new Set(attendees.map((a) => a.student.id))
   const eligibleMembers = (membersPage?.content ?? []).filter(
-    (m) => !registeredIds.has(m.user.id),
+    (m) => !registeredIds.has(m.user.id) && m.user.id !== cls.instructor.id,
   )
 
   const handleAddStudent = () => {

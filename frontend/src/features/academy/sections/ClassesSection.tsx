@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '../../../lib/i18n/I18nContext'
+import { MAX_DATE, hasYearOverflow, isApplicableRange, isOutOfOrderRange } from '../../../lib/dateValidation'
 import { useClasses } from '../hooks/useClasses'
 import { useCancelClass } from '../hooks/useClassMutations'
 import { useTemplates } from '../hooks/useTemplates'
@@ -91,11 +92,22 @@ export function ClassesSection({ academyId }: Props) {
   const [preset, setPreset] = useState<Preset>('30d')
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
+  const [appliedCustomStart, setAppliedCustomStart] = useState('')
+  const [appliedCustomEnd, setAppliedCustomEnd] = useState('')
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(25)
 
+  useEffect(() => {
+    if (isApplicableRange(customStart, customEnd)) {
+      setAppliedCustomStart(customStart)
+      setAppliedCustomEnd(customEnd)
+    }
+  }, [customStart, customEnd])
+
+  const hasError = preset === 'custom' && isOutOfOrderRange(customStart, customEnd)
+
   const { startDate, endDate } = preset === 'custom'
-    ? { startDate: customStart, endDate: customEnd }
+    ? { startDate: appliedCustomStart, endDate: appliedCustomEnd }
     : presetForwardRange(preset)
 
   const { data: classesPage, isLoading: classesLoading, isError: classesError } = useClasses(
@@ -106,8 +118,14 @@ export function ClassesSection({ academyId }: Props) {
   const totalPages = classesPage?.totalPages ?? 0
 
   const handlePreset = (p: Preset) => { setPreset(p); setPage(0) }
-  const handleCustomStart = (v: string) => { setCustomStart(v); setPage(0) }
-  const handleCustomEnd = (v: string) => { setCustomEnd(v); setPage(0) }
+  const handleCustomStart = (v: string) => {
+    if (hasYearOverflow(v)) return
+    setCustomStart(v); setPage(0)
+  }
+  const handleCustomEnd = (v: string) => {
+    if (hasYearOverflow(v)) return
+    setCustomEnd(v); setPage(0)
+  }
   const cancelMutation = useCancelClass(academyId)
   const [cancelTarget, setCancelTarget] = useState<ScheduledClassResponse | null>(null)
   const [attendanceTarget, setAttendanceTarget] = useState<ScheduledClassResponse | null>(null)
@@ -212,21 +230,32 @@ export function ClassesSection({ academyId }: Props) {
                 </button>
               ))}
               {preset === 'custom' && (
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <input
                     type="date"
                     value={customStart}
+                    max={customEnd || MAX_DATE}
                     onChange={(e) => handleCustomStart(e.target.value)}
-                    className="rounded-md border border-[var(--border-select)] bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
+                    className={`rounded-md border bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)] ${
+                      hasError ? 'border-rose-500' : 'border-[var(--border-select)]'
+                    }`}
                   />
                   <span className="text-xs text-[var(--text-subtle)]">—</span>
                   <input
                     type="date"
                     value={customEnd}
                     min={customStart || undefined}
+                    max={MAX_DATE}
                     onChange={(e) => handleCustomEnd(e.target.value)}
-                    className="rounded-md border border-[var(--border-select)] bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
+                    className={`rounded-md border bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)] ${
+                      hasError ? 'border-rose-500' : 'border-[var(--border-select)]'
+                    }`}
                   />
+                  {hasError && (
+                    <span className="text-xs text-rose-500">
+                      {translate('filter.invalidRange')}
+                    </span>
+                  )}
                 </div>
               )}
             </div>

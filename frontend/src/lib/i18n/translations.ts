@@ -88,6 +88,7 @@ const en = {
   'history.confirmDeleteMsg': 'Are you sure you want to delete the training session from {date}? This cannot be undone.',
   'history.confirmDelete': 'Delete',
   'history.cancel': 'Cancel',
+  'filter.invalidRange': 'End date must be on or after start date',
   // ── Technique Management ─────────────────────────────────────
   'technique.title': 'Manage Techniques',
   'technique.loading': 'Loading…',
@@ -451,6 +452,7 @@ const pt: Record<TranslationKey, string> = {
   'history.confirmDeleteMsg': 'Tem certeza que deseja excluir o treino de {date}? Esta ação não pode ser desfeita.',
   'history.confirmDelete': 'Excluir',
   'history.cancel': 'Cancelar',
+  'filter.invalidRange': 'A data final deve ser maior ou igual à data inicial',
   // ── Technique Management ─────────────────────────────────────
   'technique.title': 'Gerenciar Técnicas',
   'technique.loading': 'Carregando…',

@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { AcademyMenberClassViewResponse } from '../../../types/api'
 import { useTranslation } from '../../../lib/i18n/I18nContext'
+import { MAX_DATE, hasYearOverflow, isApplicableRange, isOutOfOrderRange } from '../../../lib/dateValidation'
 import { useProfile } from '../../profile/useProfile'
 import { useAcademySchedule } from '../hooks/useAcademySchedule'
 import { useMyAttendances } from '../hooks/useAttendance'
@@ -66,7 +67,7 @@ function futureWindow(preset: Preset, customStart: string, customEnd: string) {
 }
 
 function PresetFilter({
-  value, onChange, customStart, customEnd, onCustomStart, onCustomEnd,
+  value, onChange, customStart, customEnd, onCustomStart, onCustomEnd, errorMessage,
 }: {
   value: Preset
   onChange: (p: Preset) => void
@@ -74,7 +75,9 @@ function PresetFilter({
   customEnd: string
   onCustomStart: (v: string) => void
   onCustomEnd: (v: string) => void
+  errorMessage?: string
 }) {
+  const invalid = !!errorMessage
   return (
     <div className="flex flex-wrap items-center gap-2">
       {PRESETS.map(({ key, label }) => (
@@ -91,21 +94,30 @@ function PresetFilter({
         </button>
       ))}
       {value === 'custom' && (
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <input
             type="date"
             value={customStart}
+            max={customEnd || MAX_DATE}
             onChange={(e) => onCustomStart(e.target.value)}
-            className="rounded-md border border-[var(--border-select)] bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
+            className={`rounded-md border bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)] ${
+              invalid ? 'border-rose-500' : 'border-[var(--border-select)]'
+            }`}
           />
           <span className="text-xs text-[var(--text-subtle)]">—</span>
           <input
             type="date"
             value={customEnd}
             min={customStart || undefined}
+            max={MAX_DATE}
             onChange={(e) => onCustomEnd(e.target.value)}
-            className="rounded-md border border-[var(--border-select)] bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
+            className={`rounded-md border bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)] ${
+              invalid ? 'border-rose-500' : 'border-[var(--border-select)]'
+            }`}
           />
+          {errorMessage && (
+            <span className="text-xs text-rose-500">{errorMessage}</span>
+          )}
         </div>
       )}
     </div>
@@ -168,17 +180,40 @@ export function ScheduleSection({ academyId }: Props) {
   const [upcomingPreset, setUpcomingPreset] = useState<Preset>('90d')
   const [upcomingCustomStart, setUpcomingCustomStart] = useState('')
   const [upcomingCustomEnd, setUpcomingCustomEnd] = useState('')
+  const [appliedUpcomingStart, setAppliedUpcomingStart] = useState('')
+  const [appliedUpcomingEnd, setAppliedUpcomingEnd] = useState('')
   const [upcomingPage, setUpcomingPage] = useState(0)
   const [upcomingSize, setUpcomingSize] = useState(25)
 
   const [pastPreset, setPastPreset] = useState<Preset>('7d')
   const [pastCustomStart, setPastCustomStart] = useState('')
   const [pastCustomEnd, setPastCustomEnd] = useState('')
+  const [appliedPastStart, setAppliedPastStart] = useState('')
+  const [appliedPastEnd, setAppliedPastEnd] = useState('')
   const [pastPage, setPastPage] = useState(0)
   const [pastSize, setPastSize] = useState(25)
 
-  const upcomingRange = futureWindow(upcomingPreset, upcomingCustomStart, upcomingCustomEnd)
-  const pastRange = pastWindow(pastPreset, pastCustomStart, pastCustomEnd)
+  useEffect(() => {
+    if (isApplicableRange(upcomingCustomStart, upcomingCustomEnd)) {
+      setAppliedUpcomingStart(upcomingCustomStart)
+      setAppliedUpcomingEnd(upcomingCustomEnd)
+    }
+  }, [upcomingCustomStart, upcomingCustomEnd])
+
+  useEffect(() => {
+    if (isApplicableRange(pastCustomStart, pastCustomEnd)) {
+      setAppliedPastStart(pastCustomStart)
+      setAppliedPastEnd(pastCustomEnd)
+    }
+  }, [pastCustomStart, pastCustomEnd])
+
+  const upcomingRange = futureWindow(upcomingPreset, appliedUpcomingStart, appliedUpcomingEnd)
+  const pastRange = pastWindow(pastPreset, appliedPastStart, appliedPastEnd)
+
+  const upcomingHasError = upcomingPreset === 'custom'
+    && isOutOfOrderRange(upcomingCustomStart, upcomingCustomEnd)
+  const pastHasError = pastPreset === 'custom'
+    && isOutOfOrderRange(pastCustomStart, pastCustomEnd)
 
   const { data: upcomingPageData, isLoading: upcomingLoading } = useAcademySchedule(
     academyId, true, upcomingRange.startISO, upcomingRange.endISO, upcomingPage, upcomingSize,
@@ -212,11 +247,23 @@ export function ScheduleSection({ academyId }: Props) {
   const pastTotalPages = pastPageData?.totalPages ?? 0
 
   const handleUpcomingPreset = (p: Preset) => { setUpcomingPreset(p); setUpcomingPage(0) }
-  const handleUpcomingCustomStart = (v: string) => { setUpcomingCustomStart(v); setUpcomingPage(0) }
-  const handleUpcomingCustomEnd = (v: string) => { setUpcomingCustomEnd(v); setUpcomingPage(0) }
+  const handleUpcomingCustomStart = (v: string) => {
+    if (hasYearOverflow(v)) return
+    setUpcomingCustomStart(v); setUpcomingPage(0)
+  }
+  const handleUpcomingCustomEnd = (v: string) => {
+    if (hasYearOverflow(v)) return
+    setUpcomingCustomEnd(v); setUpcomingPage(0)
+  }
   const handlePastPreset = (p: Preset) => { setPastPreset(p); setPastPage(0) }
-  const handlePastCustomStart = (v: string) => { setPastCustomStart(v); setPastPage(0) }
-  const handlePastCustomEnd = (v: string) => { setPastCustomEnd(v); setPastPage(0) }
+  const handlePastCustomStart = (v: string) => {
+    if (hasYearOverflow(v)) return
+    setPastCustomStart(v); setPastPage(0)
+  }
+  const handlePastCustomEnd = (v: string) => {
+    if (hasYearOverflow(v)) return
+    setPastCustomEnd(v); setPastPage(0)
+  }
 
   return (
     <div className="space-y-4">
@@ -231,6 +278,7 @@ export function ScheduleSection({ academyId }: Props) {
           customEnd={upcomingCustomEnd}
           onCustomStart={handleUpcomingCustomStart}
           onCustomEnd={handleUpcomingCustomEnd}
+          errorMessage={upcomingHasError ? translate('filter.invalidRange') : undefined}
         />
         <PageSizeSelector
           value={upcomingSize}
@@ -371,6 +419,7 @@ export function ScheduleSection({ academyId }: Props) {
           customEnd={pastCustomEnd}
           onCustomStart={handlePastCustomStart}
           onCustomEnd={handlePastCustomEnd}
+          errorMessage={pastHasError ? translate('filter.invalidRange') : undefined}
         />
         <PageSizeSelector
           value={pastSize}

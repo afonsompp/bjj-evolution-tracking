@@ -132,57 +132,61 @@ export default function AcademyDetailPage() {
                   </div>
                 )}
               </div>
-              {isMember && !isOwner && (
-                <button
-                  onClick={() => {
-                    setActionError('')
-                    setShowLeaveConfirm(true)
-                  }}
-                  disabled={leaveMutation.isPending}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-xs text-rose-400 hover:bg-rose-500/20 disabled:opacity-50"
-                >
-                  {leaveMutation.isPending ? (
-                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-rose-400 border-t-transparent" />
-                  ) : (
-                    <LogOutIcon size={12} />
-                  )}
-                  {translate('academy.leave')}
-                </button>
-              )}
+              <div className="flex h-14 shrink-0 flex-col items-end justify-center gap-2.5">
+                {membershipLoading ? (
+                  <span className="text-xs text-[var(--text-subtle)]">
+                    <LoaderIcon size={14} className="inline" />
+                  </span>
+                ) : isMember ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
+                    {translate('academy.alreadyMember')}
+                  </span>
+                ) : isPending ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400">
+                    <HourglassIcon size={14} />
+                    {translate('academy.pendingApproval')}
+                  </span>
+                ) : (
+                  <button
+                    onClick={handleJoin}
+                    disabled={joinMutation.isPending}
+                    className="rounded-lg bg-[var(--text-primary)] px-4 py-2 text-sm font-medium text-[var(--bg-page)] hover:opacity-90 disabled:opacity-50"
+                  >
+                    {joinMutation.isPending
+                      ? translate('form.saving')
+                      : translate('academy.requestJoin')}
+                  </button>
+                )}
+                {isMember && !isOwner && (
+                  <button
+                    onClick={() => {
+                      setActionError('')
+                      setShowLeaveConfirm(true)
+                    }}
+                    disabled={leaveMutation.isPending}
+                    className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-xs text-rose-400 hover:bg-rose-500/20 disabled:opacity-50"
+                  >
+                    {leaveMutation.isPending ? (
+                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-rose-400 border-t-transparent" />
+                    ) : (
+                      <LogOutIcon size={12} />
+                    )}
+                    {translate('academy.leave')}
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              {membershipLoading ? (
-                <span className="text-xs text-[var(--text-subtle)]">
-                  <LoaderIcon size={14} className="inline" />
-                </span>
-              ) : isMember ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
-                  {translate('academy.alreadyMember')}
-                </span>
-              ) : isPending ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400">
-                  <HourglassIcon size={14} />
-                  {translate('academy.pendingApproval')}
-                </span>
-              ) : (
-                <button
-                  onClick={handleJoin}
-                  disabled={joinMutation.isPending}
-                  className="rounded-lg bg-[var(--text-primary)] px-4 py-2 text-sm font-medium text-[var(--bg-page)] hover:opacity-90 disabled:opacity-50"
-                >
-                  {joinMutation.isPending
-                    ? translate('form.saving')
-                    : translate('academy.requestJoin')}
-                </button>
-              )}
-              {actionError && (
-                <span className="text-xs text-rose-400">{actionError}</span>
-              )}
-              {joinMutation.isSuccess && !isMember && !isPending && (
-                <span className="text-xs text-emerald-400">{translate('academy.joinSent')}</span>
-              )}
-            </div>
+            {(actionError || (joinMutation.isSuccess && !isMember && !isPending)) && (
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                {actionError && (
+                  <span className="text-xs text-rose-400">{actionError}</span>
+                )}
+                {joinMutation.isSuccess && !isMember && !isPending && (
+                  <span className="text-xs text-emerald-400">{translate('academy.joinSent')}</span>
+                )}
+              </div>
+            )}
 
             {showLeaveConfirm && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

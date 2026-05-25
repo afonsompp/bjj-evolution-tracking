@@ -19,7 +19,6 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import org.hibernate.annotations.Check;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
@@ -42,7 +41,7 @@ public class ScheduledClass {
     private Instant startTime;
 
     @Column(nullable = false)
-    private Duration duration;
+    private int durationMinutes;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -77,7 +76,7 @@ public class ScheduledClass {
         this.academy = builder.academy;
         this.instructor = builder.instructor;
         this.startTime = builder.startTime;
-        this.duration = builder.duration;
+        this.durationMinutes = builder.durationMinutes;
         this.classType = builder.classType;
         this.trainingType = builder.trainingType;
         this.scheduledTechniques = builder.scheduledTechniques;
@@ -93,7 +92,7 @@ public class ScheduledClass {
         private Academy academy;
         private UserProfile instructor;
         private Instant startTime;
-        private Duration duration;
+        private int durationMinutes;
         private ClassType classType;
         private TrainingType trainingType;
         private List<Technique> scheduledTechniques;
@@ -118,8 +117,8 @@ public class ScheduledClass {
             return this;
         }
 
-        public Builder duration(Duration duration) {
-            this.duration = duration;
+        public Builder durationMinutes(int durationMinutes) {
+            this.durationMinutes = durationMinutes;
             return this;
         }
 
@@ -169,8 +168,8 @@ public class ScheduledClass {
         return startTime;
     }
 
-    public Duration getDuration() {
-        return duration;
+    public int getDurationMinutes() {
+        return durationMinutes;
     }
 
     public ClassType getClassType() {
@@ -205,8 +204,8 @@ public class ScheduledClass {
         this.startTime = startTime;
     }
 
-    public void setDuration(Duration duration) {
-        this.duration = duration;
+    public void setDurationMinutes(int durationMinutes) {
+        this.durationMinutes = durationMinutes;
     }
 
     public void setClassType(ClassType classType) {

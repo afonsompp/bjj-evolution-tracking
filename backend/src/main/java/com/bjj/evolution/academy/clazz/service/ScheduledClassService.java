@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -29,6 +30,8 @@ import java.util.UUID;
 public class ScheduledClassService {
 
     private static final Logger log = LoggerFactory.getLogger(ScheduledClassService.class);
+
+    private static final int AUTO_COMPLETE_GRACE_MINUTES = 30;
 
     private final ScheduledClassRepository repository;
     private final AcademyRepository academyRepository;
@@ -66,11 +69,11 @@ public class ScheduledClassService {
                 .academy(academy)
                 .instructor(instructor)
                 .startTime(request.startTime())
-                .duration(Duration.ofMinutes(request.durationMinutes()))
+                .durationMinutes(request.durationMinutes())
                 .classType(request.classType())
                 .trainingType(request.trainingType())
                 .scheduledTechniques(techniques)
-                .status(ClassStatus.PUBLISHED)
+                .status(request.status() != null ? request.status() : ClassStatus.PUBLISHED)
                 .build();
         ScheduledClass saved = repository.save(scheduledClass);
         log.info("Scheduled class created: id={} academy={} instructor={} start={} type={} training={} techniques={}",
@@ -107,10 +110,13 @@ public class ScheduledClassService {
 
         scheduledClass.setInstructor(instructor);
         scheduledClass.setStartTime(request.startTime());
-        scheduledClass.setDuration(Duration.ofMinutes(request.durationMinutes()));
+        scheduledClass.setDurationMinutes(request.durationMinutes());
         scheduledClass.setClassType(request.classType());
         scheduledClass.setTrainingType(request.trainingType());
         scheduledClass.setScheduledTechniques(techniques);
+        if (request.status() == ClassStatus.DRAFT || request.status() == ClassStatus.PUBLISHED) {
+            scheduledClass.setStatus(request.status());
+        }
 
         ScheduledClass saved = repository.save(scheduledClass);
         log.info("Scheduled class updated: id={} start={} instructor={}", saved.getId(), saved.getStartTime(), request.instructorId());
@@ -158,6 +164,26 @@ public class ScheduledClassService {
         scheduledClass.setStatus(ClassStatus.COMPLETED);
         repository.save(scheduledClass);
         log.info("Scheduled class closed (COMPLETED): id={} academy={}", classId, academyId);
+    }
+
+    @Scheduled(fixedDelayString = "${app.class.auto-complete.fixed-delay-ms:60000}")
+    @Transactional
+    public void autoCompletePastClasses() {
+        Instant cutoff = Instant.now().minus(Duration.ofMinutes(AUTO_COMPLETE_GRACE_MINUTES));
+        List<ScheduledClass> candidates =
+                repository.findAllByStatusAndStartTimeBefore(ClassStatus.PUBLISHED, cutoff);
+
+        int updated = 0;
+        for (ScheduledClass c : candidates) {
+            Instant endTime = c.getStartTime().plus(Duration.ofMinutes(c.getDurationMinutes()));
+            if (endTime.isBefore(cutoff)) {
+                c.setStatus(ClassStatus.COMPLETED);
+                updated++;
+            }
+        }
+        if (updated > 0) {
+            log.info("Auto-completed scheduled classes: count={} cutoff={}", updated, cutoff);
+        }
     }
 
     @Transactional

@@ -20,7 +20,6 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -43,7 +42,7 @@ public class ClassTemplate {
         private UserProfile instructor;
 
         @Column(nullable = false)
-        private Duration duration;
+        private int durationMinutes;
 
         @Enumerated(EnumType.STRING)
         @Column(nullable = false)
@@ -97,12 +96,12 @@ public class ClassTemplate {
                 this.instructor = instructor;
         }
 
-        public Duration getDuration() {
-                return duration;
+        public int getDurationMinutes() {
+                return durationMinutes;
         }
 
-        public void setDuration(Duration duration) {
-                this.duration = duration;
+        public void setDurationMinutes(int durationMinutes) {
+                this.durationMinutes = durationMinutes;
         }
 
         public ClassType getClassType() {

@@ -88,7 +88,7 @@ class ClassTemplateControllerTest {
 
         sampleResponse = new ClassTemplateResponse(
                 templateId, "Morning Class", instructorResponse,
-                90L, ClassType.REGULAR, TrainingType.GI,
+                90, ClassType.REGULAR, TrainingType.GI,
                 List.of(techniqueResponse),
                 List.of(new ClassRecurrenceRequest(DayOfWeek.MONDAY, LocalTime.of(7, 0)))
         );

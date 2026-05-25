@@ -3,12 +3,10 @@ package com.bjj.evolution.training.log.domain;
 import com.bjj.evolution.shared.exception.BusinessRuleException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import org.hibernate.annotations.Check;
 
 @Embeddable
 public class Rating {
 
-    @Check(constraints = "value BETWEEN 1 AND 5")
     @Column(nullable = false)
     private Integer value;
 

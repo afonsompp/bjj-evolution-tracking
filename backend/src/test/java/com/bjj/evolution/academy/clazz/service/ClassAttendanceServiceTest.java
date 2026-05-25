@@ -26,7 +26,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -101,7 +100,7 @@ class ClassAttendanceServiceTest {
                 .academy(academy)
                 .instructor(instructor)
                 .startTime(Instant.parse("2025-06-01T10:00:00Z"))
-                .duration(Duration.ofMinutes(90))
+                .durationMinutes(90)
                 .classType(com.bjj.evolution.catalog.domain.ClassType.REGULAR)
                 .trainingType(com.bjj.evolution.catalog.domain.TrainingType.GI)
                 .scheduledTechniques(List.of())

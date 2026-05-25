@@ -91,7 +91,7 @@ class ScheduledClassServiceTest {
         request = new ScheduledClassRequest(
                 academyId, instructorId, startTime, 90,
                 ClassType.REGULAR, TrainingType.GI,
-                List.of(1L), null
+                List.of(1L), null, null
         );
     }
 
@@ -155,7 +155,7 @@ class ScheduledClassServiceTest {
         ScheduledClassRequest requestNoTechs = new ScheduledClassRequest(
                 academyId, instructorId, startTime, 90,
                 ClassType.REGULAR, TrainingType.GI,
-                null, null
+                null, null, null
         );
 
         when(academyRepository.findById(academyId)).thenReturn(Optional.of(academy));
@@ -200,7 +200,7 @@ class ScheduledClassServiceTest {
         ScheduledClass captured = classCaptor.getValue();
         assertEquals(instructor, captured.getInstructor());
         assertEquals(startTime, captured.getStartTime());
-        assertEquals(Duration.ofMinutes(90), captured.getDuration());
+        assertEquals(90, captured.getDurationMinutes());
     }
 
     @Test
@@ -389,6 +389,60 @@ class ScheduledClassServiceTest {
     }
 
     // -------------------------------------------------------
+    // autoCompletePastClasses
+    // -------------------------------------------------------
+
+    @Test
+    @DisplayName("autoCompletePastClasses should query PUBLISHED candidates with cutoff = now - 30min")
+    void autoCompletePastClasses_shouldUseGracePeriodCutoff() {
+        when(repository.findAllByStatusAndStartTimeBefore(eq(ClassStatus.PUBLISHED), any(Instant.class)))
+                .thenReturn(List.of());
+
+        Instant before = Instant.now().minus(Duration.ofMinutes(30));
+        service.autoCompletePastClasses();
+        Instant after = Instant.now().minus(Duration.ofMinutes(30));
+
+        ArgumentCaptor<Instant> cutoffCaptor = ArgumentCaptor.forClass(Instant.class);
+        verify(repository).findAllByStatusAndStartTimeBefore(eq(ClassStatus.PUBLISHED), cutoffCaptor.capture());
+        Instant cutoff = cutoffCaptor.getValue();
+        assertFalse(cutoff.isBefore(before), "cutoff should be at or after now - grace");
+        assertFalse(cutoff.isAfter(after), "cutoff should be at or before now - grace");
+    }
+
+    @Test
+    @DisplayName("autoCompletePastClasses should mark COMPLETED only candidates ended past the grace cutoff")
+    void autoCompletePastClasses_shouldMarkOnlyExpiredCandidates() {
+        Instant now = Instant.now();
+
+        ScheduledClass expired = buildScheduledClass(ClassStatus.PUBLISHED, List.of());
+        expired.setStartTime(now.minus(Duration.ofHours(2)));
+        expired.setDurationMinutes(60);
+
+        ScheduledClass notYetEnded = buildScheduledClass(ClassStatus.PUBLISHED, List.of());
+        notYetEnded.setStartTime(now.minus(Duration.ofMinutes(35)));
+        notYetEnded.setDurationMinutes(60);
+
+        when(repository.findAllByStatusAndStartTimeBefore(eq(ClassStatus.PUBLISHED), any(Instant.class)))
+                .thenReturn(List.of(expired, notYetEnded));
+
+        service.autoCompletePastClasses();
+
+        assertEquals(ClassStatus.COMPLETED, expired.getStatus());
+        assertEquals(ClassStatus.PUBLISHED, notYetEnded.getStatus());
+    }
+
+    @Test
+    @DisplayName("autoCompletePastClasses should be a no-op when there are no candidates")
+    void autoCompletePastClasses_whenNoCandidates_shouldSucceed() {
+        when(repository.findAllByStatusAndStartTimeBefore(eq(ClassStatus.PUBLISHED), any(Instant.class)))
+                .thenReturn(List.of());
+
+        assertDoesNotThrow(() -> service.autoCompletePastClasses());
+
+        verify(repository).findAllByStatusAndStartTimeBefore(eq(ClassStatus.PUBLISHED), any(Instant.class));
+    }
+
+    // -------------------------------------------------------
     // helpers
     // -------------------------------------------------------
 
@@ -397,7 +451,7 @@ class ScheduledClassServiceTest {
                 .academy(academy)
                 .instructor(instructor)
                 .startTime(startTime)
-                .duration(Duration.ofMinutes(90))
+                .durationMinutes(90)
                 .classType(ClassType.REGULAR)
                 .trainingType(TrainingType.GI)
                 .scheduledTechniques(techniques)

@@ -89,7 +89,7 @@ class ScheduledClassControllerTest {
                 classId, academyId, "Gracie Barra",
                 instructorResponse,
                 Instant.parse("2026-06-01T10:00:00Z"),
-                90L, ClassType.REGULAR, TrainingType.GI,
+                90, ClassType.REGULAR, TrainingType.GI,
                 List.of(techniqueResponse), ClassStatus.PUBLISHED
         );
 
@@ -375,7 +375,7 @@ class ScheduledClassControllerTest {
                 .andExpect(jsonPath("$.status").value("PUBLISHED"))
                 .andExpect(jsonPath("$.instructor.name").value("John"))
                 .andExpect(jsonPath("$.instructor.nickname").value("johnny"))
-                .andExpect(jsonPath("$.techniques[0].name").value("Armbar"));
+                .andExpect(jsonPath("$.scheduledTechniques[0].name").value("Armbar"));
 
         verify(scheduledClassService).findById(academyId, classId);
     }

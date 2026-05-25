@@ -70,6 +70,7 @@ class AcademyControllerTest {
     @Test
     @DisplayName("POST /academies should return 201 when created successfully")
     void create_shouldReturn201() throws Exception {
+        when(academySecurity.isPlatformManager(any())).thenReturn(true);
         when(academyService.create(any(AcademyRequest.class), any(UUID.class)))
                 .thenReturn(sampleResponse);
 

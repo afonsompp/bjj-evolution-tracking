@@ -1,5 +1,6 @@
 package com.bjj.evolution.academy.clazz.domain.dto;
 
+import com.bjj.evolution.academy.clazz.domain.ClassStatus;
 import com.bjj.evolution.catalog.domain.ClassType;
 import com.bjj.evolution.catalog.domain.TrainingType;
 import jakarta.validation.constraints.NotNull;
@@ -17,5 +18,6 @@ public record ScheduledClassRequest(
         @NotNull ClassType classType,
         @NotNull TrainingType trainingType,
         List<Long> techniqueIds,
-        UUID templateId
+        UUID templateId,
+        ClassStatus status
 ) {}

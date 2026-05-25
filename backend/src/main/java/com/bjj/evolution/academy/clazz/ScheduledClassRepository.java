@@ -1,11 +1,13 @@
 package com.bjj.evolution.academy.clazz;
 
+import com.bjj.evolution.academy.clazz.domain.ClassStatus;
 import com.bjj.evolution.academy.clazz.domain.ScheduledClass;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public interface ScheduledClassRepository extends JpaRepository<ScheduledClass, Long> {
@@ -18,4 +20,6 @@ public interface ScheduledClassRepository extends JpaRepository<ScheduledClass, 
     );
 
     Page<ScheduledClass> findAllByAcademyId(UUID academyId, Pageable pageable);
+
+    List<ScheduledClass> findAllByStatusAndStartTimeBefore(ClassStatus status, Instant startTime);
 }

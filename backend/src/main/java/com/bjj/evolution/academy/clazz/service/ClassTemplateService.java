@@ -25,7 +25,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -77,7 +76,7 @@ public class ClassTemplateService {
         template.setAcademy(academy);
         template.setName(request.name());
         template.setInstructor(instructor);
-        template.setDuration(Duration.ofMinutes(request.durationMinutes()));
+        template.setDurationMinutes(request.durationMinutes());
         template.setClassType(request.classType());
         template.setTrainingType(request.trainingType());
         template.setDefaultTechniques(techniques);
@@ -120,7 +119,7 @@ public class ClassTemplateService {
 
         template.setName(request.name());
         template.setInstructor(instructor);
-        template.setDuration(Duration.ofMinutes(request.durationMinutes()));
+        template.setDurationMinutes(request.durationMinutes());
         template.setClassType(request.classType());
         template.setTrainingType(request.trainingType());
         template.setDefaultTechniques(request.techniqueIds() != null
@@ -181,7 +180,7 @@ public class ClassTemplateService {
                             .academy(template.getAcademy())
                             .instructor(template.getInstructor())
                             .startTime(day.atTime(rule.getStartTime()).toInstant(ZoneOffset.UTC))
-                            .duration(template.getDuration())
+                            .durationMinutes(template.getDurationMinutes())
                             .classType(template.getClassType())
                             .trainingType(template.getTrainingType())
                             .scheduledTechniques(new ArrayList<>(template.getDefaultTechniques()))

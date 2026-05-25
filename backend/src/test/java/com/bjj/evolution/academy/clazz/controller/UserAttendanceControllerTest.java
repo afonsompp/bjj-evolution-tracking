@@ -82,7 +82,7 @@ class UserAttendanceControllerTest {
                 "Gracie Barra",
                 instructor,
                 Instant.parse("2025-05-17T10:00:00Z"),
-                90L,
+                90,
                 ClassType.REGULAR,
                 TrainingType.GI,
                 List.of(new TechniqueResponse(1L, "Closed Guard", null, TechniqueType.POSITION, TechniqueTarget.TORSO)),

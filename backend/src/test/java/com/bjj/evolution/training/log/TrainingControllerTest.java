@@ -508,7 +508,7 @@ class TrainingControllerTest {
             {
                 "classType": "REGULAR",
                 "trainingType": "GI",
-                "sessionDate": "2025-05-17T10:00:00",
+                "sessionDate": "2025-05-17T10:00:00Z",
                 "durationMinutes": 60,
                 "techniqueIds": [1],
                 "submissionTechniqueIds": [2],

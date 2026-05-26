@@ -153,7 +153,7 @@ export default function AppLayout() {
 
       {/* Mobile header + main */}
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-[var(--border-header)] bg-[var(--bg-page)] p-4 md:hidden">
+        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[var(--border-header)] bg-[var(--bg-page)] p-4 md:hidden">
           <Link to="/" className="text-sm font-bold hover:opacity-80">BJJ Evolution</Link>
           <div className="relative">
             <button

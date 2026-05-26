@@ -488,7 +488,7 @@ export default function TrainingFormPage() {
               <button
                 type="button"
                 onClick={() => setShowCreateModal(true)}
-                className="rounded-lg border border-[var(--border-card)] px-3 py-1.5 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+                className="rounded-lg bg-[var(--text-primary)] px-3 py-1.5 text-xs font-medium text-[var(--bg-page)] hover:opacity-90"
               >
                 + {translate('form.newTechnique')}
               </button>

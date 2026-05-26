@@ -77,7 +77,7 @@ Cada item abaixo vira fundação que toda feature futura consome. Adiar signific
 
 ## 3. Pequenos gaps DENTRO do MVP que valem fechar
 
-Coisas onde o backend já existe mas o frontend não surfaceou — completar é trivial e evita "MVP que parece pela metade":
+Coisas onde o backend já existe, mas o frontend não surfaceou — completar é trivial e evita "MVP que parece pela metade":
 
 - `membersApi.reject()` no frontend (backend tem `PATCH /{userId}/reject`) — 15min
 - Histórico de graduação na página do membro (`GET /profiles/{userId}/graduations`) — 1-2h

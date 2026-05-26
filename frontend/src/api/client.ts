@@ -1,8 +1,10 @@
 import axios from 'axios'
 import { authClient } from '../lib/auth/authClient'
 
+const apiOrigin = import.meta.env.VITE_API_BASE_URL ?? ''
+
 export const apiClient = axios.create({
-  baseURL: `${import.meta.env.VITE_API_BASE_URL}/api/v1`,
+  baseURL: `${apiOrigin}/api/v1`,
 })
 
 apiClient.interceptors.request.use(async (config) => {

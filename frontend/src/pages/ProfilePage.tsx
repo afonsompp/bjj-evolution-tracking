@@ -136,7 +136,7 @@ export default function ProfilePage() {
 
         {/* BJJ details */}
         <div className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] p-6">
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-[var(--text-muted)]">{translate('profile.belt')}</label>
               <select

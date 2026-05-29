@@ -93,6 +93,7 @@ export interface ProfileResponse {
   belt?: Belt
   beltStripe?: number
   startsIn?: string
+  photoUrl?: string
   role: UserRole
 }
 

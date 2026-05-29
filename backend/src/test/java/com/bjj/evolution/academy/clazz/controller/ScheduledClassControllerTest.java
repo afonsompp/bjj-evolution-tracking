@@ -77,7 +77,7 @@ class ScheduledClassControllerTest {
 
         instructorResponse = new ProfileResponse(
                 UUID.randomUUID(), "John", "Danaher",
-                "johnny", null, null, LocalDate.of(2020, 1, 1), UserRole.CUSTOMER
+                "johnny", null, null, LocalDate.of(2020, 1, 1), null, UserRole.CUSTOMER
         );
 
         techniqueResponse = new TechniqueResponse(

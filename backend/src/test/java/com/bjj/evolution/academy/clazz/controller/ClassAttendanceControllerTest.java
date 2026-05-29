@@ -72,7 +72,7 @@ class ClassAttendanceControllerTest {
 
         studentResponse = new ProfileResponse(
                 studentId, "Jane", "Doe",
-                "jane_bjj", null, null, LocalDate.of(2022, 3, 1), UserRole.CUSTOMER
+                "jane_bjj", null, null, LocalDate.of(2022, 3, 1), null, UserRole.CUSTOMER
         );
 
         sampleResponse = new CheckInResponse(

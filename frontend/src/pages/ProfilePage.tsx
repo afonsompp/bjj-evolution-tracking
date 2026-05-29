@@ -1,13 +1,14 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useEffect } from 'react'
+import { useEffect, useRef, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '../lib/i18n/I18nContext'
 import type { ProfileRequest, Belt } from '../types/api'
-import { useProfile, useUpsertProfile } from '../features/profile/useProfile'
+import { useProfile, useUpsertProfile, useUploadPhoto, useRemovePhoto } from '../features/profile/useProfile'
 import { GraduationHistorySection } from '../features/academy/sections/GraduationHistorySection'
 import { AttendanceHistorySection } from '../features/academy/sections/AttendanceHistorySection'
+import { UserIcon, LoaderIcon, TrashIcon } from '../assets/icons'
 
 const BELTS: { group: string; values: { label: string; value: Belt }[] }[] = [
   {
@@ -90,6 +91,16 @@ export default function ProfilePage() {
   const mutation = useUpsertProfile()
   const submit = (data: FormValues) => mutation.mutate(toRequest(data))
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const uploadPhoto = useUploadPhoto()
+  const removePhoto = useRemovePhoto()
+
+  const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) uploadPhoto.mutate(file)
+    e.target.value = '' // allow re-selecting the same file
+  }
+
   if (isLoading) {
     return (
       <div className="mx-auto max-w-lg animate-pulse space-y-6 pt-8">
@@ -104,6 +115,64 @@ export default function ProfilePage() {
       <h1 className="mb-8 text-2xl font-bold tracking-tight text-[var(--text-primary)]">
         {translate('profile.title')}
       </h1>
+
+      {/* Avatar */}
+      <div className="mb-6 flex items-center gap-4 rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] p-6">
+        <div className="relative h-20 w-20 shrink-0">
+          {profile?.photoUrl ? (
+            <img
+              src={profile.photoUrl}
+              alt={profile.name}
+              className="h-20 w-20 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--bg-subtle)] text-[var(--text-muted)]">
+              <UserIcon size={28} />
+            </div>
+          )}
+          {uploadPhoto.isPending && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
+              <LoaderIcon size={20} className="animate-spin text-white" />
+            </div>
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-[var(--text-primary)]">{translate('profile.photo')}</p>
+          <p className="mt-0.5 text-xs text-[var(--text-muted)]">{translate('profile.photoHint')}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadPhoto.isPending}
+              className="rounded-lg border border-[var(--border-card)] px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-50"
+            >
+              {profile?.photoUrl ? translate('profile.changePhoto') : translate('profile.uploadPhoto')}
+            </button>
+            {profile?.photoUrl && (
+              <button
+                type="button"
+                onClick={() => removePhoto.mutate()}
+                disabled={removePhoto.isPending}
+                className="flex items-center gap-1 rounded-lg border border-rose-500/20 px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-500/10 disabled:opacity-50"
+              >
+                <TrashIcon size={12} /> {translate('profile.removePhoto')}
+              </button>
+            )}
+          </div>
+          {uploadPhoto.isError && (
+            <p className="mt-2 text-xs text-rose-500">{translate('profile.photoError')}</p>
+          )}
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="hidden"
+          onChange={handlePhotoChange}
+        />
+      </div>
 
       <form onSubmit={handleSubmit(submit)} className="space-y-6">
         {/* Name fields */}

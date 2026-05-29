@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -69,6 +71,18 @@ public class UserProfileController {
     }
     
     
+
+    @PostMapping(value = "/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ProfileResponse> uploadPhoto(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(service.updatePhoto(jwt, file));
+    }
+
+    @DeleteMapping("/photo")
+    public ResponseEntity<ProfileResponse> removePhoto(@AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(service.removePhoto(jwt));
+    }
 
     @GetMapping("/export")
     public ResponseEntity<UserDataExportResponse> exportMyData(@AuthenticationPrincipal Jwt jwt) {

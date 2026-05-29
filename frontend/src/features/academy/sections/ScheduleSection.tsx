@@ -14,9 +14,9 @@ import {
   LoaderIcon,
   CheckCircleIcon,
   HourglassIcon,
-  UsersIcon,
   XIcon,
 } from '../../../assets/icons'
+import { Avatar } from '../../../components/Avatar'
 
 type Preset = 'all' | '7d' | '30d' | '90d' | '1y' | 'custom'
 
@@ -326,7 +326,7 @@ export function ScheduleSection({ academyId }: Props) {
                     {new Date(c.startTime).toLocaleString()}
                   </span>
                   <span className="flex items-center gap-1">
-                    <UsersIcon size={12} />
+                    <Avatar photoUrl={c.instructor.photoUrl} name={c.instructor.name} size={16} />
                     {c.instructor.name}
                   </span>
                   <span>{c.durationMinutes} {translate('form.minutes')}</span>
@@ -471,7 +471,7 @@ export function ScheduleSection({ academyId }: Props) {
                       {new Date(c.startTime).toLocaleString()}
                     </span>
                     <span className="flex items-center gap-1">
-                      <UsersIcon size={12} />
+                      <Avatar photoUrl={c.instructor.photoUrl} name={c.instructor.name} size={16} />
                       {c.instructor.name}
                     </span>
                     <span>{c.durationMinutes} {translate('form.minutes')}</span>

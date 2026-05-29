@@ -6,6 +6,7 @@ import { useProfile } from '../features/profile/useProfile'
 import { useTranslation } from '../lib/i18n/I18nContext'
 import { useTheme } from '../lib/ThemeContext'
 import { Logo } from '../components/Logo'
+import { Avatar } from '../components/Avatar'
 import type { Locale } from '../lib/i18n/translations'
 import {
   SunIcon,
@@ -93,7 +94,7 @@ export default function AppLayout() {
             className="flex w-full items-center justify-between rounded px-3 py-2 text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] transition-colors"
           >
             <div className="flex items-center gap-2">
-              <UserIcon />
+              <Avatar photoUrl={profile?.photoUrl} name={profile?.name} size={22} />
               <span>{translate('nav.myAccount')}</span>
             </div>
             {accountOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
@@ -160,11 +161,11 @@ export default function AppLayout() {
           <div className="relative">
             <button
               onClick={() => setAccountOpen((o) => !o)}
-              className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+              className="rounded-full text-[var(--text-muted)] hover:opacity-90"
               title={translate('nav.myAccount')}
               aria-label={translate('nav.myAccount')}
             >
-              <UserIcon />
+              <Avatar photoUrl={profile?.photoUrl} name={profile?.name} size={32} />
             </button>
             {accountOpen && (
               <>

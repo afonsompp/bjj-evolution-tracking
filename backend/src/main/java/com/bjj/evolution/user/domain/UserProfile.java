@@ -32,6 +32,12 @@ public class UserProfile {
 
     private LocalDate startsIn;
 
+    @Column(name = "photo_url")
+    private String photoUrl;
+
+    @Column(name = "photo_key")
+    private String photoKey;
+
     @Enumerated(EnumType.STRING)
     private UserRole role = UserRole.CUSTOMER;
 
@@ -104,6 +110,22 @@ public class UserProfile {
         this.startsIn = startsIn;
     }
 
+    public String getPhotoUrl() {
+        return photoUrl;
+    }
+
+    public void setPhotoUrl(String photoUrl) {
+        this.photoUrl = photoUrl;
+    }
+
+    public String getPhotoKey() {
+        return photoKey;
+    }
+
+    public void setPhotoKey(String photoKey) {
+        this.photoKey = photoKey;
+    }
+
     public void setRole(UserRole role) {
         this.role = role;
     }
@@ -135,6 +157,8 @@ public class UserProfile {
         this.belt = null;
         this.beltStripe = null;
         this.startsIn = null;
+        this.photoUrl = null;
+        this.photoKey = null;
         this.anonymizedAt = Instant.now();
     }
 }

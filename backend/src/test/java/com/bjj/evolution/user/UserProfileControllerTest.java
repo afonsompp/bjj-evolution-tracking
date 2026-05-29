@@ -69,6 +69,7 @@ class UserProfileControllerTest {
         sampleResponse = new ProfileResponse(
                 userId, "John", "Doe", "jiujitsu_john",
                 Belt.PURPLE, 2, LocalDate.of(2023, 1, 15),
+                null,
                 UserRole.CUSTOMER
         );
         sampleSearchResponse = new SearchProfileResponse(
@@ -221,6 +222,7 @@ class UserProfileControllerTest {
         ProfileResponse updatedResponse = new ProfileResponse(
                 targetUserId, "Jane", "Doe", "jiujitsu_jane",
                 Belt.BLUE, 1, LocalDate.of(2024, 6, 1),
+                null,
                 UserRole.PLATFORM_MANAGER
         );
 

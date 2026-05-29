@@ -9,6 +9,7 @@ import {
 } from '../hooks/useAttendanceMutations'
 import { useAcademyMembers } from '../hooks/useAcademyMembers'
 import { LoaderIcon, TrashIcon, XIcon } from '../../../assets/icons'
+import { Avatar } from '../../../components/Avatar'
 import type { ScheduledClassResponse } from '../../../types/api'
 
 const STATUS_BADGE: Record<string, string> = {
@@ -101,6 +102,7 @@ export function AttendanceModal({ academyId, cls, onClose }: Props) {
                   key={a.id}
                   className="flex items-center gap-3 rounded-lg border border-[var(--border-card)] bg-[var(--bg-page)] px-3 py-2"
                 >
+                  <Avatar photoUrl={a.student.photoUrl} name={a.student.name} size={32} />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-[var(--text-primary)]">
                       {a.student.name}

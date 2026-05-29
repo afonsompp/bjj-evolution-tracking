@@ -72,6 +72,7 @@ class TrainingControllerTest {
         sampleProfile = new ProfileResponse(
                 profileId, "John", "Doe", "jiujitsu_john",
                 null, 0, LocalDate.of(2023, 1, 15),
+                null,
                 UserRole.CUSTOMER
         );
 

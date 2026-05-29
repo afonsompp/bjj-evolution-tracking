@@ -6,6 +6,7 @@ import { useAcademyPermissions } from '../permissions/useAcademyPermissions'
 import { PendingRequestsPanel } from '../components/PendingRequestsPanel'
 import { GraduationHistorySection } from './GraduationHistorySection'
 import { AttendanceHistorySection } from './AttendanceHistorySection'
+import { Avatar } from '../../../components/Avatar'
 import {
   useRejectMember,
   useGraduateMember,
@@ -258,9 +259,7 @@ export function MembersSection({ academyId }: Props) {
                   onClick={() => toggleDetail(member)}
                   className="flex cursor-pointer items-center gap-3 px-4 py-3 hover:bg-[var(--bg-subtle)]"
                 >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--bg-subtle)] text-[var(--text-muted)]">
-                    <UsersIcon size={16} />
-                  </div>
+                  <Avatar photoUrl={member.user.photoUrl} name={member.user.name} size={36} />
 
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-[var(--text-primary)]">

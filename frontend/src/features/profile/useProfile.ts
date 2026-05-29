@@ -22,3 +22,23 @@ export function useUpsertProfile() {
     },
   })
 }
+
+export function useUploadPhoto() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (file: File) => profileApi.uploadPhoto(file),
+    onSuccess: (data) => {
+      qc.setQueryData(profileKeys.me, data)
+    },
+  })
+}
+
+export function useRemovePhoto() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: profileApi.removePhoto,
+    onSuccess: (data) => {
+      qc.setQueryData(profileKeys.me, data)
+    },
+  })
+}

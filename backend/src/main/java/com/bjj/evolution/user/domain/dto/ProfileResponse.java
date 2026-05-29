@@ -15,6 +15,7 @@ public record ProfileResponse(
         Belt belt,
         Integer beltStripe,
         LocalDate startsIn,
+        String photoUrl,
         UserRole role
 ) {
     public static ProfileResponse fromEntity(UserProfile entity) {
@@ -26,6 +27,7 @@ public record ProfileResponse(
                 entity.getBelt(),
                 entity.getBeltStripe(),
                 entity.getStartsIn(),
+                entity.getPhotoUrl(),
                 entity.getRole()
         );
     }

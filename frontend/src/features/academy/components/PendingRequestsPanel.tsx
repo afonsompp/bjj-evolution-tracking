@@ -6,8 +6,8 @@ import {
   XIcon,
   LoaderIcon,
   HourglassIcon,
-  UserIcon,
 } from '../../../assets/icons'
+import { Avatar } from '../../../components/Avatar'
 
 type Props = {
   academyId: string
@@ -65,9 +65,7 @@ export function PendingRequestsPanel({ academyId }: Props) {
                 key={userId}
                 className="flex items-center gap-3 rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] p-3"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--bg-subtle)] text-[var(--text-muted)]">
-                  <UserIcon />
-                </div>
+                <Avatar photoUrl={m.user.photoUrl} name={m.user.name} size={36} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-[var(--text-primary)]">
                     {[m.user.name, m.user.secondName].filter(Boolean).join(' ')}

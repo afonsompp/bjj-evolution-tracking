@@ -6,6 +6,10 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   security:
@@ -14,6 +18,22 @@ spring:
         jwt:
           issuer-uri: https://tpltengabmlhpkhdmqbm.supabase.co/auth/v1
           audiences: authenticated
+
+# File storage (Supabase Storage via S3-compatible API). Leave STORAGE_ENDPOINT
+# unset to disable uploads (the app boots with a DisabledFileStorage fallback).
+#   STORAGE_ENDPOINT        https://<project-ref>.supabase.co/storage/v1/s3
+#   STORAGE_PUBLIC_URL_BASE https://<project-ref>.supabase.co/storage/v1/object/public
+#   STORAGE_REGION          project region (e.g. sa-east-1)
+#   STORAGE_ACCESS_KEY / STORAGE_SECRET_KEY   from Storage → S3 connection
+#   STORAGE_BUCKET          a public bucket you created (e.g. avatars)
+storage:
+  endpoint: ${STORAGE_ENDPOINT:}
+  public-url-base: ${STORAGE_PUBLIC_URL_BASE:}
+  region: ${STORAGE_REGION:us-east-1}
+  access-key: ${STORAGE_ACCESS_KEY:}
+  secret-key: ${STORAGE_SECRET_KEY:}
+  bucket: ${STORAGE_BUCKET:avatars}
+  signed-url-ttl-seconds: ${STORAGE_SIGNED_URL_TTL_SECONDS:3600}
 
 rate-limit:
   enabled: true

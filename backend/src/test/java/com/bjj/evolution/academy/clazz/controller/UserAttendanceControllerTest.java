@@ -73,7 +73,7 @@ class UserAttendanceControllerTest {
 
         ProfileResponse instructor = new ProfileResponse(
                 UUID.randomUUID(), "Carlos", "Gracie", "carlos_gracie",
-                null, null, null, UserRole.PLATFORM_MANAGER
+                null, null, null, null, UserRole.PLATFORM_MANAGER
         );
 
         ScheduledClassResponse scheduledClass = new ScheduledClassResponse(

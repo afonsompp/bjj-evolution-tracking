@@ -16,7 +16,6 @@ import {
   ChevronLeftIcon,
   LoaderIcon,
   MapPinIcon,
-  CheckCircleIcon,
   HourglassIcon,
   LogOutIcon,
 } from '../assets/icons'

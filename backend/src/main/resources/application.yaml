@@ -15,6 +15,19 @@ spring:
           issuer-uri: https://tpltengabmlhpkhdmqbm.supabase.co/auth/v1
           audiences: authenticated
 
+rate-limit:
+  enabled: true
+  rules:
+    - path-pattern: /api/v1/auth/**
+      capacity: 60
+      refill-per-minute: 60
+    - path-pattern: /api/v1/profiles/search
+      capacity: 60
+      refill-per-minute: 60
+    - path-pattern: /api/v1/academies/search
+      capacity: 60
+      refill-per-minute: 60
+
 logging:
   pattern:
     console: "%d{HH:mm:ss.SSS} %highlight(%-5level) [%X{traceId:-no-trace}] [%15.15t] %-40.40logger{39} - %msg%n"

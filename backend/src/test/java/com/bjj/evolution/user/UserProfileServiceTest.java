@@ -3,6 +3,7 @@ package com.bjj.evolution.user;
 import com.bjj.evolution.catalog.domain.Belt;
 import com.bjj.evolution.shared.exception.ConflictException;
 import com.bjj.evolution.shared.exception.ForbiddenException;
+import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import com.bjj.evolution.user.domain.UserProfile;
 import com.bjj.evolution.user.domain.UserRole;
 import com.bjj.evolution.user.domain.dto.ProfileRequest;
@@ -180,7 +181,7 @@ class UserProfileServiceTest {
     @Test
     void getMyProfile_shouldReturnProfile_whenExists() {
         UserProfile userProfile = createUserProfile(userId, "test", UserRole.PLATFORM_MANAGER);
-        when(repository.findById(userId)).thenReturn(Optional.of(userProfile));
+        when(repository.findActiveById(userId)).thenReturn(Optional.of(userProfile));
 
         Optional<ProfileResponse> response = service.getMyProfile(jwt);
 
@@ -190,7 +191,16 @@ class UserProfileServiceTest {
 
     @Test
     void getMyProfile_shouldReturnEmpty_whenNotExists() {
-        when(repository.findById(userId)).thenReturn(Optional.empty());
+        when(repository.findActiveById(userId)).thenReturn(Optional.empty());
+
+        Optional<ProfileResponse> response = service.getMyProfile(jwt);
+
+        assertThat(response).isNotPresent();
+    }
+
+    @Test
+    void getMyProfile_shouldReturnEmpty_whenProfileIsAnonymized() {
+        when(repository.findActiveById(userId)).thenReturn(Optional.empty());
 
         Optional<ProfileResponse> response = service.getMyProfile(jwt);
 
@@ -213,12 +223,55 @@ class UserProfileServiceTest {
     }
 
     @Test
-    void deleteMyProfile_shouldCallRepositoryDelete() {
-        doNothing().when(repository).deleteById(userId);
+    void deleteMyProfile_shouldAnonymizeProfile() {
+        UserProfile profile = createUserProfile(userId, "testuser", UserRole.CUSTOMER);
+        profile.setName("John");
+        when(repository.findById(userId)).thenReturn(Optional.of(profile));
+        when(repository.save(any(UserProfile.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         service.deleteMyProfile(jwt);
 
-        verify(repository, times(1)).deleteById(userId);
+        ArgumentCaptor<UserProfile> captor = ArgumentCaptor.forClass(UserProfile.class);
+        verify(repository).save(captor.capture());
+        verify(repository, never()).deleteById(any());
+
+        UserProfile saved = captor.getValue();
+        assertThat(saved.isAnonymized()).isTrue();
+        assertThat(saved.getAnonymizedAt()).isNotNull();
+        assertThat(saved.getName()).isEqualTo("[deleted]");
+        assertThat(saved.getSecondName()).isNull();
+        assertThat(saved.getNickname()).startsWith("deleted_");
+        assertThat(saved.getBelt()).isNull();
+        assertThat(saved.getStartsIn()).isNull();
+    }
+
+    @Test
+    void deleteMyProfile_shouldThrow_whenProfileNotFound() {
+        when(repository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> service.deleteMyProfile(jwt));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void saveOrUpdate_shouldResurrectProfile_whenPreviouslyAnonymized() {
+        UserProfile anonymized = createUserProfile(userId, "deleted_abc123", UserRole.CUSTOMER);
+        anonymized.anonymize();
+
+        when(repository.findById(userId)).thenReturn(Optional.of(anonymized));
+        when(repository.existsByNickname(profileRequest.nickname())).thenReturn(false);
+        when(repository.save(any(UserProfile.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProfileResponse response = service.saveOrUpdate(jwt, profileRequest);
+
+        ArgumentCaptor<UserProfile> captor = ArgumentCaptor.forClass(UserProfile.class);
+        verify(repository).save(captor.capture());
+
+        UserProfile saved = captor.getValue();
+        assertThat(saved.isAnonymized()).isFalse();
+        assertThat(saved.getAnonymizedAt()).isNull();
+        assertThat(saved.getNickname()).isEqualTo(profileRequest.nickname());
+        assertThat(response.nickname()).isEqualTo(profileRequest.nickname());
     }
 
     private UserProfile createUserProfile(UUID id, String nickname, UserRole role) {

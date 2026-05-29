@@ -7,6 +7,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -33,6 +34,9 @@ public class UserProfile {
 
     @Enumerated(EnumType.STRING)
     private UserRole role = UserRole.CUSTOMER;
+
+    @Column(name = "anonymized_at")
+    private Instant anonymizedAt;
 
     public UserProfile() {
     }
@@ -110,5 +114,27 @@ public class UserProfile {
 
     public void setNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    public Instant getAnonymizedAt() {
+        return anonymizedAt;
+    }
+
+    public void setAnonymizedAt(Instant anonymizedAt) {
+        this.anonymizedAt = anonymizedAt;
+    }
+
+    public boolean isAnonymized() {
+        return anonymizedAt != null;
+    }
+
+    public void anonymize() {
+        this.name = "[deleted]";
+        this.secondName = null;
+        this.nickname = "deleted_" + UUID.randomUUID().toString().replace("-", "");
+        this.belt = null;
+        this.beltStripe = null;
+        this.startsIn = null;
+        this.anonymizedAt = Instant.now();
     }
 }

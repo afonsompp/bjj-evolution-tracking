@@ -48,6 +48,7 @@ public class UserProfileService {
                     existing.setBelt(request.belt());
                     existing.setBeltStripe(request.beltStripe());
                     existing.setStartsIn(request.startsIn());
+                    existing.setAnonymizedAt(null);
                     return existing;
                 })
                 .orElseGet(() -> {
@@ -104,7 +105,7 @@ public class UserProfileService {
     public Optional<ProfileResponse> getMyProfile(Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
         log.debug("Fetching profile for user={}", userId);
-        return repository.findById(userId)
+        return repository.findActiveById(userId)
                 .map(ProfileResponse::fromEntity);
     }
 
@@ -116,8 +117,11 @@ public class UserProfileService {
 
     public void deleteMyProfile(Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
-        log.warn("Deleting profile for user={}", userId);
-        repository.deleteById(userId);
-        log.info("Profile deleted for user={}", userId);
+        log.warn("Anonymizing profile for user={}", userId);
+        UserProfile profile = repository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("UserProfile", userId));
+        profile.anonymize();
+        repository.save(profile);
+        log.info("Profile anonymized for user={}", userId);
     }
 }

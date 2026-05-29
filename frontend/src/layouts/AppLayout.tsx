@@ -72,9 +72,9 @@ export default function AppLayout() {
     'flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors'
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)] transition-colors">
+    <div className="flex h-screen overflow-hidden bg-[var(--bg-page)] text-[var(--text-primary)] transition-colors">
       {/* Sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-56 flex-col border-r border-[var(--border-header)] bg-[var(--bg-sidebar)] p-4 md:flex">
+      <aside className="hidden h-screen w-56 flex-col overflow-y-auto border-r border-[var(--border-header)] bg-[var(--bg-sidebar)] p-4 md:flex">
         <Link to="/" className="mb-6 inline-flex items-center gap-2 text-lg font-bold text-[var(--text-primary)] hover:opacity-80">
           <Logo variant="icon" className="h-6" />
           BJJ Evolution
@@ -154,9 +154,9 @@ export default function AppLayout() {
       </aside>
 
       {/* Mobile header + main */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[var(--border-header)] bg-[var(--bg-page)] p-4 md:hidden">
-          <Link to="/" className="inline-flex items-center hover:opacity-80" aria-label="BJJ Evolution"><Logo variant="icon" className="h-7" /></Link>
+          <Link to="/" className="inline-flex items-center gap-1.5 text-sm font-bold hover:opacity-80"><Logo variant="icon" className="h-6" />BJJ Evolution</Link>
           <div className="relative">
             <button
               onClick={() => setAccountOpen((o) => !o)}
@@ -213,7 +213,7 @@ export default function AppLayout() {
             )}
           </div>
         </header>
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6">
+        <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 pb-20 md:p-6">
           <Outlet />
         </main>
       </div>

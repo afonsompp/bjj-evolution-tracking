@@ -46,6 +46,11 @@ export const membersApi = {
       .patch<AcademyMemberResponse>(`/academies/${academyId}/members/${userId}/approve`)
       .then((r) => r.data),
 
+  reject: (academyId: string, userId: string) =>
+    apiClient
+      .patch(`/academies/${academyId}/members/${userId}/reject`)
+      .then(() => undefined),
+
   remove: (academyId: string, userId: string) =>
     apiClient
       .delete(`/academies/${academyId}/members/${userId}`)

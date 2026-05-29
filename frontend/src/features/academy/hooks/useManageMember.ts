@@ -17,7 +17,7 @@ export function useApproveMember(academyId: string | undefined) {
 export function useRejectMember(academyId: string | undefined) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (userId: string) => membersApi.remove(academyId!, userId),
+    mutationFn: (userId: string) => membersApi.reject(academyId!, userId),
     onSuccess: () => {
       if (!academyId) return
       qc.invalidateQueries({ queryKey: memberKeys.byAcademy(academyId) })

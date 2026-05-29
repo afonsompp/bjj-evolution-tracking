@@ -5,6 +5,7 @@ import { useAuth } from '../features/auth/AuthContext'
 import { useProfile } from '../features/profile/useProfile'
 import { useTranslation } from '../lib/i18n/I18nContext'
 import { useTheme } from '../lib/ThemeContext'
+import { Logo } from '../components/Logo'
 import type { Locale } from '../lib/i18n/translations'
 import {
   SunIcon,
@@ -74,7 +75,8 @@ export default function AppLayout() {
     <div className="flex min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)] transition-colors">
       {/* Sidebar */}
       <aside className="sticky top-0 hidden h-screen w-56 flex-col border-r border-[var(--border-header)] bg-[var(--bg-sidebar)] p-4 md:flex">
-        <Link to="/" className="mb-6 inline-block text-lg font-bold text-[var(--text-primary)] hover:opacity-80">
+        <Link to="/" className="mb-6 inline-flex items-center gap-2 text-lg font-bold text-[var(--text-primary)] hover:opacity-80">
+          <Logo variant="icon" className="h-6" />
           BJJ Evolution
         </Link>
         <nav className="flex flex-col gap-1">
@@ -154,7 +156,7 @@ export default function AppLayout() {
       {/* Mobile header + main */}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[var(--border-header)] bg-[var(--bg-page)] p-4 md:hidden">
-          <Link to="/" className="text-sm font-bold hover:opacity-80">BJJ Evolution</Link>
+          <Link to="/" className="inline-flex items-center hover:opacity-80" aria-label="BJJ Evolution"><Logo variant="icon" className="h-7" /></Link>
           <div className="relative">
             <button
               onClick={() => setAccountOpen((o) => !o)}

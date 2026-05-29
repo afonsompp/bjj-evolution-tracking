@@ -5,8 +5,9 @@
       <stop offset="1" stop-color="#6320d6"/>
     </linearGradient>
   </defs>
-  <!-- BJJ Evolution: two ascending chevrons (leveling up) forming a triangle.
-       Scaled 1.6x about the center so the mark fills the canvas. -->
+  <!-- PWA / home-screen icon source: slate tile so installed icons aren't black.
+       The browser-tab favicon (favicon.svg) stays transparent. -->
+  <rect width="512" height="512" fill="#18181b"/>
   <g transform="translate(256 256) scale(1.6) translate(-256 -256)">
     <g stroke="url(#triGrad)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
       <path d="M196 232 L256 162 L316 232"/>

@@ -171,6 +171,7 @@ export interface AcademyMenberClassViewResponse {
 export interface GraduationHistoryResponse {
   id: number
   academyId: string
+  academyName: string
   student: ProfileResponse
   promotedBy: ProfileResponse
   oldBelt: Belt

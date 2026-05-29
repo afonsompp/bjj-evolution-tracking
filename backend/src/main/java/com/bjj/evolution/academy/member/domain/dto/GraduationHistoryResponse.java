@@ -10,6 +10,7 @@ import java.util.UUID;
 public record GraduationHistoryResponse(
         Long id,
         UUID academyId,
+        String academyName,
         ProfileResponse student,
         ProfileResponse promotedBy,
         Belt oldBelt,
@@ -22,6 +23,7 @@ public record GraduationHistoryResponse(
         return new GraduationHistoryResponse(
                 entity.getId(),
                 entity.getAcademy().getId(),
+                entity.getAcademy().getName(),
                 ProfileResponse.fromEntity(entity.getStudent()),
                 ProfileResponse.fromEntity(entity.getPromotedBy()),
                 entity.getOldBelt(),

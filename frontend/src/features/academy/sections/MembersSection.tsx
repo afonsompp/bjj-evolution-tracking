@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { useAcademyMembers } from '../hooks/useAcademyMembers'
 import { useAcademyPermissions } from '../permissions/useAcademyPermissions'
 import { PendingRequestsPanel } from '../components/PendingRequestsPanel'
+import { GraduationHistorySection } from './GraduationHistorySection'
 import {
   useRejectMember,
   useGraduateMember,
@@ -17,6 +18,8 @@ import {
   ShieldIcon,
   UsersIcon,
   LoaderIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from '../../../assets/icons'
 
 const BELT_OPTIONS: { value: Belt; label: string }[] = [
@@ -97,6 +100,7 @@ export function MembersSection({ academyId }: Props) {
   const [graduateBelt, setGraduateBelt] = useState<Belt>('WHITE')
   const [graduateStripe, setGraduateStripe] = useState(0)
   const [newRole, setNewRole] = useState<MemberRole>('STUDENT')
+  const [showGraduations, setShowGraduations] = useState(false)
 
   const { data, isLoading, isError } = useAcademyMembers(academyId, {
     query: search || undefined,
@@ -323,6 +327,24 @@ export function MembersSection({ academyId }: Props) {
           </button>
         </div>
       )}
+
+      <div className="border-t border-[var(--border-card)] pt-4">
+        <button
+          onClick={() => setShowGraduations((s) => !s)}
+          className="flex w-full items-center justify-between text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+        >
+          <span className="flex items-center gap-2">
+            <TrophyIcon size={15} className="text-amber-400" />
+            {translate('graduation.titleAcademy')}
+          </span>
+          {showGraduations ? <ChevronUpIcon /> : <ChevronDownIcon />}
+        </button>
+        {showGraduations && (
+          <div className="mt-4">
+            <GraduationHistorySection variant="academy" academyId={academyId} />
+          </div>
+        )}
+      </div>
 
       {modal === 'remove' && selected && (
         <Modal>

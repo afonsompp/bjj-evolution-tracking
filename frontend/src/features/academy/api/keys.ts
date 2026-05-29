@@ -27,4 +27,10 @@ export const memberKeys = {
     [...memberKeys.byAcademy(academyId), 'one', userId] as const,
   myMemberships: (status?: MemberStatus) =>
     [...memberKeys.all, 'mine', status ?? 'ALL'] as const,
+  graduations: (academyId: string, page: number) =>
+    [...memberKeys.byAcademy(academyId), 'graduations', page] as const,
+  myGraduations: (academyId: string, userId: string, page: number) =>
+    [...memberKeys.byAcademy(academyId), 'graduations', userId, page] as const,
+  myGraduationsAll: (userId: string, page: number) =>
+    [...memberKeys.all, 'graduations', 'mine-all', userId, page] as const,
 }

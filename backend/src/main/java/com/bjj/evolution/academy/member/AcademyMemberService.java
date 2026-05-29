@@ -296,6 +296,12 @@ public class AcademyMemberService {
     @Transactional(readOnly = true)
     public Page<GraduationHistoryResponse> findGraduationHistoryByMember(UUID academyId, UUID userId, Pageable pageable) {
         findMemberOrThrow(academyId, userId);
+        return graduationHistoryRepository.findByAcademyIdAndStudentIdOrderByGraduationDateDesc(academyId, userId, pageable)
+                .map(GraduationHistoryResponse::fromEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<GraduationHistoryResponse> findGraduationHistoryByStudent(UUID userId, Pageable pageable) {
         return graduationHistoryRepository.findByStudentIdOrderByGraduationDateDesc(userId, pageable)
                 .map(GraduationHistoryResponse::fromEntity);
     }

@@ -12,4 +12,5 @@ import java.util.UUID;
 public interface GraduationHistoryRepository extends JpaRepository<GraduationHistory, Long> {
     Page<GraduationHistory> findByStudentIdOrderByGraduationDateDesc(UUID studentId, Pageable pageable);
     Page<GraduationHistory> findByAcademyIdOrderByGraduationDateDesc(UUID academyId, Pageable pageable);
+    Page<GraduationHistory> findByAcademyIdAndStudentIdOrderByGraduationDateDesc(UUID academyId, UUID studentId, Pageable pageable);
 }

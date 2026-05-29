@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '../lib/i18n/I18nContext'
 import type { ProfileRequest, Belt } from '../types/api'
 import { useProfile, useUpsertProfile } from '../features/profile/useProfile'
+import { GraduationHistorySection } from '../features/academy/sections/GraduationHistorySection'
 
 const BELTS: { group: string; values: { label: string; value: Belt }[] }[] = [
   {
@@ -198,6 +199,12 @@ export default function ProfilePage() {
           {mutation.isPending ? translate('profile.saving') : translate('profile.save')}
         </button>
       </form>
+
+      {profile && (
+        <div className="mt-10">
+          <GraduationHistorySection variant="mine-all" userId={profile.id} />
+        </div>
+      )}
     </div>
   )
 }

@@ -203,6 +203,14 @@ const en = {
   'academy.tab.members': 'Members',
   'academy.tab.classes': 'Classes',
   'academy.tab.settings': 'Settings',
+  'academy.tab.graduations': 'Graduations',
+  // ── Graduation History ────────────────────────────────────────
+  'graduation.title': 'Graduation History',
+  'graduation.titleAcademy': 'Academy Graduations',
+  'graduation.titleMine': 'My Graduations',
+  'graduation.empty': 'No graduations recorded yet.',
+  'graduation.promotedBy': 'Promoted by',
+  'graduation.error': 'Failed to load graduation history.',
   // ── Profile ──────────────────────────────────────────────────
   'profile.title': 'Edit Profile',
   'profile.name': 'Name',
@@ -568,6 +576,14 @@ const pt: Record<TranslationKey, string> = {
   'academy.tab.members': 'Alunos',
   'academy.tab.classes': 'Aulas',
   'academy.tab.settings': 'Configurações',
+  'academy.tab.graduations': 'Graduações',
+  // ── Graduation History ────────────────────────────────────────
+  'graduation.title': 'Histórico de Graduações',
+  'graduation.titleAcademy': 'Graduações da Academia',
+  'graduation.titleMine': 'Minhas Graduações',
+  'graduation.empty': 'Nenhuma graduação registrada.',
+  'graduation.promotedBy': 'Promovido por',
+  'graduation.error': 'Erro ao carregar histórico de graduações.',
   // ── Profile ──────────────────────────────────────────────────
   'profile.title': 'Editar Perfil',
   'profile.name': 'Nome',

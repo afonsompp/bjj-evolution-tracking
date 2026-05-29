@@ -152,7 +152,7 @@ export default function AppLayout() {
       </aside>
 
       {/* Mobile header + main */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[var(--border-header)] bg-[var(--bg-page)] p-4 md:hidden">
           <Link to="/" className="text-sm font-bold hover:opacity-80">BJJ Evolution</Link>
           <div className="relative">
@@ -211,7 +211,7 @@ export default function AppLayout() {
             )}
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6">
           <Outlet />
         </main>
       </div>

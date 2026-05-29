@@ -2,6 +2,7 @@ import { apiClient } from '../../../api/client'
 import type {
   AcademyMemberRequest,
   AcademyMemberResponse,
+  GraduationHistoryResponse,
   GraduationRequest,
   MemberStatus,
   Page,
@@ -59,6 +60,27 @@ export const membersApi = {
   graduate: (academyId: string, userId: string, body: GraduationRequest) =>
     apiClient
       .post<AcademyMemberResponse>(`/academies/${academyId}/members/${userId}/graduate`, body)
+      .then((r) => r.data),
+
+  listGraduations: (academyId: string, page: number, size: number) =>
+    apiClient
+      .get<Page<GraduationHistoryResponse>>(`/academies/${academyId}/members/graduations`, {
+        params: { page, size },
+      })
+      .then((r) => r.data),
+
+  listMyGraduations: (academyId: string, userId: string, page: number, size: number) =>
+    apiClient
+      .get<Page<GraduationHistoryResponse>>(`/academies/${academyId}/members/${userId}/graduations`, {
+        params: { page, size },
+      })
+      .then((r) => r.data),
+
+  listAllMyGraduations: (page: number, size: number) =>
+    apiClient
+      .get<Page<GraduationHistoryResponse>>('/academies/memberships/graduations', {
+        params: { page, size },
+      })
       .then((r) => r.data),
 
   updateMember: (academyId: string, userId: string, body: AcademyMemberRequest) =>

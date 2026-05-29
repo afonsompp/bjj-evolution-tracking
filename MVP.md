@@ -6,6 +6,10 @@
 >
 > Regra de corte aplicada: *base é aquilo que feature futura vai precisar consumir; se chamar isso de feature, vira código duplicado depois.*
 
+> **Status (2026-05-29):** LGPD, rate limiting, PWA e todos os gaps de UI estão concluídos.
+> Falta para fechar o MVP: **storage de arquivos** + **notificação outbound** (os dois 🔴),
+> e depois observability e E2E (🟡). RFC 7807 está parcial (handler custom, sem `ProblemDetail`).
+
 ---
 
 ## 1. Base já entregue (não mexer)
@@ -43,7 +47,7 @@ Cada item abaixo vira fundação que toda feature futura consome. Adiar signific
 - **Por que é base:** foto de perfil do aluno, vídeo na técnica, foto de medalha em competição, waiver PDF, certificado de graduação — toda feature de mídia bate aqui. Sem isso, primeira foto de perfil vira `<input type="text" placeholder="cole link do imgur">`.
 - **Esforço:** 1 dia. Mesmo que MVP só use pra foto de perfil.
 
-### 2.3 LGPD básico 🟡
+### 2.3 LGPD básico 🟡 ✅ FEITO
 
 - **O que:** `GET /me/export` (zip JSON + CSV de tudo do usuário) e `DELETE /me` com soft-delete (anonimiza, mantém `audit_log`).
 - **Por que é base:** abrir pra uma única academia paga em SP sem isso descumpre lei. Adicionar depois é cirurgia em quase toda tabela (decidir o que apagar, o que anonimizar). Modelado já no MVP, todo `entity` novo já nasce sabendo o que fazer.
@@ -55,13 +59,13 @@ Cada item abaixo vira fundação que toda feature futura consome. Adiar signific
 - **Por que é base:** o dia que cair, é preciso saber **antes** do cliente reclamar. Adicionar depois funciona, mas o primeiro incidente custa caro.
 - **Esforço:** meio dia.
 
-### 2.5 Rate limiting nas bordas 🟡
+### 2.5 Rate limiting nas bordas 🟡 ✅ FEITO
 
 - **O que:** Bucket4j em `/auth/*`, `/profiles/search`, `/academies/search`. Default conservador (60 req/min por IP).
 - **Por que é base:** endpoints públicos sem isso são vetor de abuso. 1h de código que blinda o produto pra sempre.
 - **Esforço:** 2h.
 
-### 2.6 PWA mínimo 🟡
+### 2.6 PWA mínimo 🟡 ✅ FEITO
 
 - **O que:** `manifest.json` + service worker que cacheia o shell. Sem offline-first ainda.
 - **Por que é base:** academia instala no celular do aluno (homescreen) sem App Store. E **service worker é pré-requisito pra push notification futura** — sem PWA agora, todo aluno terá que reinstalar o app no dia que push virar feature.
@@ -79,11 +83,11 @@ Cada item abaixo vira fundação que toda feature futura consome. Adiar signific
 
 Coisas onde o backend já existe, mas o frontend não surfaceou — completar é trivial e evita "MVP que parece pela metade":
 
-- `membersApi.reject()` no frontend (backend tem `PATCH /{userId}/reject`) — 15min
-- Histórico de graduação na página do membro (`GET /profiles/{userId}/graduations`) — 1-2h
-- Histórico de presença do aluno (`GET /profiles/{userId}/attendances`) — 1-2h
+- ✅ `membersApi.reject()` no frontend (backend tem `PATCH /{userId}/reject`)
+- ✅ Histórico de graduação na página do membro (seção expansível por membro)
+- ✅ Histórico de presença do aluno (perfil, por academia, e visão da academia por membro)
 - Foto de perfil no `UserProfile` (depende do storage do item 2.2) — 2h
-- Mensagem de erro padronizada (RFC 7807) se ainda não tiver — meio dia
+- 🟡 Erro padronizado: existe `GlobalExceptionHandler` com `ApiError` custom, mas **não** é RFC 7807 (`ProblemDetail`) — meio dia se quiser migrar
 
 ---
 
@@ -137,21 +141,21 @@ Critério de pronto: o MVP pode (1) ser hospedado num cliente pagante sem multa 
 - [ ] `FileStorage` abstraído (Supabase Storage / S3) + foto de perfil
 - [ ] `NotificationService` abstraído + provider transacional (Resend/Postmark)
 - [ ] Templates: `member_approved`, `member_rejected`, `welcome`
-- [ ] `GET /me/export` (zip JSON + CSV) + `DELETE /me` (soft-delete + anonimização)
+- [x] `GET /me/export` (zip JSON + CSV) + `DELETE /me` (soft-delete + anonimização)
 - [ ] Sentry no frontend
 - [ ] Spring Boot Actuator + Micrometer + `/actuator/health`
-- [ ] Bucket4j em `/auth/*`, `/profiles/search`, `/academies/search`
-- [ ] `manifest.json` + service worker mínimo (PWA instalável)
+- [x] Bucket4j em `/auth/*`, `/profiles/search`, `/academies/search`
+- [x] `manifest.json` + service worker mínimo (PWA instalável)
 - [ ] Playwright: golden path login → academia → check-in → treino → dashboard
-- [ ] Erro padronizado (RFC 7807) se ainda não existir
+- [ ] Erro padronizado (RFC 7807) — *parcial:* `GlobalExceptionHandler` custom existe, falta migrar pra `ProblemDetail`
 
 ### Gaps de UI
-- [ ] `membersApi.reject()` no frontend
-- [ ] Histórico de graduação na página do membro
-- [ ] Histórico de presença do aluno
+- [x] `membersApi.reject()` no frontend
+- [x] Histórico de graduação na página do membro
+- [x] Histórico de presença do aluno
 - [ ] Foto de perfil no `UserProfile`
 
 ### Decisões de produto (não codar antes de decidir)
 - [ ] Provider de e-mail (Resend ou Postmark)
 - [ ] Provider de storage (Supabase Storage ou S3 próprio)
-- [ ] Política de soft-delete: o que anonimiza, o que apaga, o que mantém em `audit_log`
+- [x] Política de soft-delete: anonimiza `UserProfile` (`anonymized_at`), mantém `audit_log`

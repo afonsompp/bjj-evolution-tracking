@@ -204,6 +204,7 @@ const en = {
   'academy.tab.classes': 'Classes',
   'academy.tab.settings': 'Settings',
   'academy.tab.graduations': 'Graduations',
+  'academy.tab.attendances': 'Attendances',
   // ── Graduation History ────────────────────────────────────────
   'graduation.title': 'Graduation History',
   'graduation.titleAcademy': 'Academy Graduations',
@@ -373,6 +374,10 @@ const en = {
   'attendance.status.REGISTERED': 'Registered',
   'attendance.status.CONFIRMED': 'Confirmed',
   'attendance.status.CANCELED': 'Canceled',
+  'attendance.history.title': 'Attendance History',
+  'attendance.history.empty': 'No attendance recorded yet.',
+  'attendance.history.error': 'Failed to load attendance history.',
+  'members.attendances': 'Attendance history',
 }
 
 const pt: Record<TranslationKey, string> = {
@@ -577,6 +582,7 @@ const pt: Record<TranslationKey, string> = {
   'academy.tab.classes': 'Aulas',
   'academy.tab.settings': 'Configurações',
   'academy.tab.graduations': 'Graduações',
+  'academy.tab.attendances': 'Presenças',
   // ── Graduation History ────────────────────────────────────────
   'graduation.title': 'Histórico de Graduações',
   'graduation.titleAcademy': 'Graduações da Academia',
@@ -746,6 +752,10 @@ const pt: Record<TranslationKey, string> = {
   'attendance.status.REGISTERED': 'Registrado',
   'attendance.status.CONFIRMED': 'Confirmado',
   'attendance.status.CANCELED': 'Cancelado',
+  'attendance.history.title': 'Histórico de Presença',
+  'attendance.history.empty': 'Nenhuma presença registrada.',
+  'attendance.history.error': 'Erro ao carregar histórico de presença.',
+  'members.attendances': 'Histórico de presença',
 }
 
 const translations: Record<Locale, Record<TranslationKey, string>> = { 'en-US': en, 'pt-BR': pt }

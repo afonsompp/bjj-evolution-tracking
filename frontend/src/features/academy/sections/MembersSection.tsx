@@ -5,6 +5,7 @@ import { useAcademyMembers } from '../hooks/useAcademyMembers'
 import { useAcademyPermissions } from '../permissions/useAcademyPermissions'
 import { PendingRequestsPanel } from '../components/PendingRequestsPanel'
 import { GraduationHistorySection } from './GraduationHistorySection'
+import { AttendanceHistorySection } from './AttendanceHistorySection'
 import {
   useRejectMember,
   useGraduateMember,
@@ -18,6 +19,7 @@ import {
   ShieldIcon,
   UsersIcon,
   LoaderIcon,
+  CalendarIcon,
   ChevronDownIcon,
   ChevronUpIcon,
 } from '../../../assets/icons'
@@ -100,7 +102,8 @@ export function MembersSection({ academyId }: Props) {
   const [graduateBelt, setGraduateBelt] = useState<Belt>('WHITE')
   const [graduateStripe, setGraduateStripe] = useState(0)
   const [newRole, setNewRole] = useState<MemberRole>('STUDENT')
-  const [showGraduations, setShowGraduations] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [detailTab, setDetailTab] = useState<'attendances' | 'graduations'>('attendances')
 
   const { data, isLoading, isError } = useAcademyMembers(academyId, {
     query: search || undefined,
@@ -139,6 +142,14 @@ export function MembersSection({ academyId }: Props) {
     setSelected(member)
     setNewRole(member.role === 'OWNER' ? 'MANAGER' : member.role)
     setModal('changeRole')
+  }
+
+  const toggleDetail = (member: AcademyMemberResponse) => {
+    setExpandedId((cur) => {
+      if (cur === member.user.id) return null
+      setDetailTab('attendances')
+      return member.user.id
+    })
   }
 
   const handleRemove = () => {
@@ -236,68 +247,108 @@ export function MembersSection({ academyId }: Props) {
             const isSelf = member.user.id === user?.id
             const isOwner = member.role === 'OWNER'
 
+            const isExpanded = expandedId === member.user.id
+
             return (
               <div
                 key={member.user.id}
-                className="flex items-center gap-3 rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] px-4 py-3 hover:border-[var(--border-card-hover)]"
+                className="overflow-hidden rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)]"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--bg-subtle)] text-[var(--text-muted)]">
-                  <UsersIcon size={16} />
-                </div>
+                <div
+                  onClick={() => toggleDetail(member)}
+                  className="flex cursor-pointer items-center gap-3 px-4 py-3 hover:bg-[var(--bg-subtle)]"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--bg-subtle)] text-[var(--text-muted)]">
+                    <UsersIcon size={16} />
+                  </div>
 
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-[var(--text-primary)]">
-                    {member.user.name}
-                    {member.user.secondName ? ` ${member.user.secondName}` : ''}
-                  </p>
-                  <p className="truncate text-xs text-[var(--text-muted)]">
-                    @{member.user.nickname}
-                  </p>
-                </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-[var(--text-primary)]">
+                      {member.user.name}
+                      {member.user.secondName ? ` ${member.user.secondName}` : ''}
+                    </p>
+                    <p className="truncate text-xs text-[var(--text-muted)]">
+                      @{member.user.nickname}
+                    </p>
+                  </div>
 
-                <div className="hidden shrink-0 items-center gap-2 sm:flex">
-                  <span className={`rounded px-2 py-0.5 text-xs font-medium ${beltBadgeClass(member.belt)}`}>
-                    {beltLabel(member.belt)}
-                    {member.beltStripe != null && member.beltStripe > 0
-                      ? ` · ${member.beltStripe}`
-                      : ''}
+                  <div className="hidden shrink-0 items-center gap-2 sm:flex">
+                    <span className={`rounded px-2 py-0.5 text-xs font-medium ${beltBadgeClass(member.belt)}`}>
+                      {beltLabel(member.belt)}
+                      {member.beltStripe != null && member.beltStripe > 0
+                        ? ` · ${member.beltStripe}`
+                        : ''}
+                    </span>
+                    <span className={`rounded px-2 py-0.5 text-xs font-medium ${roleBadgeClass(member.role)}`}>
+                      {member.role}
+                    </span>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    {canManageMembers && (
+                      <button
+                        title={translate('members.graduate')}
+                        disabled={isOwner}
+                        onClick={() => openGraduate(member)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-amber-400 disabled:opacity-30 disabled:hover:text-[var(--text-muted)]"
+                      >
+                        <TrophyIcon size={15} />
+                      </button>
+                    )}
+                    {canEditAcademy && !isOwner && (
+                      <button
+                        title={translate('members.changeRole')}
+                        onClick={() => openChangeRole(member)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-blue-400"
+                      >
+                        <ShieldIcon size={15} />
+                      </button>
+                    )}
+                    {canManageMembers && (
+                      <button
+                        title={translate('members.remove')}
+                        disabled={isSelf || isOwner}
+                        onClick={() => openRemove(member)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-400 disabled:opacity-30 disabled:hover:text-[var(--text-muted)]"
+                      >
+                        <TrashIcon size={15} />
+                      </button>
+                    )}
+                  </div>
+
+                  <span className="shrink-0 text-[var(--text-subtle)]">
+                    {isExpanded ? <ChevronUpIcon size={16} /> : <ChevronDownIcon size={16} />}
                   </span>
-                  <span className={`rounded px-2 py-0.5 text-xs font-medium ${roleBadgeClass(member.role)}`}>
-                    {member.role}
-                  </span>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-1">
-                  {canManageMembers && (
-                    <button
-                      title={translate('members.graduate')}
-                      disabled={isOwner}
-                      onClick={() => openGraduate(member)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-amber-400 disabled:opacity-30 disabled:hover:text-[var(--text-muted)]"
-                    >
-                      <TrophyIcon size={15} />
-                    </button>
-                  )}
-                  {canEditAcademy && !isOwner && (
-                    <button
-                      title={translate('members.changeRole')}
-                      onClick={() => openChangeRole(member)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-blue-400"
-                    >
-                      <ShieldIcon size={15} />
-                    </button>
-                  )}
-                  {canManageMembers && (
-                    <button
-                      title={translate('members.remove')}
-                      disabled={isSelf || isOwner}
-                      onClick={() => openRemove(member)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-400 disabled:opacity-30 disabled:hover:text-[var(--text-muted)]"
-                    >
-                      <TrashIcon size={15} />
-                    </button>
-                  )}
-                </div>
+                {isExpanded && (
+                  <div className="border-t border-[var(--border-card)]">
+                    <div className="flex gap-1 border-b border-[var(--border-card)] px-4">
+                      {(['attendances', 'graduations'] as const).map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => setDetailTab(t)}
+                          className={`-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm transition-colors ${
+                            detailTab === t
+                              ? 'border-[var(--text-primary)] text-[var(--text-primary)]'
+                              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                          }`}
+                        >
+                          {t === 'attendances' ? <CalendarIcon size={14} /> : <TrophyIcon size={14} />}
+                          {translate(`academy.tab.${t}`)}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="p-4">
+                      {detailTab === 'attendances' && (
+                        <AttendanceHistorySection variant="member" academyId={academyId} userId={member.user.id} />
+                      )}
+                      {detailTab === 'graduations' && (
+                        <GraduationHistorySection variant="mine" academyId={academyId} userId={member.user.id} />
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )
           })}
@@ -327,24 +378,6 @@ export function MembersSection({ academyId }: Props) {
           </button>
         </div>
       )}
-
-      <div className="border-t border-[var(--border-card)] pt-4">
-        <button
-          onClick={() => setShowGraduations((s) => !s)}
-          className="flex w-full items-center justify-between text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-        >
-          <span className="flex items-center gap-2">
-            <TrophyIcon size={15} className="text-amber-400" />
-            {translate('graduation.titleAcademy')}
-          </span>
-          {showGraduations ? <ChevronUpIcon /> : <ChevronDownIcon />}
-        </button>
-        {showGraduations && (
-          <div className="mt-4">
-            <GraduationHistorySection variant="academy" academyId={academyId} />
-          </div>
-        )}
-      </div>
 
       {modal === 'remove' && selected && (
         <Modal>

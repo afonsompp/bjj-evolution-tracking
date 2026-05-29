@@ -117,6 +117,16 @@ export const academyApi = {
       })
       .then((r) => r.data),
 
+  // Attendance history of a specific member within an academy
+  // (instructors/owners, or the member themselves).
+  listMemberAttendances: (academyId: string, userId: string, page = 0, size = 20) =>
+    apiClient
+      .get<Page<AcademyMenberClassViewResponse>>(
+        `/academies/${academyId}/members/${userId}/attendances`,
+        { params: { page, size } },
+      )
+      .then((r) => r.data),
+
   // ── Templates ────────────────────────────────────────────
   listTemplates: (academyId: string, page = 0, size = 20) =>
     apiClient

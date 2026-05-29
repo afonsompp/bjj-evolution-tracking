@@ -7,6 +7,7 @@ import { useTranslation } from '../lib/i18n/I18nContext'
 import type { ProfileRequest, Belt } from '../types/api'
 import { useProfile, useUpsertProfile } from '../features/profile/useProfile'
 import { GraduationHistorySection } from '../features/academy/sections/GraduationHistorySection'
+import { AttendanceHistorySection } from '../features/academy/sections/AttendanceHistorySection'
 
 const BELTS: { group: string; values: { label: string; value: Belt }[] }[] = [
   {
@@ -203,6 +204,12 @@ export default function ProfilePage() {
       {profile && (
         <div className="mt-10">
           <GraduationHistorySection variant="mine-all" userId={profile.id} />
+        </div>
+      )}
+
+      {profile && (
+        <div className="mt-10">
+          <AttendanceHistorySection variant="mine-all" userId={profile.id} />
         </div>
       )}
     </div>

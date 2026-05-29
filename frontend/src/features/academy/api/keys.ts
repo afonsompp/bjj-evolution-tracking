@@ -15,6 +15,11 @@ export const attendanceKeys = {
     ['attendance', 'class', classId.toString()] as const,
   myAttendances: (academyId?: string) =>
     ['attendance', 'mine', academyId ?? 'all'] as const,
+  // Paginated attendance history (mirrors graduation history keys).
+  byMember: (academyId: string, userId: string, page: number) =>
+    ['attendance', 'history', academyId, userId, page] as const,
+  myAll: (userId: string, page: number) =>
+    ['attendance', 'history', 'mine-all', userId, page] as const,
 }
 
 export const memberKeys = {

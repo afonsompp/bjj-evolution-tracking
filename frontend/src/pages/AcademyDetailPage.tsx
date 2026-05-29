@@ -12,6 +12,7 @@ import { MembersSection } from '../features/academy/sections/MembersSection'
 import { ClassesSection } from '../features/academy/sections/ClassesSection'
 import { SettingsSection } from '../features/academy/sections/SettingsSection'
 import { GraduationHistorySection } from '../features/academy/sections/GraduationHistorySection'
+import { AttendanceHistorySection } from '../features/academy/sections/AttendanceHistorySection'
 import {
   BuildingIcon,
   ChevronLeftIcon,
@@ -21,7 +22,7 @@ import {
   LogOutIcon,
 } from '../assets/icons'
 
-type Tab = 'schedule' | 'members' | 'classes' | 'settings' | 'graduations'
+type Tab = 'schedule' | 'members' | 'classes' | 'settings' | 'graduations' | 'attendances'
 
 export default function AcademyDetailPage() {
   const { translate } = useTranslation()
@@ -52,6 +53,7 @@ export default function AcademyDetailPage() {
     const tabs: Tab[] = ['schedule']
     if (canManageMembers) tabs.push('members')
     tabs.push('graduations')
+    tabs.push('attendances')
     if (canManageClasses) tabs.push('classes')
     if (canEditAcademy) tabs.push('settings')
     return tabs
@@ -93,6 +95,7 @@ export default function AcademyDetailPage() {
       case 'classes': return translate('academy.tab.classes')
       case 'settings': return translate('academy.tab.settings')
       case 'graduations': return translate('academy.tab.graduations')
+      case 'attendances': return translate('academy.tab.attendances')
     }
   }
 
@@ -248,6 +251,9 @@ export default function AcademyDetailPage() {
           {isMember && activeTab === 'settings' && canEditAcademy && <SettingsSection academyId={id} />}
           {isMember && activeTab === 'graduations' && (
             <GraduationHistorySection variant="mine" academyId={id} userId={profile?.id} />
+          )}
+          {isMember && activeTab === 'attendances' && (
+            <AttendanceHistorySection variant="member" academyId={id} userId={profile?.id} />
           )}
         </div>
       )}

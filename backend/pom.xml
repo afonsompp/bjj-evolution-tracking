@@ -54,10 +54,13 @@
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
 		</dependency>
-		<!-- Database migrations. Flyway owns the schema; Hibernate only validates. -->
+		<!-- Database migrations. Flyway owns the schema; Hibernate only validates.
+		     Spring Boot 4 modularized autoconfiguration: FlywayAutoConfiguration lives
+		     in spring-boot-flyway (no longer in spring-boot-autoconfigure). Without it
+		     Flyway never runs and Hibernate validate fails with "missing table". -->
 		<dependency>
-			<groupId>org.flywaydb</groupId>
-			<artifactId>flyway-core</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-flyway</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.flywaydb</groupId>

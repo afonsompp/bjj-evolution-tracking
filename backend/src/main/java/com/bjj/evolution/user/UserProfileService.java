@@ -70,6 +70,11 @@ public class UserProfileService {
                     return request.toEntity(userId);
                 });
 
+        String email = jwt.getClaimAsString("email");
+        if (email != null && !email.isBlank()) {
+            profile.setEmail(email);
+        }
+
         UserProfile saved = repository.save(profile);
         log.info("Profile saved successfully for user={} nickname={}", saved.getId(), saved.getNickname());
         return ProfileResponse.fromEntity(saved);

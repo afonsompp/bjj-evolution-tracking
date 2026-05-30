@@ -22,4 +22,7 @@ public interface ScheduledClassRepository extends JpaRepository<ScheduledClass, 
     Page<ScheduledClass> findAllByAcademyId(UUID academyId, Pageable pageable);
 
     List<ScheduledClass> findAllByStatusAndStartTimeBefore(ClassStatus status, Instant startTime);
+
+    /** Upcoming classes not yet reminded, whose start falls within [from, to] — drives the reminder job. */
+    List<ScheduledClass> findByStatusAndReminderSentAtIsNullAndStartTimeBetween(ClassStatus status, Instant from, Instant to);
 }

@@ -25,6 +25,11 @@ public class UserProfile {
     @Column(nullable = false, unique = true)
     private String nickname;
 
+    // Captured from the Supabase JWT (see UserEmailSyncFilter) so notifications
+    // can reach the user outside of a request context (async/scheduled sends).
+    @Column(length = 320)
+    private String email;
+
     @Enumerated(EnumType.STRING)
     private Belt belt;
 
@@ -138,6 +143,14 @@ public class UserProfile {
         this.nickname = nickname;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     public Instant getAnonymizedAt() {
         return anonymizedAt;
     }
@@ -154,6 +167,7 @@ public class UserProfile {
         this.name = "[deleted]";
         this.secondName = null;
         this.nickname = "deleted_" + UUID.randomUUID().toString().replace("-", "");
+        this.email = null;
         this.belt = null;
         this.beltStripe = null;
         this.startsIn = null;

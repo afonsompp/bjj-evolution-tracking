@@ -14,6 +14,9 @@ import com.bjj.evolution.academy.member.domain.dto.GraduationRequest;
 import com.bjj.evolution.catalog.domain.Belt;
 import com.bjj.evolution.audit.AuditAction;
 import com.bjj.evolution.audit.annotation.Auditable;
+import com.bjj.evolution.notification.event.MemberApprovedEvent;
+import com.bjj.evolution.notification.event.MemberJoinRequestedEvent;
+import com.bjj.evolution.notification.event.MemberRejectedEvent;
 import com.bjj.evolution.shared.exception.BusinessRuleException;
 import com.bjj.evolution.shared.exception.ConflictException;
 import com.bjj.evolution.shared.exception.ResourceNotFoundException;
@@ -21,6 +24,7 @@ import com.bjj.evolution.user.UserProfileRepository;
 import com.bjj.evolution.user.domain.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -35,17 +39,20 @@ public class AcademyMemberService {
     private final AcademyRepository academyRepository;
     private final UserProfileRepository userProfileRepository;
     private final GraduationHistoryRepository graduationHistoryRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final Logger log = LoggerFactory.getLogger(AcademyMemberService.class);
 
     public AcademyMemberService(AcademyMemberRepository memberRepository,
                                 AcademyRepository academyRepository,
                                 UserProfileRepository userProfileRepository,
-                                GraduationHistoryRepository graduationHistoryRepository) {
+                                GraduationHistoryRepository graduationHistoryRepository,
+                                ApplicationEventPublisher eventPublisher) {
         this.memberRepository = memberRepository;
         this.academyRepository = academyRepository;
         this.userProfileRepository = userProfileRepository;
         this.graduationHistoryRepository = graduationHistoryRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -105,6 +112,7 @@ public class AcademyMemberService {
 
         AcademyMember saved = memberRepository.save(member);
         log.info("Join request created: academy={} user={} status=PENDING", academyId, userId);
+        eventPublisher.publishEvent(new MemberJoinRequestedEvent(academyId, userId));
         return AcademyMemberResponse.fromEntity(saved);
     }
 
@@ -178,6 +186,7 @@ public class AcademyMemberService {
         member.setStatus(MemberStatus.ACTIVE);
         AcademyMember saved = memberRepository.save(member);
         log.info("Member approved: academy={} user={} status=ACTIVE", academyId, userId);
+        eventPublisher.publishEvent(new MemberApprovedEvent(academyId, userId));
         return AcademyMemberResponse.fromEntity(saved);
     }
 
@@ -193,6 +202,7 @@ public class AcademyMemberService {
         }
         memberRepository.deleteById(member.getId());
         log.info("Join request rejected: academy={} user={}", academyId, userId);
+        eventPublisher.publishEvent(new MemberRejectedEvent(academyId, userId));
     }
 
     @Transactional

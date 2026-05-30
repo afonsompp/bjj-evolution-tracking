@@ -68,6 +68,11 @@ public class ScheduledClass {
     @JoinColumn(name = "template_id")
     private ClassTemplate template;
 
+    // When the upcoming-class reminder was sent (null = not yet). Used by
+    // ClassReminderJob to avoid reminding the same class twice.
+    @Column(name = "reminder_sent_at")
+    private Instant reminderSentAt;
+
 
     protected ScheduledClass() {
     }
@@ -226,5 +231,13 @@ public class ScheduledClass {
 
     public void setTemplate(ClassTemplate template) {
         this.template = template;
+    }
+
+    public Instant getReminderSentAt() {
+        return reminderSentAt;
+    }
+
+    public void setReminderSentAt(Instant reminderSentAt) {
+        this.reminderSentAt = reminderSentAt;
     }
 }

@@ -9,6 +9,8 @@ import com.bjj.evolution.academy.clazz.domain.dto.ScheduledClassResponse;
 import com.bjj.evolution.academy.domain.Academy;
 import com.bjj.evolution.catalog.TechniqueRepository;
 import com.bjj.evolution.catalog.domain.Technique;
+import com.bjj.evolution.notification.event.ClassCanceledEvent;
+import com.bjj.evolution.notification.event.ClassUpdatedEvent;
 import com.bjj.evolution.shared.exception.BusinessRuleException;
 import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import com.bjj.evolution.user.UserProfileRepository;
@@ -16,6 +18,7 @@ import com.bjj.evolution.user.domain.UserProfile;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -37,15 +40,18 @@ public class ScheduledClassService {
     private final AcademyRepository academyRepository;
     private final UserProfileRepository userProfileRepository;
     private final TechniqueRepository techniqueRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ScheduledClassService(ScheduledClassRepository repository,
                                  AcademyRepository academyRepository,
                                  UserProfileRepository userProfileRepository,
-                                 TechniqueRepository techniqueRepository) {
+                                 TechniqueRepository techniqueRepository,
+                                 ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.academyRepository = academyRepository;
         this.userProfileRepository = userProfileRepository;
         this.techniqueRepository = techniqueRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -105,6 +111,10 @@ public class ScheduledClassService {
                 ? techniqueRepository.findAllById(request.techniqueIds())
                 : List.of();
 
+        // Capture what students care about before mutating, to decide whether to notify.
+        Instant previousStart = scheduledClass.getStartTime();
+        UUID previousInstructorId = scheduledClass.getInstructor().getId();
+
         log.info("Updating scheduled class: id={} start={} instructor={} techniques={}",
                 id, request.startTime(), request.instructorId(), techniques.size());
 
@@ -120,6 +130,12 @@ public class ScheduledClassService {
 
         ScheduledClass saved = repository.save(scheduledClass);
         log.info("Scheduled class updated: id={} start={} instructor={}", saved.getId(), saved.getStartTime(), request.instructorId());
+
+        boolean scheduleChanged = !saved.getStartTime().equals(previousStart)
+                || !instructor.getId().equals(previousInstructorId);
+        if (scheduleChanged && saved.getStatus() == ClassStatus.PUBLISHED) {
+            eventPublisher.publishEvent(new ClassUpdatedEvent(saved.getId()));
+        }
         return ScheduledClassResponse.fromEntity(saved);
     }
 
@@ -140,6 +156,11 @@ public class ScheduledClassService {
         scheduledClass.setStatus(ClassStatus.CANCELED);
         repository.save(scheduledClass);
         log.info("Scheduled class canceled: id={} academy={} wasStatus={}", id, scheduledClass.getAcademy().getId(), oldStatus);
+
+        // Only worth notifying students if the class had been published to them.
+        if (oldStatus == ClassStatus.PUBLISHED) {
+            eventPublisher.publishEvent(new ClassCanceledEvent(id));
+        }
     }
 
     @Transactional

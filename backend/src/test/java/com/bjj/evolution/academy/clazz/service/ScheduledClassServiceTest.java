@@ -58,6 +58,9 @@ class ScheduledClassServiceTest {
     @Mock
     private TechniqueRepository techniqueRepository;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private ScheduledClassService service;
 

@@ -6,12 +6,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface ClassAttendanceRepository extends JpaRepository<ClassAttendance, Long> {
 
     Optional<ClassAttendance> findByScheduledClassIdAndStudentId(Long scheduledClassId, UUID studentId);
+
+    /** Attendances for a class restricted to the given statuses — the recipients of class notifications. */
+    List<ClassAttendance> findByScheduledClassIdAndStatusIn(Long scheduledClassId, Collection<CheckInStatus> statuses);
 
     Page<ClassAttendance> findAllByScheduledClassId(Long scheduledClassId, Pageable pageable);
 

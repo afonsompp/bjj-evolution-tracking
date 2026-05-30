@@ -35,6 +35,21 @@ storage:
   bucket: ${STORAGE_BUCKET:avatars}
   signed-url-ttl-seconds: ${STORAGE_SIGNED_URL_TTL_SECONDS:3600}
 
+# Notifications. Email goes through Resend (https://resend.com). Leave
+# RESEND_ENABLED=false (default) to boot with a DisabledEmailSender that logs
+# messages instead of sending. For testing without a verified domain, set
+# RESEND_FROM_EMAIL=onboarding@resend.dev (delivers only to the account owner).
+notification:
+  resend:
+    enabled: ${RESEND_ENABLED:false}
+    api-key: ${RESEND_API_KEY:}
+    from-email: ${RESEND_FROM_EMAIL:noreply@bjjevolution.com}
+    from-name: ${RESEND_FROM_NAME:BJJ Evolution}
+  class-reminder:
+    enabled: ${CLASS_REMINDER_ENABLED:true}
+    hours-before: ${CLASS_REMINDER_HOURS:12}
+    fixed-delay-ms: ${CLASS_REMINDER_DELAY_MS:300000}
+
 rate-limit:
   enabled: true
   rules:

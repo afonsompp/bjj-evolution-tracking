@@ -342,6 +342,10 @@ const en = {
   'notFound.title': 'Page not found',
   'notFound.description': 'The page you are looking for does not exist or has been moved.',
   'notFound.goHome': 'Go to Dashboard',
+  'error.title': 'Something went wrong',
+  'error.description': 'An unexpected server error occurred. Please try again in a moment.',
+  'error.retry': 'Try again',
+  'error.goHome': 'Go to Dashboard',
   // ── Class Management ────────────────────────────────────
   'academy.manageClasses': 'Manage Classes',
   'academy.templates': 'Templates',
@@ -748,6 +752,10 @@ const pt: Record<TranslationKey, string> = {
   'notFound.title': 'Página não encontrada',
   'notFound.description': 'A página que você está procurando não existe ou foi movida.',
   'notFound.goHome': 'Ir para o Dashboard',
+  'error.title': 'Algo deu errado',
+  'error.description': 'Ocorreu um erro inesperado no servidor. Tente novamente em instantes.',
+  'error.retry': 'Tentar novamente',
+  'error.goHome': 'Ir para o Dashboard',
   // ── Class Management ────────────────────────────────────
   'academy.manageClasses': 'Gerenciar Aulas',
   'academy.templates': 'Templates',

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
+import { authClient } from '../../lib/auth/authClient'
 
 export default function RegisterForm() {
   const [email, setEmail] = useState('')
@@ -25,7 +25,7 @@ export default function RegisterForm() {
     setError('')
     setLoading(true)
 
-    const { error: signUpError } = await supabase.auth.signUp({ email, password })
+    const { error: signUpError } = await authClient.signUp(email, password)
 
     if (signUpError) {
       setError(signUpError.message)

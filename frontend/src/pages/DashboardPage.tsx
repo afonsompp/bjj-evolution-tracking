@@ -1,8 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { apiClient } from '../api/client'
-import type { DashboardResponse } from '../types/api'
+import { useDashboard } from '../features/dashboard/hooks/useDashboard'
 import { useTranslation } from '../lib/i18n/I18nContext'
 import {
   ActivityIcon,
@@ -191,12 +189,7 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const [days, setDays] = useState<number>(30)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['dashboard', days],
-    queryFn: () =>
-      apiClient.get<DashboardResponse>(`/trainings/dashboard?days=${days}`)
-        .then(r => r.data),
-  })
+  const { data, isLoading } = useDashboard(days)
 
   if (isLoading) {
     return <div className="animate-pulse p-8 text-[var(--text-muted)]">{translate('dashboard.loading')}</div>

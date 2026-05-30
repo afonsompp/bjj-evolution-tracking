@@ -4,7 +4,7 @@ import com.bjj.evolution.academy.domain.Academy;
 import com.bjj.evolution.catalog.domain.Belt;
 import com.bjj.evolution.user.domain.UserProfile;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 public class GraduationHistory {
@@ -27,29 +27,29 @@ public class GraduationHistory {
 
     @Enumerated(EnumType.STRING)
     private Belt oldBelt;
-    private Integer oldStripe;
+    private Integer oldBeltStripe;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Belt newBelt;
-    private Integer newStripe;
+    private Integer newBeltStripe;
 
     @Column(nullable = false)
-    private LocalDateTime graduationDate;
+    private Instant graduationDate;
 
     // Construtor vazio para JPA
     public GraduationHistory() {}
 
     public GraduationHistory(Academy academy, UserProfile student, UserProfile promotedBy,
-                             Belt oldBelt, Integer oldStripe, Belt newBelt, Integer newStripe) {
+                             Belt oldBelt, Integer oldBeltStripe, Belt newBelt, Integer newBeltStripe) {
         this.academy = academy;
         this.student = student;
         this.promotedBy = promotedBy;
         this.oldBelt = oldBelt;
-        this.oldStripe = oldStripe;
+        this.oldBeltStripe = oldBeltStripe;
         this.newBelt = newBelt;
-        this.newStripe = newStripe;
-        this.graduationDate = LocalDateTime.now();
+        this.newBeltStripe = newBeltStripe;
+        this.graduationDate = Instant.now();
     }
 
     public Long getId() { return id; }
@@ -57,8 +57,8 @@ public class GraduationHistory {
     public UserProfile getStudent() { return student; }
     public UserProfile getPromotedBy() { return promotedBy; }
     public Belt getOldBelt() { return oldBelt; }
-    public Integer getOldStripe() { return oldStripe; }
+    public Integer getOldStripe() { return oldBeltStripe; }
     public Belt getNewBelt() { return newBelt; }
-    public Integer getNewStripe() { return newStripe; }
-    public LocalDateTime getGraduationDate() { return graduationDate; }
+    public Integer getNewStripe() { return newBeltStripe; }
+    public Instant getGraduationDate() { return graduationDate; }
 }

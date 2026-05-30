@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
+import { authClient } from '../../lib/auth/authClient'
 
 export default function LoginForm() {
   const navigate = useNavigate()
@@ -14,7 +14,7 @@ export default function LoginForm() {
     setError('')
     setLoading(true)
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+    const { error: signInError } = await authClient.signIn(email, password)
 
     if (signInError) {
       if (signInError.code === 'invalid_credentials') {

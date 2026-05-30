@@ -20,15 +20,15 @@ public record AcademyMemberRequest(
         MemberStatus status,
 
         Belt belt,
-        Integer stripe
+        Integer beltStripe
 ) {
     public AcademyMember toEntity(Academy academy, UserProfile user) {
         Belt initialBelt = (belt != null) ? belt : (user.getBelt() != null ? user.getBelt() : Belt.WHITE);
-        Integer initialStripe = (stripe != null) ? stripe : 0;
+        Integer initialStripe = (beltStripe != null) ? beltStripe : 0;
 
         AcademyMember member = new AcademyMember(academy, user, role);
         member.setBelt(initialBelt);
-        member.setStripe(initialStripe);
+        member.setBeltStripe(initialStripe);
 
         if (status != null) {
             member.setStatus(status);

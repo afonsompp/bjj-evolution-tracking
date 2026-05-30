@@ -4,6 +4,8 @@ import com.bjj.evolution.academy.member.AcademyMemberRepository;
 import com.bjj.evolution.academy.member.domain.AcademyMemberId;
 import com.bjj.evolution.academy.member.domain.MemberRole;
 import com.bjj.evolution.academy.member.domain.MemberStatus;
+import com.bjj.evolution.user.UserProfileRepository;
+import com.bjj.evolution.user.domain.UserRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -16,11 +18,14 @@ import java.util.UUID;
 public class AcademySecurity {
 
     private final AcademyMemberRepository memberRepository;
+    private final UserProfileRepository userProfileRepository;
 
     private static final Logger log = LoggerFactory.getLogger(AcademySecurity.class);
 
-    public AcademySecurity(AcademyMemberRepository memberRepository) {
+    public AcademySecurity(AcademyMemberRepository memberRepository,
+                           UserProfileRepository userProfileRepository) {
         this.memberRepository = memberRepository;
+        this.userProfileRepository = userProfileRepository;
     }
 
     public boolean hasAccess(Authentication authentication, UUID academyId) {
@@ -82,6 +87,13 @@ public class AcademySecurity {
             log.warn("isOwner denied: user={} academy={}", userId, academyId);
         }
         return result;
+    }
+
+    public boolean isPlatformManager(Authentication authentication) {
+        UUID userId = extractUserId(authentication);
+        return userProfileRepository.findById(userId)
+                .map(p -> p.getRole() == UserRole.PLATFORM_MANAGER || p.getRole() == UserRole.ADMIN)
+                .orElse(false);
     }
 
     public boolean isStudent(Authentication authentication) {

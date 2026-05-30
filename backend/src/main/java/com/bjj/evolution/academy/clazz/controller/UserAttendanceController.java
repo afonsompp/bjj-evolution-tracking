@@ -31,9 +31,14 @@ public class UserAttendanceController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Page<AcademyMenberClassViewResponse>> getMyAttendances(
             @RequestParam(required = false) CheckInStatus status,
+            @RequestParam(required = false) UUID academyId,
             @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
 
         UUID userId = SecurityUtils.getCurrentUserId();
+        if (academyId != null) {
+            return ResponseEntity.ok(
+                    classAttendanceService.findClassViewsByStudentAndAcademy(academyId, userId, status, pageable));
+        }
         return ResponseEntity.ok(classAttendanceService.findClassViewsByStudent(userId, status, pageable));
     }
 }

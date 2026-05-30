@@ -29,9 +29,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -76,7 +75,7 @@ class TrainingServiceTest {
 
         request = new TrainingRequest(
                 ClassType.REGULAR, TrainingType.GI,
-                LocalDateTime.of(2026, 6, 1, 10, 0),
+                Instant.parse("2026-06-01T10:00:00Z"),
                 90,
                 List.of(1L),                // techniqueIds
                 List.of(2L),                // submissionTechniqueIds
@@ -92,8 +91,7 @@ class TrainingServiceTest {
                 1,                          // escapes
                 2,                          // sweeps
                 1,                          // takedowns
-                2,                          // guardPasses
-                Duration.ofMinutes(90)      // duration
+                2                           // guardPasses
         );
     }
 
@@ -154,12 +152,11 @@ class TrainingServiceTest {
     void create_withNullTechniqueLists_shouldCreate() {
         TrainingRequest requestNoTechs = new TrainingRequest(
                 ClassType.REGULAR, TrainingType.GI,
-                LocalDateTime.of(2026, 6, 1, 10, 0),
+                Instant.parse("2026-06-01T10:00:00Z"),
                 90,
                 null, null, null,
                 5, "Good session", 7, 2,
-                4, 3, 2, 3, 1, 2, 1, 2,
-                Duration.ofMinutes(90)
+                4, 3, 2, 3, 1, 2, 1, 2
         );
 
         when(userProfileRepository.findById(userId)).thenReturn(Optional.of(profile));
@@ -169,7 +166,7 @@ class TrainingServiceTest {
                 .userProfile(profile)
                 .classType(ClassType.REGULAR)
                 .trainingType(TrainingType.GI)
-                .sessionDate(LocalDateTime.of(2026, 6, 1, 10, 0))
+                .sessionDate(Instant.parse("2026-06-01T10:00:00Z"))
                 .durationMinutes(90)
                 .technique(List.of())
                 .submissionsTechniques(List.of())
@@ -205,8 +202,8 @@ class TrainingServiceTest {
     @Test
     @DisplayName("findAll with date range should call between query")
     void findAll_withDateRange_shouldCallBetweenQuery() {
-        LocalDateTime start = LocalDateTime.of(2026, 6, 1, 0, 0);
-        LocalDateTime end = LocalDateTime.of(2026, 6, 30, 23, 59);
+        Instant start = Instant.parse("2026-06-01T00:00:00Z");
+        Instant end = Instant.parse("2026-06-30T23:59:00Z");
         Pageable pageable = PageRequest.of(0, 10);
 
         Training training = buildTraining(trainingId);
@@ -222,7 +219,7 @@ class TrainingServiceTest {
         assertEquals(trainingId, result.getContent().get(0).id());
 
         verify(trainingRepository).findAllByUserProfileIdAndSessionDateBetween(userId, start, end, pageable);
-        verify(trainingRepository, never()).findAllByUserProfileId(any(), any());
+        verify(trainingRepository, never()).findAllByUserProfileId(any(UUID.class), any());
     }
 
     @Test
@@ -359,8 +356,8 @@ class TrainingServiceTest {
     @Test
     @DisplayName("getStats should return stats from repository projection")
     void getStats_shouldReturnStats() {
-        LocalDateTime start = LocalDateTime.of(2026, 1, 1, 0, 0);
-        LocalDateTime end = LocalDateTime.of(2026, 12, 31, 23, 59);
+        Instant start = Instant.parse("2026-01-01T00:00:00Z");
+        Instant end = Instant.parse("2026-12-31T23:59:00Z");
 
         Object[] projection = new Object[]{
                 10L,              // [0] count
@@ -420,7 +417,7 @@ class TrainingServiceTest {
                 .userProfile(profile)
                 .classType(ClassType.REGULAR)
                 .trainingType(TrainingType.GI)
-                .sessionDate(LocalDateTime.of(2026, 6, 1, 10, 0))
+                .sessionDate(Instant.parse("2026-06-01T10:00:00Z"))
                 .durationMinutes(90)
                 .technique(List.of(technique))
                 .submissionsTechniques(List.of(technique))

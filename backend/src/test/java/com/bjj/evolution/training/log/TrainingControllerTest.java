@@ -26,7 +26,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -73,6 +72,7 @@ class TrainingControllerTest {
         sampleProfile = new ProfileResponse(
                 profileId, "John", "Doe", "jiujitsu_john",
                 null, 0, LocalDate.of(2023, 1, 15),
+                null,
                 UserRole.CUSTOMER
         );
 
@@ -83,7 +83,7 @@ class TrainingControllerTest {
                 trainingId,
                 ClassType.REGULAR,
                 TrainingType.GI,
-                LocalDateTime.of(2025, 5, 17, 10, 0),
+                Instant.parse("2025-05-17T10:00:00Z"),
                 60L,
                 List.of(guard),
                 List.of(armbar),
@@ -111,14 +111,14 @@ class TrainingControllerTest {
         when(trainingService.create(any(TrainingRequest.class), any(UUID.class)))
                 .thenReturn(sampleResponse);
 
-        mockMvc.perform(post("/trainings")
+        mockMvc.perform(post("/api/v1/trainings")
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                     "classType": "REGULAR",
                                     "trainingType": "GI",
-                                    "sessionDate": "2025-05-17T10:00:00",
+                                    "sessionDate": "2025-05-17T10:00:00Z",
                                     "durationMinutes": 60,
                                     "techniqueIds": [1],
                                     "submissionTechniqueIds": [2],
@@ -158,7 +158,7 @@ class TrainingControllerTest {
     @Test
     @DisplayName("POST /trainings should return 400 when required fields are missing")
     void create_whenInvalidBody_shouldReturn400() throws Exception {
-        mockMvc.perform(post("/trainings")
+        mockMvc.perform(post("/api/v1/trainings")
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -177,14 +177,14 @@ class TrainingControllerTest {
     @Test
     @DisplayName("POST /trainings should return 400 when rating is out of range")
     void create_whenRatingOutOfRange_shouldReturn400() throws Exception {
-        mockMvc.perform(post("/trainings")
+        mockMvc.perform(post("/api/v1/trainings")
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                     "classType": "REGULAR",
                                     "trainingType": "GI",
-                                    "sessionDate": "2025-05-17T10:00:00",
+                                    "sessionDate": "2025-05-17T10:00:00Z",
                                     "durationMinutes": 60,
                                     "totalRolls": 3,
                                     "roundLengthMinutes": 5,
@@ -210,7 +210,7 @@ class TrainingControllerTest {
         when(trainingService.create(any(TrainingRequest.class), any(UUID.class)))
                 .thenThrow(new ResourceNotFoundException("User", UUID.fromString(USER_SUB)));
 
-        mockMvc.perform(post("/trainings")
+        mockMvc.perform(post("/api/v1/trainings")
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(VALID_TRAINING_JSON))
@@ -232,7 +232,7 @@ class TrainingControllerTest {
         when(trainingService.findAll(any(UUID.class), isNull(), isNull(), any()))
                 .thenReturn(page);
 
-        mockMvc.perform(get("/trainings")
+        mockMvc.perform(get("/api/v1/trainings")
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(1))
@@ -246,10 +246,10 @@ class TrainingControllerTest {
     @DisplayName("GET /trainings should return paginated results with date filters")
     void getAll_withDateFilters_shouldReturnPage() throws Exception {
         Page<TrainingResponse> page = new PageImpl<>(List.of(sampleResponse), PageRequest.of(0, 10), 1);
-        when(trainingService.findAll(any(UUID.class), any(LocalDateTime.class), any(LocalDateTime.class), any()))
+        when(trainingService.findAll(any(UUID.class), any(Instant.class), any(Instant.class), any()))
                 .thenReturn(page);
 
-        mockMvc.perform(get("/trainings")
+        mockMvc.perform(get("/api/v1/trainings")
                         .header("Authorization", "Bearer " + TOKEN)
                         .param("startDate", "2025-05-01")
                         .param("endDate", "2025-05-31"))
@@ -257,7 +257,7 @@ class TrainingControllerTest {
                 .andExpect(jsonPath("$.content[0].id").value(1))
                 .andExpect(jsonPath("$.totalElements").value(1));
 
-        verify(trainingService).findAll(any(UUID.class), any(LocalDateTime.class), any(LocalDateTime.class), any());
+        verify(trainingService).findAll(any(UUID.class), any(Instant.class), any(Instant.class), any());
     }
 
     @Test
@@ -267,7 +267,7 @@ class TrainingControllerTest {
         when(trainingService.findAll(any(UUID.class), isNull(), isNull(), any()))
                 .thenReturn(emptyPage);
 
-        mockMvc.perform(get("/trainings")
+        mockMvc.perform(get("/api/v1/trainings")
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isEmpty())
@@ -286,7 +286,7 @@ class TrainingControllerTest {
         when(trainingService.findById(eq(trainingId), any(UUID.class)))
                 .thenReturn(sampleResponse);
 
-        mockMvc.perform(get("/trainings/{id}", trainingId)
+        mockMvc.perform(get("/api/v1/trainings/{id}", trainingId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
@@ -303,7 +303,7 @@ class TrainingControllerTest {
         when(trainingService.findById(eq(trainingId), any(UUID.class)))
                 .thenThrow(new ResourceNotFoundException("Training", trainingId));
 
-        mockMvc.perform(get("/trainings/{id}", trainingId)
+        mockMvc.perform(get("/api/v1/trainings/{id}", trainingId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
@@ -322,14 +322,14 @@ class TrainingControllerTest {
         when(trainingService.update(eq(trainingId), any(TrainingRequest.class), any(UUID.class)))
                 .thenReturn(sampleResponse);
 
-        mockMvc.perform(put("/trainings/{id}", trainingId)
+        mockMvc.perform(put("/api/v1/trainings/{id}", trainingId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                     "classType": "REGULAR",
                                     "trainingType": "GI",
-                                    "sessionDate": "2025-05-17T10:00:00",
+                                    "sessionDate": "2025-05-17T10:00:00Z",
                                     "durationMinutes": 90,
                                     "techniqueIds": [1],
                                     "submissionTechniqueIds": [2],
@@ -360,7 +360,7 @@ class TrainingControllerTest {
         when(trainingService.update(eq(trainingId), any(TrainingRequest.class), any(UUID.class)))
                 .thenThrow(new ResourceNotFoundException("Training", trainingId));
 
-        mockMvc.perform(put("/trainings/{id}", trainingId)
+        mockMvc.perform(put("/api/v1/trainings/{id}", trainingId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(VALID_TRAINING_JSON))
@@ -374,7 +374,7 @@ class TrainingControllerTest {
     @Test
     @DisplayName("PUT /trainings/{id} should return 400 when request body is invalid")
     void update_whenInvalidBody_shouldReturn400() throws Exception {
-        mockMvc.perform(put("/trainings/{id}", trainingId)
+        mockMvc.perform(put("/api/v1/trainings/{id}", trainingId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -396,7 +396,7 @@ class TrainingControllerTest {
     void delete_shouldReturn204() throws Exception {
         doNothing().when(trainingService).delete(eq(trainingId), any(UUID.class));
 
-        mockMvc.perform(delete("/trainings/{id}", trainingId)
+        mockMvc.perform(delete("/api/v1/trainings/{id}", trainingId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNoContent());
 
@@ -409,7 +409,7 @@ class TrainingControllerTest {
         doThrow(new ResourceNotFoundException("Training", trainingId))
                 .when(trainingService).delete(eq(trainingId), any(UUID.class));
 
-        mockMvc.perform(delete("/trainings/{id}", trainingId)
+        mockMvc.perform(delete("/api/v1/trainings/{id}", trainingId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
@@ -431,7 +431,7 @@ class TrainingControllerTest {
         when(trainingService.getStats(any(UUID.class), isNull(), isNull()))
                 .thenReturn(stats);
 
-        mockMvc.perform(get("/trainings/stats")
+        mockMvc.perform(get("/api/v1/trainings/stats")
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalSessions").value(42))
@@ -455,10 +455,10 @@ class TrainingControllerTest {
         TrainingStatsResponse stats = new TrainingStatsResponse(
                 10, 600, 4.0, 3.8, 5, 30, 20, 10, 3, 15, 50
         );
-        when(trainingService.getStats(any(UUID.class), any(LocalDateTime.class), any(LocalDateTime.class)))
+        when(trainingService.getStats(any(UUID.class), any(Instant.class), any(Instant.class)))
                 .thenReturn(stats);
 
-        mockMvc.perform(get("/trainings/stats")
+        mockMvc.perform(get("/api/v1/trainings/stats")
                         .header("Authorization", "Bearer " + TOKEN)
                         .param("startDate", "2025-05-01")
                         .param("endDate", "2025-05-31"))
@@ -468,7 +468,7 @@ class TrainingControllerTest {
                 .andExpect(jsonPath("$.avgCardioRating").value(4.0))
                 .andExpect(jsonPath("$.avgIntensityRating").value(3.8));
 
-        verify(trainingService).getStats(any(UUID.class), any(LocalDateTime.class), any(LocalDateTime.class));
+        verify(trainingService).getStats(any(UUID.class), any(Instant.class), any(Instant.class));
     }
 
     @Test
@@ -480,7 +480,7 @@ class TrainingControllerTest {
         when(trainingService.getStats(any(UUID.class), isNull(), isNull()))
                 .thenReturn(emptyStats);
 
-        mockMvc.perform(get("/trainings/stats")
+        mockMvc.perform(get("/api/v1/trainings/stats")
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalSessions").value(0))
@@ -495,7 +495,7 @@ class TrainingControllerTest {
     @Test
     @DisplayName("GET /trainings/stats should return 401 when not authenticated")
     void getStats_withoutAuth_shouldReturn401() throws Exception {
-        mockMvc.perform(get("/trainings/stats"))
+        mockMvc.perform(get("/api/v1/trainings/stats"))
                 .andExpect(status().isUnauthorized());
 
         verify(trainingService, never()).getStats(any(), any(), any());
@@ -509,7 +509,7 @@ class TrainingControllerTest {
             {
                 "classType": "REGULAR",
                 "trainingType": "GI",
-                "sessionDate": "2025-05-17T10:00:00",
+                "sessionDate": "2025-05-17T10:00:00Z",
                 "durationMinutes": 60,
                 "techniqueIds": [1],
                 "submissionTechniqueIds": [2],

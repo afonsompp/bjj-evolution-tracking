@@ -32,7 +32,7 @@ public class AcademyMember {
     @Enumerated(EnumType.STRING)
     private Belt belt;
 
-    private Integer stripe;
+    private Integer beltStripe;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -45,12 +45,12 @@ public class AcademyMember {
     }
 
 
-    public AcademyMember(Academy academy, UserProfile user, Belt belt, Integer stripe, MemberRole role, MemberStatus status) {
+    public AcademyMember(Academy academy, UserProfile user, Belt belt, Integer beltStripe, MemberRole role, MemberStatus status) {
         this.id = new AcademyMemberId(academy.getId(), user.getId());
         this.academy = academy;
         this.user = user;
         this.belt = belt;
-        this.stripe = stripe;
+        this.beltStripe = beltStripe;
         this.role = role;
         this.status = status;
     }
@@ -118,11 +118,11 @@ public class AcademyMember {
         this.belt = belt;
     }
 
-    public Integer getStripe() {
-        return stripe;
+    public Integer getBeltStripe() {
+        return beltStripe;
     }
 
-    public void setStripe(Integer stripe) {
-        this.stripe = stripe;
+    public void setBeltStripe(Integer beltStripe) {
+        this.beltStripe = beltStripe;
     }
 }

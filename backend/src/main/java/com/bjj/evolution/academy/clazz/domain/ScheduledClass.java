@@ -17,9 +17,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import org.hibernate.annotations.Check;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Entity
@@ -38,10 +38,10 @@ public class ScheduledClass {
     private UserProfile instructor;
 
     @Column(nullable = false)
-    private LocalDateTime startTime;
+    private Instant startTime;
 
     @Column(nullable = false)
-    private Duration duration;
+    private int durationMinutes;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -59,6 +59,7 @@ public class ScheduledClass {
     )
     private List<Technique> scheduledTechniques;
 
+    @Check(constraints = "status IN ('DRAFT', 'PUBLISHED', 'COMPLETED', 'CANCELED')")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ClassStatus status = ClassStatus.PUBLISHED;
@@ -66,6 +67,11 @@ public class ScheduledClass {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "template_id")
     private ClassTemplate template;
+
+    // When the upcoming-class reminder was sent (null = not yet). Used by
+    // ClassReminderJob to avoid reminding the same class twice.
+    @Column(name = "reminder_sent_at")
+    private Instant reminderSentAt;
 
 
     protected ScheduledClass() {
@@ -75,7 +81,7 @@ public class ScheduledClass {
         this.academy = builder.academy;
         this.instructor = builder.instructor;
         this.startTime = builder.startTime;
-        this.duration = builder.duration;
+        this.durationMinutes = builder.durationMinutes;
         this.classType = builder.classType;
         this.trainingType = builder.trainingType;
         this.scheduledTechniques = builder.scheduledTechniques;
@@ -90,8 +96,8 @@ public class ScheduledClass {
     public static class Builder {
         private Academy academy;
         private UserProfile instructor;
-        private LocalDateTime startTime;
-        private Duration duration;
+        private Instant startTime;
+        private int durationMinutes;
         private ClassType classType;
         private TrainingType trainingType;
         private List<Technique> scheduledTechniques;
@@ -111,13 +117,13 @@ public class ScheduledClass {
             return this;
         }
 
-        public Builder startTime(LocalDateTime startTime) {
+        public Builder startTime(Instant startTime) {
             this.startTime = startTime;
             return this;
         }
 
-        public Builder duration(Duration duration) {
-            this.duration = duration;
+        public Builder durationMinutes(int durationMinutes) {
+            this.durationMinutes = durationMinutes;
             return this;
         }
 
@@ -163,12 +169,12 @@ public class ScheduledClass {
         return instructor;
     }
 
-    public LocalDateTime getStartTime() {
+    public Instant getStartTime() {
         return startTime;
     }
 
-    public Duration getDuration() {
-        return duration;
+    public int getDurationMinutes() {
+        return durationMinutes;
     }
 
     public ClassType getClassType() {
@@ -199,12 +205,12 @@ public class ScheduledClass {
         this.instructor = instructor;
     }
 
-    public void setStartTime(LocalDateTime startTime) {
+    public void setStartTime(Instant startTime) {
         this.startTime = startTime;
     }
 
-    public void setDuration(Duration duration) {
-        this.duration = duration;
+    public void setDurationMinutes(int durationMinutes) {
+        this.durationMinutes = durationMinutes;
     }
 
     public void setClassType(ClassType classType) {
@@ -225,5 +231,13 @@ public class ScheduledClass {
 
     public void setTemplate(ClassTemplate template) {
         this.template = template;
+    }
+
+    public Instant getReminderSentAt() {
+        return reminderSentAt;
+    }
+
+    public void setReminderSentAt(Instant reminderSentAt) {
+        this.reminderSentAt = reminderSentAt;
     }
 }

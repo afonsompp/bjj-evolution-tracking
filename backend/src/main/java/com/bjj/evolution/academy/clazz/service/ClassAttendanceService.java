@@ -19,7 +19,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -46,6 +47,11 @@ public class ClassAttendanceService {
         if (scheduledClass.getStatus() != ClassStatus.PUBLISHED) {
             log.warn("Check-in registration denied: classId={} student={} classStatus={}", classId, studentId, scheduledClass.getStatus());
             throw new BusinessRuleException("Check-in is only allowed for published classes.");
+        }
+
+        if (scheduledClass.getInstructor().getId().equals(studentId)) {
+            log.warn("Check-in registration denied: instructor is already confirmed in the class classId={} instructorId={}", classId, studentId);
+            throw new BusinessRuleException("The instructor is already confirmed as the teacher of this class.");
         }
 
         attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId).ifPresent(a -> {
@@ -82,7 +88,7 @@ public class ClassAttendanceService {
 
         CheckInStatus oldStatus = attendance.getStatus();
         attendance.setStatus(CheckInStatus.CONFIRMED);
-        attendance.setCheckInTime(LocalDateTime.now());
+        attendance.setCheckInTime(Instant.now());
         ClassAttendance saved = attendanceRepository.save(attendance);
         log.info("Check-in confirmed: classId={} student={} academy={} wasStatus={} confirmedAt={}",
                 classId, studentId, academyId, oldStatus, saved.getCheckInTime());
@@ -115,6 +121,24 @@ public class ClassAttendanceService {
         log.debug("Listing check-ins classId={} academy={} page={} size={}", classId, academyId, pageable.getPageNumber(), pageable.getPageSize());
         return attendanceRepository.findAllByScheduledClassId(classId, pageable)
                 .map(CheckInResponse::fromEntity);
+    }
+
+    public Optional<CheckInResponse> getMyAttendance(UUID academyId, Long classId, UUID studentId) {
+        getScheduledClassAndValidateAcademy(academyId, classId);
+        return attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId)
+                .map(CheckInResponse::fromEntity);
+    }
+
+    @Transactional
+    public void deleteAttendance(UUID academyId, Long classId, UUID studentId) {
+        getScheduledClassAndValidateAcademy(academyId, classId);
+        ClassAttendance attendance = attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId)
+                .orElseThrow(() -> {
+                    log.warn("Attendance delete failed: record not found classId={} student={}", classId, studentId);
+                    return new ResourceNotFoundException("Attendance record not found for student");
+                });
+        attendanceRepository.delete(attendance);
+        log.info("Attendance deleted: classId={} student={} academy={}", classId, studentId, academyId);
     }
 
     public Page<AcademyMenberClassViewResponse> findClassViewsByStudent(UUID studentId, CheckInStatus status, Pageable pageable) {

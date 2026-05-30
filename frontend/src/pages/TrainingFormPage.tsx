@@ -1,20 +1,18 @@
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
-import { useState, useEffect, useMemo, useRef } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { apiClient } from '../api/client'
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useTranslation } from '../lib/i18n/I18nContext'
+import { useProfile } from '../features/profile/useProfile'
+import { useCreateTechnique } from '../features/technique/hooks/useManageTechnique'
+import { TechniquePicker } from '../features/technique/components/TechniquePicker'
+import { useTraining } from '../features/training/hooks/useTrainings'
+import { useCreateTraining, useUpdateTraining } from '../features/training/hooks/useManageTraining'
 import type {
-  TrainingResponse, TechniqueResponse, TrainingRequest,
+  TrainingRequest,
   ClassType, TrainingType, TechniqueType, TechniqueTarget,
-  ProfileResponse, UserRole, Page,
 } from '../types/api'
 import {
   StarIcon,
-  CheckIcon,
-  XIcon,
   ChevronLeftIcon,
-  SearchIcon,
-  LoaderIcon,
 } from '../assets/icons'
 
 // ── Constants ────────────────────────────────────────────
@@ -32,25 +30,6 @@ const TRAINING_TYPES: { value: TrainingType; key: string }[] = [
   { value: 'GI', key: 'form.gi' },
   { value: 'NO_GI', key: 'form.noGi' },
 ]
-
-const TECHNIQUE_TYPE_ORDER: TechniqueType[] = [
-  'SUBMISSION', 'POSITION', 'GUARD_POSITION', 'GUARD_PASS',
-  'SWEEP', 'TAKEDOWN', 'PIN', 'SCAPE', 'GRIP',
-]
-
-const TECHNIQUE_TYPE_LABELS: Record<TechniqueType, string> = {
-  SUBMISSION: 'form.techType.SUBMISSION',
-  POSITION: 'form.techType.POSITION',
-  GUARD_POSITION: 'form.techType.GUARD_POSITION',
-  GUARD_PASS: 'form.techType.GUARD_PASS',
-  SWEEP: 'form.techType.SWEEP',
-  TAKEDOWN: 'form.techType.TAKEDOWN',
-  PIN: 'form.techType.PIN',
-  SCAPE: 'form.techType.SCAPE',
-  GRIP: 'form.techType.GRIP',
-}
-
-const TECHNIQUE_PAGE_SIZE = 50
 
 // ── Technique creation options ───────────────────────────
 const TECHNIQUE_TYPE_OPTIONS: { value: TechniqueType; label: string }[] = [
@@ -89,16 +68,6 @@ const TECHNIQUE_TARGET_OPTIONS: { value: TechniqueTarget; label: string }[] = [
   { value: 'ESCAPE', label: 'Escape' },
 ]
 
-// ── Hook: debounce ────────────────────────────────────────
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(t)
-  }, [value, delay])
-  return debounced
-}
-
 // ── Star Rating Component ────────────────────────────────
 function StarRating({ value, onChange, label }: {
   value: number
@@ -123,241 +92,6 @@ function StarRating({ value, onChange, label }: {
             <StarIcon filled={star <= value} />
           </button>
         ))}
-      </div>
-    </div>
-  )
-}
-
-// ── Technique Picker (server-side search & pagination) ───
-function TechniquePicker({
-  selectedIds, onChange, label, typeFilter,
-}: {
-  selectedIds: number[]
-  onChange: (ids: number[]) => void
-  label: string
-  typeFilter?: TechniqueType[]
-}) {
-  const { translate } = useTranslation()
-  const [search, setSearch] = useState('')
-  const debouncedSearch = useDebounce(search, 300)
-  const sentinelRef = useRef<HTMLDivElement>(null)
-
-  // ── Infinite query ──────────────────────────────────────
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-    isFetching,
-  } = useInfiniteQuery({
-    queryKey: ['techniques', 'search', debouncedSearch],
-    queryFn: ({ pageParam = 0 }) =>
-      apiClient
-        .get<Page<TechniqueResponse>>('/techniques', {
-          params: {
-            query: debouncedSearch || undefined,
-            page: pageParam,
-            size: TECHNIQUE_PAGE_SIZE,
-          },
-        })
-        .then((r) => r.data),
-    getNextPageParam: (lastPage) =>
-      lastPage.last ? undefined : lastPage.number + 1,
-    initialPageParam: 0,
-  })
-
-  // ── IntersectionObserver: load more on scroll ───────────
-  useEffect(() => {
-    const el = sentinelRef.current
-    if (!el || !hasNextPage) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) fetchNextPage()
-      },
-      { rootMargin: '200px' },
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [hasNextPage, fetchNextPage])
-
-  // ── Flatten pages into a single array ───────────────────
-  const allTechniques = useMemo(
-    () => data?.pages.flatMap((p) => p.content) ?? [],
-    [data],
-  )
-
-  // ── Filter by type ──────────────────────────────────────
-  const filtered = useMemo(() => {
-    let list = allTechniques
-    if (typeFilter) list = list.filter((t) => typeFilter.includes(t.type))
-    return list
-  }, [allTechniques, typeFilter])
-
-  // ── Group by type, preserving order ─────────────────────
-  const grouped = useMemo(() => {
-    const map = new Map<TechniqueType, TechniqueResponse[]>()
-    for (const t of filtered) {
-      if (!map.has(t.type)) map.set(t.type, [])
-      map.get(t.type)!.push(t)
-    }
-    return TECHNIQUE_TYPE_ORDER.filter((t) => map.has(t)).map((t) => ({
-      type: t,
-      items: map.get(t)!,
-    }))
-  }, [filtered])
-
-  // ── Handlers ────────────────────────────────────────────
-  const toggle = (id: number) => {
-    onChange(
-      selectedIds.includes(id)
-        ? selectedIds.filter((i) => i !== id)
-        : [...selectedIds, id],
-    )
-  }
-
-  const selectAllInGroup = (ids: number[]) =>
-    onChange(Array.from(new Set([...selectedIds, ...ids])))
-
-  const deselectAllInGroup = (ids: number[]) => {
-    const exclude = new Set(ids)
-    onChange(selectedIds.filter((i) => !exclude.has(i)))
-  }
-
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-medium text-[var(--text-muted)]">{label}</label>
-      <div className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)]">
-        {/* Search */}
-        <div className="flex items-center gap-2 border-b border-[var(--border-row)] px-4 py-2.5">
-          <span className="text-[var(--text-subtle)]"><SearchIcon /></span>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={translate('form.searchTechniques')}
-            className="flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-subtle)]"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch('')}
-              className="text-[var(--text-subtle)] hover:text-[var(--text-primary)]"
-            >
-              <XIcon />
-            </button>
-          )}
-          {isFetching && (
-            <span className="text-[var(--text-subtle)]"><LoaderIcon /></span>
-          )}
-        </div>
-
-        {/* Technique list */}
-        <div className="max-h-72 space-y-1 overflow-y-auto p-2">
-          {isLoading ? (
-            <div className="flex items-center justify-center gap-2 py-8 text-sm text-[var(--text-subtle)]">
-              <LoaderIcon />
-              {translate('form.loadingTechniques')}
-            </div>
-          ) : grouped.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[var(--text-subtle)]">
-              {search
-                ? translate('form.noTechniquesMatch')
-                : translate('form.noTechniques')}
-            </p>
-          ) : (
-            grouped.map(({ type, items }) => {
-              const allSelected = items.every((t) =>
-                selectedIds.includes(t.id),
-              )
-              const someSelected = items.some((t) =>
-                selectedIds.includes(t.id),
-              )
-              return (
-                <div key={type}>
-                  {/* Group header */}
-                  <div className="flex items-center gap-2 px-3 py-1.5">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        allSelected
-                          ? deselectAllInGroup(items.map((t) => t.id))
-                          : selectAllInGroup(items.map((t) => t.id))
-                      }
-                      className={`flex h-4 w-4 items-center justify-center rounded border text-xs transition-colors ${
-                        allSelected
-                          ? 'border-yellow-500 bg-yellow-500 text-yellow-950'
-                          : someSelected
-                            ? 'border-yellow-500/50 bg-yellow-500/20 text-yellow-500'
-                            : 'border-[var(--border-card)] text-transparent'
-                      }`}
-                    >
-                      {allSelected && <CheckIcon />}
-                      {someSelected &&
-                        !allSelected &&
-                        (
-                          <span className="text-[10px]">—</span>
-                        )}
-                    </button>
-                    <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-subtle)]">
-                      {translate(TECHNIQUE_TYPE_LABELS[type])}
-                    </span>
-                    <span className="text-[10px] text-[var(--text-subtle)]">
-                      ({items.length})
-                    </span>
-                  </div>
-                  {/* Items */}
-                  <div className="ml-3 space-y-0.5 border-l border-[var(--border-row)] pl-2">
-                    {items.map((t) => (
-                      <label
-                        key={t.id}
-                        className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.includes(t.id)}
-                          onChange={() => toggle(t.id)}
-                          className="sr-only"
-                        />
-                        <span
-                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-xs transition-colors ${
-                            selectedIds.includes(t.id)
-                              ? 'border-yellow-500 bg-yellow-500 text-yellow-950'
-                              : 'border-[var(--border-card)]'
-                          }`}
-                        >
-                          {selectedIds.includes(t.id) && <CheckIcon />}
-                        </span>
-                        {t.name}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )
-            })
-          )}
-
-          {/* Sentinel for infinite scroll */}
-          {hasNextPage && (
-            <div ref={sentinelRef} className="flex justify-center py-3">
-              <span className="text-xs text-[var(--text-subtle)]">
-                {isFetchingNextPage
-                  ? translate('form.loadingMore')
-                  : translate('form.scrollForMore')}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="border-t border-[var(--border-row)] px-4 py-2 text-xs text-[var(--text-subtle)]">
-          {(() => {
-            const total = data?.pages[0]?.totalElements ?? 0
-            return total > 0
-              ? translate('form.selectedOf', { count: selectedIds.length, total })
-              : translate('form.selectedCount', { count: selectedIds.length })
-          })()}
-        </div>
       </div>
     </div>
   )
@@ -389,23 +123,18 @@ function CreateTechniqueModal({
   onCreated: (id: number) => void
 }) {
   const { translate } = useTranslation()
-  const queryClient = useQueryClient()
   const [name, setName] = useState('')
   const [type, setType] = useState<TechniqueType>('SUBMISSION')
   const [target, setTarget] = useState<TechniqueTarget>('ARM')
   const [error, setError] = useState<string | null>(null)
 
-  const mutation = useMutation({
-    mutationFn: (data: { name: string; type: TechniqueType; target: TechniqueTarget }) =>
-      apiClient.post<TechniqueResponse>('/techniques', data).then((r) => r.data),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['techniques'] })
-      onCreated(data.id)
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.message ?? translate('technique.failedCreate'))
-    },
-  })
+  const mutation = useCreateTechnique()
+  const submit = (data: { name: string; type: TechniqueType; target: TechniqueTarget }) =>
+    mutation.mutate(data, {
+      onSuccess: (created) => onCreated(created.id),
+      onError: (err: any) =>
+        setError(err?.response?.data?.message ?? translate('technique.failedCreate')),
+    })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
@@ -417,7 +146,7 @@ function CreateTechniqueModal({
           onSubmit={(e) => {
             e.preventDefault()
             if (!name.trim()) return
-            mutation.mutate({ name: name.trim(), type, target })
+            submit({ name: name.trim(), type, target })
           }}
           className="space-y-4"
         >
@@ -490,17 +219,13 @@ function CreateTechniqueModal({
 export default function TrainingFormPage() {
   const navigate = useNavigate()
   const { id } = useParams()
+  const location = useLocation()
   const isEdit = Boolean(id)
   const { translate } = useTranslation()
-  const queryClient = useQueryClient()
 
   // ── Role check (for "+ New Technique" button) ───────────
-  const { data: profile, isError: profileError } = useQuery<ProfileResponse>({
-    queryKey: ['profile'],
-    queryFn: () => apiClient.get<ProfileResponse>('/profiles').then((r) => r.data),
-    retry: false,
-  })
-  const canCreateTechnique = profile?.role === 'ADMIN' || profile?.role === 'MANAGER'
+  const { data: profile, isError: profileError } = useProfile()
+  const canCreateTechnique = profile?.role === 'ADMIN' || profile?.role === 'PLATFORM_MANAGER'
 
   useEffect(() => {
     if (profileError) {
@@ -509,27 +234,33 @@ export default function TrainingFormPage() {
   }, [profileError, navigate])
 
   // ── Fetch existing training for edit ────────────────────
-  const { data: existing } = useQuery({
-    queryKey: ['training', id],
-    queryFn: () =>
-      apiClient.get<TrainingResponse>(`/trainings/${id}`).then((r) => r.data),
-    enabled: isEdit,
-  })
+  const { data: existing } = useTraining(id, isEdit)
+
+  // ── Class import state (from location.state when navigating from schedule) ──
+  const fromClass = (location.state as any)?.fromClass as {
+    classType: string
+    trainingType: string
+    durationMinutes: number
+    startTime: string
+    techniqueIds: number[]
+  } | undefined
 
   // ── Form state ─────────────────────────────────────────
   const today = new Date().toISOString().slice(0, 10)
   const now = new Date().toTimeString().slice(0, 5)
-  const [sessionDate, setSessionDate] = useState(today)
-  const [sessionTime, setSessionTime] = useState(now)
-  const [trainingType, setTrainingType] = useState<TrainingType>('GI')
-  const [classType, setClassType] = useState<ClassType>('REGULAR')
-  const [durationMinutes, setDurationMinutes] = useState(90)
+  const importDate = fromClass ? new Date(fromClass.startTime).toISOString().slice(0, 10) : today
+  const importTime = fromClass ? new Date(fromClass.startTime).toTimeString().slice(0, 5) : now
+  const [sessionDate, setSessionDate] = useState(importDate)
+  const [sessionTime, setSessionTime] = useState(importTime)
+  const [trainingType, setTrainingType] = useState<TrainingType>((fromClass?.trainingType as TrainingType) ?? 'GI')
+  const [classType, setClassType] = useState<ClassType>((fromClass?.classType as ClassType) ?? 'REGULAR')
+  const [durationMinutes, setDurationMinutes] = useState(fromClass?.durationMinutes ?? 90)
   const [roundLengthMinutes, setRoundLengthMinutes] = useState(5)
   const [restLengthMinutes, setRestLengthMinutes] = useState(1)
   const [totalRolls, setTotalRolls] = useState(0)
   const [cardioRating, setCardioRating] = useState(3)
   const [intensityRating, setIntensityRating] = useState(3)
-  const [techniqueIds, setTechniqueIds] = useState<number[]>([])
+  const [techniqueIds, setTechniqueIds] = useState<number[]>(fromClass?.techniqueIds ?? [])
   const [submissionTechniqueIds, setSubmissionTechniqueIds] = useState<number[]>([])
   const [submissionTechniqueAllowedIds, setSubmissionTechniqueAllowedIds] = useState<number[]>([])
   const [sweeps, setSweeps] = useState(0)
@@ -589,21 +320,16 @@ export default function TrainingFormPage() {
   }
 
   // ── Mutation ────────────────────────────────────────────
-  const mutation = useMutation({
-    mutationFn: (data: TrainingRequest) =>
-      isEdit
-        ? apiClient.put<TrainingResponse>(`/trainings/${id}`, data).then((r) => r.data)
-        : apiClient.post<TrainingResponse>('/trainings', data).then((r) => r.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trainings'] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-      queryClient.invalidateQueries({ queryKey: ['training', id] })
-      navigate(isEdit ? '/' : '/training')
-    },
-    onError: (err: any) => {
-      setErrors({ form: err?.response?.data?.message ?? 'Failed to save training.' })
-    },
-  })
+  const createMutation = useCreateTraining()
+  const updateMutation = useUpdateTraining(id)
+  const mutation = isEdit ? updateMutation : createMutation
+
+  const save = (data: TrainingRequest) =>
+    mutation.mutate(data, {
+      onSuccess: () => navigate(isEdit ? '/' : '/training'),
+      onError: (err: any) =>
+        setErrors({ form: err?.response?.data?.message ?? 'Failed to save training.' }),
+    })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -631,7 +357,7 @@ export default function TrainingFormPage() {
       escapes,
       description: description.trim() || undefined,
     }
-    mutation.mutate(payload)
+    save(payload)
   }
 
   const handleCreatedTechnique = (id: number) => {
@@ -762,7 +488,7 @@ export default function TrainingFormPage() {
               <button
                 type="button"
                 onClick={() => setShowCreateModal(true)}
-                className="rounded-lg border border-[var(--border-card)] px-3 py-1.5 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+                className="rounded-lg bg-[var(--text-primary)] px-3 py-1.5 text-xs font-medium text-[var(--bg-page)] hover:opacity-90"
               >
                 + {translate('form.newTechnique')}
               </button>

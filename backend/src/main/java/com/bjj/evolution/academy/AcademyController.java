@@ -2,9 +2,15 @@ package com.bjj.evolution.academy;
 
 import com.bjj.evolution.academy.domain.dto.AcademyRequest;
 import com.bjj.evolution.academy.domain.dto.AcademyResponse;
+import com.bjj.evolution.academy.member.AcademyMemberService;
+import com.bjj.evolution.academy.member.domain.MemberStatus;
+import com.bjj.evolution.academy.member.domain.dto.AcademyMemberResponse;
+import com.bjj.evolution.academy.member.domain.dto.GraduationHistoryResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,12 +25,15 @@ import java.util.UUID;
 public class AcademyController {
 
     private final AcademyService service;
+    private final AcademyMemberService memberService;
 
-    public AcademyController(AcademyService service) {
+    public AcademyController(AcademyService service, AcademyMemberService memberService) {
         this.service = service;
+        this.memberService = memberService;
     }
 
     @PostMapping
+    @PreAuthorize("@academySecurity.isPlatformManager(authentication)")
     public ResponseEntity<AcademyResponse> create(@AuthenticationPrincipal Jwt jwt,
                                                   @Valid @RequestBody AcademyRequest request) {
         AcademyResponse response = service.create(request, UUID.fromString(jwt.getSubject()));
@@ -44,6 +53,23 @@ public class AcademyController {
             Pageable pageable) {
         UUID userId = UUID.fromString(jwt.getSubject());
         return ResponseEntity.ok(service.findMyAcademies(userId, pageable));
+    }
+
+    @GetMapping("/memberships")
+    public ResponseEntity<Page<AcademyMemberResponse>> getMyMemberships(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(required = false) MemberStatus status,
+            Pageable pageable) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(memberService.findMyMemberships(userId, status, pageable));
+    }
+
+    @GetMapping("/memberships/graduations")
+    public ResponseEntity<Page<GraduationHistoryResponse>> getMyGraduations(
+            @AuthenticationPrincipal Jwt jwt,
+            @PageableDefault(size = 20, sort = "graduationDate", direction = Sort.Direction.DESC) Pageable pageable) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(memberService.findGraduationHistoryByStudent(userId, pageable));
     }
 
     @GetMapping("/{id}")

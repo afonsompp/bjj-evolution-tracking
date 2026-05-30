@@ -31,7 +31,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -78,7 +77,7 @@ class ScheduledClassControllerTest {
 
         instructorResponse = new ProfileResponse(
                 UUID.randomUUID(), "John", "Danaher",
-                "johnny", null, null, LocalDate.of(2020, 1, 1), UserRole.CUSTOMER
+                "johnny", null, null, LocalDate.of(2020, 1, 1), null, UserRole.CUSTOMER
         );
 
         techniqueResponse = new TechniqueResponse(
@@ -89,8 +88,8 @@ class ScheduledClassControllerTest {
         sampleResponse = new ScheduledClassResponse(
                 classId, academyId, "Gracie Barra",
                 instructorResponse,
-                LocalDateTime.of(2026, 6, 1, 10, 0),
-                90L, ClassType.REGULAR, TrainingType.GI,
+                Instant.parse("2026-06-01T10:00:00Z"),
+                90, ClassType.REGULAR, TrainingType.GI,
                 List.of(techniqueResponse), ClassStatus.PUBLISHED
         );
 
@@ -108,14 +107,14 @@ class ScheduledClassControllerTest {
         when(scheduledClassService.createManualClass(any(ScheduledClassRequest.class)))
                 .thenReturn(sampleResponse);
 
-        mockMvc.perform(post("/academies/{academyId}/classes", academyId)
+        mockMvc.perform(post("/api/v1/academies/{academyId}/classes", academyId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                     "academyId": "%s",
                                     "instructorId": "%s",
-                                    "startTime": "2026-06-01T10:00:00",
+                                    "startTime": "2026-06-01T10:00:00Z",
                                     "durationMinutes": 90,
                                     "classType": "REGULAR",
                                     "trainingType": "GI"
@@ -138,14 +137,14 @@ class ScheduledClassControllerTest {
         UUID otherAcademy = UUID.randomUUID();
         when(academySecurity.isInstructorOrAdmin(any(), eq(otherAcademy))).thenReturn(true);
 
-        mockMvc.perform(post("/academies/{academyId}/classes", otherAcademy)
+        mockMvc.perform(post("/api/v1/academies/{academyId}/classes", otherAcademy)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                     "academyId": "%s",
                                     "instructorId": "%s",
-                                    "startTime": "2026-06-01T10:00:00",
+                                    "startTime": "2026-06-01T10:00:00Z",
                                     "durationMinutes": 90,
                                     "classType": "REGULAR",
                                     "trainingType": "GI"
@@ -159,7 +158,7 @@ class ScheduledClassControllerTest {
     @Test
     @DisplayName("POST should return 400 when request body is invalid")
     void create_whenInvalidBody_shouldReturn400() throws Exception {
-        mockMvc.perform(post("/academies/{academyId}/classes", academyId)
+        mockMvc.perform(post("/api/v1/academies/{academyId}/classes", academyId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -180,14 +179,14 @@ class ScheduledClassControllerTest {
     void create_whenNotAuthorized_shouldReturn403() throws Exception {
         when(academySecurity.isInstructorOrAdmin(any(), eq(academyId))).thenReturn(false);
 
-        mockMvc.perform(post("/academies/{academyId}/classes", academyId)
+        mockMvc.perform(post("/api/v1/academies/{academyId}/classes", academyId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                     "academyId": "%s",
                                     "instructorId": "%s",
-                                    "startTime": "2026-06-01T10:00:00",
+                                    "startTime": "2026-06-01T10:00:00Z",
                                     "durationMinutes": 90,
                                     "classType": "REGULAR",
                                     "trainingType": "GI"
@@ -209,14 +208,14 @@ class ScheduledClassControllerTest {
         when(scheduledClassService.update(eq(classId), any(ScheduledClassRequest.class)))
                 .thenReturn(sampleResponse);
 
-        mockMvc.perform(put("/academies/{academyId}/classes/{classId}", academyId, classId)
+        mockMvc.perform(put("/api/v1/academies/{academyId}/classes/{classId}", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                     "academyId": "%s",
                                     "instructorId": "%s",
-                                    "startTime": "2026-06-01T10:00:00",
+                                    "startTime": "2026-06-01T10:00:00Z",
                                     "durationMinutes": 90,
                                     "classType": "REGULAR",
                                     "trainingType": "GI"
@@ -236,14 +235,14 @@ class ScheduledClassControllerTest {
         when(scheduledClassService.update(eq(classId), any(ScheduledClassRequest.class)))
                 .thenThrow(new ResourceNotFoundException("Class", classId));
 
-        mockMvc.perform(put("/academies/{academyId}/classes/{classId}", academyId, classId)
+        mockMvc.perform(put("/api/v1/academies/{academyId}/classes/{classId}", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                     "academyId": "%s",
                                     "instructorId": "%s",
-                                    "startTime": "2026-06-01T10:00:00",
+                                    "startTime": "2026-06-01T10:00:00Z",
                                     "durationMinutes": 90,
                                     "classType": "REGULAR",
                                     "trainingType": "GI"
@@ -265,7 +264,7 @@ class ScheduledClassControllerTest {
         when(academySecurity.isInstructorOrAdmin(any(), eq(academyId))).thenReturn(true);
         doNothing().when(scheduledClassService).cancel(classId);
 
-        mockMvc.perform(patch("/academies/{academyId}/classes/{classId}/cancel", academyId, classId)
+        mockMvc.perform(patch("/api/v1/academies/{academyId}/classes/{classId}/cancel", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNoContent());
 
@@ -279,7 +278,7 @@ class ScheduledClassControllerTest {
         doThrow(new ResourceNotFoundException("Class", classId))
                 .when(scheduledClassService).cancel(classId);
 
-        mockMvc.perform(patch("/academies/{academyId}/classes/{classId}/cancel", academyId, classId)
+        mockMvc.perform(patch("/api/v1/academies/{academyId}/classes/{classId}/cancel", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Class not found with id: " + classId));
@@ -294,7 +293,7 @@ class ScheduledClassControllerTest {
         doThrow(new BusinessRuleException("Cannot cancel a class that is already completed."))
                 .when(scheduledClassService).cancel(classId);
 
-        mockMvc.perform(patch("/academies/{academyId}/classes/{classId}/cancel", academyId, classId)
+        mockMvc.perform(patch("/api/v1/academies/{academyId}/classes/{classId}/cancel", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.message").value("Cannot cancel a class that is already completed."));
@@ -310,13 +309,13 @@ class ScheduledClassControllerTest {
         when(academySecurity.hasAccess(any(), eq(academyId))).thenReturn(true);
         Page<ScheduledClassResponse> page = new PageImpl<>(
                 List.of(sampleResponse), PageRequest.of(0, 20), 1);
-        when(scheduledClassService.findAll(eq(academyId), any(LocalDateTime.class), any(LocalDateTime.class), any()))
+        when(scheduledClassService.findAll(eq(academyId), any(Instant.class), any(Instant.class), any()))
                 .thenReturn(page);
 
-        mockMvc.perform(get("/academies/{academyId}/classes", academyId)
+        mockMvc.perform(get("/api/v1/academies/{academyId}/classes", academyId)
                         .header("Authorization", "Bearer " + TOKEN)
-                        .param("startDate", "2026-06-01T00:00:00")
-                        .param("endDate", "2026-06-30T23:59:59")
+                        .param("startDate", "2026-06-01")
+                        .param("endDate", "2026-06-30")
                         .param("page", "0")
                         .param("size", "20"))
                 .andExpect(status().isOk())
@@ -324,7 +323,7 @@ class ScheduledClassControllerTest {
                 .andExpect(jsonPath("$.content[0].academyName").value("Gracie Barra"))
                 .andExpect(jsonPath("$.totalElements").value(1));
 
-        verify(scheduledClassService).findAll(eq(academyId), any(LocalDateTime.class), any(LocalDateTime.class), any());
+        verify(scheduledClassService).findAll(eq(academyId), any(Instant.class), any(Instant.class), any());
     }
 
     @Test
@@ -336,7 +335,7 @@ class ScheduledClassControllerTest {
         when(scheduledClassService.findAll(eq(academyId), isNull(), isNull(), any()))
                 .thenReturn(page);
 
-        mockMvc.perform(get("/academies/{academyId}/classes", academyId)
+        mockMvc.perform(get("/api/v1/academies/{academyId}/classes", academyId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(classId))
@@ -351,7 +350,7 @@ class ScheduledClassControllerTest {
     void getAll_whenNoAccess_shouldReturn403() throws Exception {
         when(academySecurity.hasAccess(any(), eq(academyId))).thenReturn(false);
 
-        mockMvc.perform(get("/academies/{academyId}/classes", academyId)
+        mockMvc.perform(get("/api/v1/academies/{academyId}/classes", academyId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isForbidden());
 
@@ -368,7 +367,7 @@ class ScheduledClassControllerTest {
         when(academySecurity.hasAccess(any(), eq(academyId))).thenReturn(true);
         when(scheduledClassService.findById(academyId, classId)).thenReturn(sampleResponse);
 
-        mockMvc.perform(get("/academies/{academyId}/classes/{classId}", academyId, classId)
+        mockMvc.perform(get("/api/v1/academies/{academyId}/classes/{classId}", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(classId))
@@ -376,7 +375,7 @@ class ScheduledClassControllerTest {
                 .andExpect(jsonPath("$.status").value("PUBLISHED"))
                 .andExpect(jsonPath("$.instructor.name").value("John"))
                 .andExpect(jsonPath("$.instructor.nickname").value("johnny"))
-                .andExpect(jsonPath("$.techniques[0].name").value("Armbar"));
+                .andExpect(jsonPath("$.scheduledTechniques[0].name").value("Armbar"));
 
         verify(scheduledClassService).findById(academyId, classId);
     }
@@ -388,7 +387,7 @@ class ScheduledClassControllerTest {
         when(scheduledClassService.findById(academyId, classId))
                 .thenThrow(new ResourceNotFoundException("Class", classId));
 
-        mockMvc.perform(get("/academies/{academyId}/classes/{classId}", academyId, classId)
+        mockMvc.perform(get("/api/v1/academies/{academyId}/classes/{classId}", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Class not found with id: " + classId));
@@ -403,7 +402,7 @@ class ScheduledClassControllerTest {
         when(scheduledClassService.findById(academyId, classId))
                 .thenThrow(new BusinessRuleException("Class does not belong to the given academy."));
 
-        mockMvc.perform(get("/academies/{academyId}/classes/{classId}", academyId, classId)
+        mockMvc.perform(get("/api/v1/academies/{academyId}/classes/{classId}", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.message").value("Class does not belong to the given academy."));
@@ -416,7 +415,7 @@ class ScheduledClassControllerTest {
     void getById_whenNoAccess_shouldReturn403() throws Exception {
         when(academySecurity.hasAccess(any(), eq(academyId))).thenReturn(false);
 
-        mockMvc.perform(get("/academies/{academyId}/classes/{classId}", academyId, classId)
+        mockMvc.perform(get("/api/v1/academies/{academyId}/classes/{classId}", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isForbidden());
 

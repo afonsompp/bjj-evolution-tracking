@@ -12,6 +12,11 @@ import com.bjj.evolution.academy.member.domain.dto.AcademyMemberResponse;
 import com.bjj.evolution.academy.member.domain.dto.GraduationHistoryResponse;
 import com.bjj.evolution.academy.member.domain.dto.GraduationRequest;
 import com.bjj.evolution.catalog.domain.Belt;
+import com.bjj.evolution.audit.AuditAction;
+import com.bjj.evolution.audit.annotation.Auditable;
+import com.bjj.evolution.notification.event.MemberApprovedEvent;
+import com.bjj.evolution.notification.event.MemberJoinRequestedEvent;
+import com.bjj.evolution.notification.event.MemberRejectedEvent;
 import com.bjj.evolution.shared.exception.BusinessRuleException;
 import com.bjj.evolution.shared.exception.ConflictException;
 import com.bjj.evolution.shared.exception.ResourceNotFoundException;
@@ -19,6 +24,7 @@ import com.bjj.evolution.user.UserProfileRepository;
 import com.bjj.evolution.user.domain.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -33,17 +39,20 @@ public class AcademyMemberService {
     private final AcademyRepository academyRepository;
     private final UserProfileRepository userProfileRepository;
     private final GraduationHistoryRepository graduationHistoryRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final Logger log = LoggerFactory.getLogger(AcademyMemberService.class);
 
     public AcademyMemberService(AcademyMemberRepository memberRepository,
                                 AcademyRepository academyRepository,
                                 UserProfileRepository userProfileRepository,
-                                GraduationHistoryRepository graduationHistoryRepository) {
+                                GraduationHistoryRepository graduationHistoryRepository,
+                                ApplicationEventPublisher eventPublisher) {
         this.memberRepository = memberRepository;
         this.academyRepository = academyRepository;
         this.userProfileRepository = userProfileRepository;
         this.graduationHistoryRepository = graduationHistoryRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -70,8 +79,8 @@ public class AcademyMemberService {
 
         if (request.belt() != null) {
             newMember.setBelt(request.belt());
-            newMember.setStripe(request.stripe() != null ? request.stripe() : 0);
-            syncGlobalProfile(user, newMember.getBelt(), newMember.getStripe());
+            newMember.setBeltStripe(request.beltStripe() != null ? request.beltStripe() : 0);
+            syncGlobalProfile(user, newMember.getBelt(), newMember.getBeltStripe());
         }
 
         AcademyMember saved = memberRepository.save(newMember);
@@ -99,10 +108,11 @@ public class AcademyMemberService {
                 });
         AcademyMember member = new AcademyMember(academy, user, MemberRole.STUDENT, MemberStatus.PENDING);
         member.setBelt(user.getBelt() != null ? user.getBelt() : Belt.WHITE);
-        member.setStripe(user.getStripe() != null ? user.getStripe() : 0);
+        member.setBeltStripe(user.getBeltStripe() != null ? user.getBeltStripe() : 0);
 
         AcademyMember saved = memberRepository.save(member);
         log.info("Join request created: academy={} user={} status=PENDING", academyId, userId);
+        eventPublisher.publishEvent(new MemberJoinRequestedEvent(academyId, userId));
         return AcademyMemberResponse.fromEntity(saved);
     }
 
@@ -124,6 +134,7 @@ public class AcademyMemberService {
     }
 
     @Transactional
+    @Auditable(action = AuditAction.MEMBER_GRADUATED, resourceType = "MEMBER", academyIdArg = 0, resourceIdArg = 1)
     public AcademyMemberResponse graduateMember(UUID academyId, UUID userId, GraduationRequest request, UUID promoterId) {
         log.info("Graduation requested: academy={} student={} newBelt={} newStripe={} promotedBy={}",
                 academyId, userId, request.newBelt(), request.newStripe(), promoterId);
@@ -137,10 +148,10 @@ public class AcademyMemberService {
                 });
 
         Belt oldBelt = member.getBelt();
-        Integer oldStripe = member.getStripe();
+        Integer oldStripe = member.getBeltStripe();
 
         member.setBelt(request.newBelt());
-        member.setStripe(request.newStripe() != null ? request.newStripe() : 0);
+        member.setBeltStripe(request.newStripe() != null ? request.newStripe() : 0);
 
         GraduationHistory history = new GraduationHistory(
                 member.getAcademy(),
@@ -149,19 +160,20 @@ public class AcademyMemberService {
                 oldBelt,
                 oldStripe,
                 member.getBelt(),
-                member.getStripe()
+                member.getBeltStripe()
         );
         graduationHistoryRepository.save(history);
 
-        syncGlobalProfile(user, member.getBelt(), member.getStripe());
+        syncGlobalProfile(user, member.getBelt(), member.getBeltStripe());
 
         AcademyMember saved = memberRepository.save(member);
-        log.info("Graduation completed: academy={} student={} {} stripe {} -> {} stripe {}",
-                academyId, userId, oldBelt, oldStripe, saved.getBelt(), saved.getStripe());
+        log.info("Graduation completed: academy={} student={} {} beltStripe {} -> {} beltStripe {}",
+                academyId, userId, oldBelt, oldStripe, saved.getBelt(), saved.getBeltStripe());
         return AcademyMemberResponse.fromEntity(saved);
     }
 
     @Transactional
+    @Auditable(action = AuditAction.MEMBER_APPROVED, resourceType = "MEMBER", academyIdArg = 0, resourceIdArg = 1)
     public AcademyMemberResponse approveMember(UUID academyId, UUID userId) {
         log.info("Approving member: academy={} user={}", academyId, userId);
 
@@ -174,10 +186,27 @@ public class AcademyMemberService {
         member.setStatus(MemberStatus.ACTIVE);
         AcademyMember saved = memberRepository.save(member);
         log.info("Member approved: academy={} user={} status=ACTIVE", academyId, userId);
+        eventPublisher.publishEvent(new MemberApprovedEvent(academyId, userId));
         return AcademyMemberResponse.fromEntity(saved);
     }
 
     @Transactional
+    @Auditable(action = AuditAction.MEMBER_REJECTED, resourceType = "MEMBER", academyIdArg = 0, resourceIdArg = 1)
+    public void rejectMember(UUID academyId, UUID userId) {
+        log.info("Rejecting join request: academy={} user={}", academyId, userId);
+        AcademyMember member = findMemberOrThrow(academyId, userId);
+        if (member.getStatus() != MemberStatus.PENDING) {
+            log.warn("Rejection failed: member is not PENDING academy={} user={} status={}",
+                    academyId, userId, member.getStatus());
+            throw new BusinessRuleException("Only pending join requests can be rejected.");
+        }
+        memberRepository.deleteById(member.getId());
+        log.info("Join request rejected: academy={} user={}", academyId, userId);
+        eventPublisher.publishEvent(new MemberRejectedEvent(academyId, userId));
+    }
+
+    @Transactional
+    @Auditable(action = AuditAction.MEMBER_REMOVED, resourceType = "MEMBER", academyIdArg = 0, resourceIdArg = 1)
     public void removeMember(UUID academyId, UUID userId) {
         log.info("Removing member: academy={} user={}", academyId, userId);
 
@@ -188,6 +217,19 @@ public class AcademyMemberService {
         }
         memberRepository.deleteById(member.getId());
         log.info("Member removed: academy={} user={}", academyId, userId);
+    }
+
+    @Transactional
+    public void leaveAcademy(UUID academyId, UUID userId) {
+        log.info("User leaving academy: academy={} user={}", academyId, userId);
+
+        AcademyMember member = findMemberOrThrow(academyId, userId);
+        if (member.getRole() == MemberRole.OWNER) {
+            log.warn("Leave blocked: user is an owner academy={} user={}", academyId, userId);
+            validateOwnerRemoval(academyId);
+        }
+        memberRepository.deleteById(member.getId());
+        log.info("User left academy: academy={} user={}", academyId, userId);
     }
 
     @Transactional(readOnly = true)
@@ -235,15 +277,25 @@ public class AcademyMemberService {
             user.setBelt(newBelt);
             updated = true;
         }
-        if (newStripe != null && !newStripe.equals(user.getStripe())) {
-            log.debug("Syncing global stripe: user={} {} -> {}", user.getId(), user.getStripe(), newStripe);
-            user.setStripe(newStripe);
+        if (newStripe != null && !newStripe.equals(user.getBeltStripe())) {
+            log.debug("Syncing global beltStripe: user={} {} -> {}", user.getId(), user.getBeltStripe(), newStripe);
+            user.setBeltStripe(newStripe);
             updated = true;
         }
         if (updated) {
             userProfileRepository.save(user);
             log.info("Global profile synced: user={}", user.getId());
         }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AcademyMemberResponse> findMyMemberships(UUID userId, MemberStatus status, Pageable pageable) {
+        if (status != null) {
+            return memberRepository.findAllByUserIdAndStatus(userId, status, pageable)
+                    .map(AcademyMemberResponse::fromEntity);
+        }
+        return memberRepository.findAllByUserId(userId, pageable)
+                .map(AcademyMemberResponse::fromEntity);
     }
 
     @Transactional(readOnly = true)
@@ -254,6 +306,12 @@ public class AcademyMemberService {
     @Transactional(readOnly = true)
     public Page<GraduationHistoryResponse> findGraduationHistoryByMember(UUID academyId, UUID userId, Pageable pageable) {
         findMemberOrThrow(academyId, userId);
+        return graduationHistoryRepository.findByAcademyIdAndStudentIdOrderByGraduationDateDesc(academyId, userId, pageable)
+                .map(GraduationHistoryResponse::fromEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<GraduationHistoryResponse> findGraduationHistoryByStudent(UUID userId, Pageable pageable) {
         return graduationHistoryRepository.findByStudentIdOrderByGraduationDateDesc(userId, pageable)
                 .map(GraduationHistoryResponse::fromEntity);
     }

@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* ── App shell never scrolls horizontally (mobile guard) ── */
+html,
+body {
+  overflow-x: hidden;
+}
+
 /* ── Theme tokens (no hardcoded colors in components) ──── */
 
 :root {

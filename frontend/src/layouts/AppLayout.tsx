@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '../api/client'
+import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-dom'
+import axios from 'axios'
 import { useAuth } from '../features/auth/AuthContext'
+import { useProfile } from '../features/profile/useProfile'
 import { useTranslation } from '../lib/i18n/I18nContext'
 import { useTheme } from '../lib/ThemeContext'
+import { Logo } from '../components/Logo'
+import { Avatar } from '../components/Avatar'
 import type { Locale } from '../lib/i18n/translations'
-import type { ProfileResponse } from '../types/api'
 import {
   SunIcon,
   MoonIcon,
@@ -23,7 +24,7 @@ const languages: { code: Locale; labelKey: string }[] = [
 ]
 
 export default function AppLayout() {
-  const { user, signOut } = useAuth()
+  const { signOut } = useAuth()
   const navigate = useNavigate()
   const { locale, setLocale, translate } = useTranslation()
   const { theme, toggle } = useTheme()
@@ -31,17 +32,14 @@ export default function AppLayout() {
   const location = useLocation()
 
   // ── Profile fetch (for role check) ──────────────────────
-  const { data: profile, isError: profileError } = useQuery({
-    queryKey: ['profile'],
-    queryFn: () =>
-      apiClient.get<ProfileResponse>('/profiles').then(r => r.data),
-    retry: false,
-  })
+  const { data: profile, error: profileError } = useProfile()
   const isAdmin = profile?.role === 'ADMIN'
 
-  // ── Redirect to onboarding when profile is missing ──────
+  // ── Redirect to onboarding only when profile does not exist (404) ──
   useEffect(() => {
-    if (profileError && location.pathname !== '/onboarding') {
+    const isNotFound =
+      axios.isAxiosError(profileError) && profileError.response?.status === 404
+    if (isNotFound && location.pathname !== '/onboarding') {
       navigate('/onboarding', { replace: true })
     }
   }, [profileError, location.pathname, navigate])
@@ -50,7 +48,9 @@ export default function AppLayout() {
   const navItems: { to: string; labelKey: string; end?: boolean }[] = [
     { to: '/dashboard', labelKey: 'nav.dashboard' },
     { to: '/training', labelKey: 'nav.training', end: true },
+    { to: '/academies', labelKey: 'nav.academies' },
     ...(isAdmin ? [{ to: '/techniques', labelKey: 'nav.techniques' } as const] : []),
+    ...(isAdmin ? [{ to: '/admin/users', labelKey: 'nav.admin' } as const] : []),
   ]
 
   const handleSignOut = async () => {
@@ -74,10 +74,13 @@ export default function AppLayout() {
     'flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors'
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)] transition-colors">
+    <div className="flex h-screen overflow-hidden bg-[var(--bg-page)] text-[var(--text-primary)] transition-colors">
       {/* Sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-56 flex-col border-r border-[var(--border-header)] bg-[var(--bg-sidebar)] p-4 md:flex">
-        <h2 className="mb-6 text-lg font-bold text-[var(--text-primary)]">BJJ Evolution</h2>
+      <aside className="hidden h-screen w-56 flex-col overflow-y-auto border-r border-[var(--border-header)] bg-[var(--bg-sidebar)] p-4 md:flex">
+        <Link to="/" className="mb-6 inline-flex items-center gap-2 text-lg font-bold text-[var(--text-primary)] hover:opacity-80">
+          <Logo variant="icon" className="h-6" />
+          BJJ Evolution
+        </Link>
         <nav className="flex flex-col gap-1">
           {navItems.map(({ to, labelKey, end }) => (
             <NavLink key={to} to={to} end={end} className={linkClass}>
@@ -92,7 +95,7 @@ export default function AppLayout() {
             className="flex w-full items-center justify-between rounded px-3 py-2 text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] transition-colors"
           >
             <div className="flex items-center gap-2">
-              <UserIcon />
+              <Avatar photoUrl={profile?.photoUrl} name={profile?.name} size={22} />
               <span>{translate('nav.myAccount')}</span>
             </div>
             {accountOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
@@ -153,34 +156,66 @@ export default function AppLayout() {
       </aside>
 
       {/* Mobile header + main */}
-      <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-[var(--border-header)] bg-[var(--bg-page)] p-4 md:hidden">
-          <h2 className="text-sm font-bold">BJJ Evolution</h2>
-          <div className="flex items-center gap-2">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[var(--border-header)] bg-[var(--bg-page)] p-4 md:hidden">
+          <Link to="/" className="inline-flex items-center gap-1.5 text-sm font-bold hover:opacity-80"><Logo variant="icon" className="h-6" />BJJ Evolution</Link>
+          <div className="relative">
             <button
-              onClick={toggle}
-              className="rounded p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              onClick={() => setAccountOpen((o) => !o)}
+              className="rounded-full text-[var(--text-muted)] hover:opacity-90"
+              title={translate('nav.myAccount')}
+              aria-label={translate('nav.myAccount')}
             >
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+              <Avatar photoUrl={profile?.photoUrl} name={profile?.name} size={32} />
             </button>
-            <select
-              value={locale}
-              onChange={(e) => setLocale(e.target.value as Locale)}
-              className="rounded border border-[var(--border-select)] bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-muted)]"
-            >
-              {languages.map(({ code, labelKey }) => (
-                <option key={code} value={code}>
-                  {translate(labelKey)}
-                </option>
-              ))}
-            </select>
-            <button onClick={handleSignOut} className="text-xs text-[var(--text-subtle)] hover:text-[var(--text-primary)]">
-              {translate('nav.signOut')}
-            </button>
+            {accountOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setAccountOpen(false)}
+                />
+                <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-[var(--border-header)] bg-[var(--bg-page)] p-1 shadow-lg">
+                  <button
+                    onClick={() => { setAccountOpen(false); navigate('/profile') }}
+                    className={accountBtnClass}
+                  >
+                    <UserIcon />
+                    <span>{translate('nav.profile')}</span>
+                  </button>
+                  <div className={accountBtnClass} onClick={(e) => e.stopPropagation()}>
+                    <GlobeIcon />
+                    <select
+                      value={locale}
+                      onChange={(e) => setLocale(e.target.value as Locale)}
+                      className="flex-1 bg-transparent text-sm text-[var(--text-muted)] outline-none"
+                    >
+                      {languages.map(({ code, labelKey }) => (
+                        <option key={code} value={code}>
+                          {translate(labelKey)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={() => { toggle() }}
+                    className={accountBtnClass}
+                  >
+                    {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+                    <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+                  </button>
+                  <button
+                    onClick={() => { setAccountOpen(false); handleSignOut() }}
+                    className={accountBtnClass + ' text-rose-500 hover:text-rose-400'}
+                  >
+                    <LogOutIcon />
+                    <span>{translate('nav.signOut')}</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 pb-20 md:p-6">
           <Outlet />
         </main>
       </div>

@@ -12,7 +12,7 @@ public record SearchProfileResponse(
         String secondName,
         String nickname,
         Belt belt,
-        Integer stripe,
+        Integer beltStripe,
         LocalDate startsIn
 ) {
     public static SearchProfileResponse fromEntity(UserProfile entity) {
@@ -22,7 +22,7 @@ public record SearchProfileResponse(
                 entity.getSecondName(),
                 entity.getNickname(),
                 entity.getBelt(),
-                entity.getStripe(),
+                entity.getBeltStripe(),
                 entity.getStartsIn()
         );
     }

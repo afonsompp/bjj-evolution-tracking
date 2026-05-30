@@ -1,9 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { apiClient } from '../api/client'
 import { useTranslation } from '../lib/i18n/I18nContext'
-import type { Page, TrainingResponse } from '../types/api'
+import { MAX_DATE, hasYearOverflow, isApplicableRange, isOutOfOrderRange } from '../lib/dateValidation'
+import { useTrainings } from '../features/training/hooks/useTrainings'
+import { useDeleteTraining } from '../features/training/hooks/useManageTraining'
+import type { TrainingResponse } from '../types/api'
 import {
   ActivityIcon,
   ChevronUpIcon,
@@ -350,34 +351,70 @@ function PageSizeSelector({
   )
 }
 
+// ── Time presets ─────────────────────────────────────────
+type Preset = 'all' | '7d' | '30d' | '90d' | '1y' | 'custom'
+
+const PRESETS: { key: Preset; label: string }[] = [
+  { key: 'all',    label: 'All' },
+  { key: '7d',     label: '7d' },
+  { key: '30d',    label: '30d' },
+  { key: '90d',    label: '90d' },
+  { key: '1y',     label: '1y' },
+  { key: 'custom', label: 'Custom' },
+]
+
+function presetToDates(preset: Preset): { startDate: string; endDate: string } {
+  if (preset === 'all' || preset === 'custom') return { startDate: '', endDate: '' }
+  const days = preset === '7d' ? 7 : preset === '30d' ? 30 : preset === '90d' ? 90 : 365
+  const start = new Date()
+  start.setDate(start.getDate() - days)
+  return { startDate: start.toISOString().slice(0, 10), endDate: '' }
+}
+
 // ── Main History Page ────────────────────────────────────
 export default function HistoryPage() {
   const { translate, locale } = useTranslation()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(25)
+  const [preset, setPreset] = useState<Preset>('all')
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
+  const [appliedCustomStart, setAppliedCustomStart] = useState('')
+  const [appliedCustomEnd, setAppliedCustomEnd] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<TrainingResponse | null>(null)
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['trainings', page, size],
-    queryFn: () =>
-      apiClient.get<Page<TrainingResponse>>(`/trainings?page=${page}&size=${size}`)
-        .then(r => r.data),
-  })
+  useEffect(() => {
+    if (isApplicableRange(customStart, customEnd)) {
+      setAppliedCustomStart(customStart)
+      setAppliedCustomEnd(customEnd)
+    }
+  }, [customStart, customEnd])
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiClient.delete(`/trainings/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trainings'] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-      setDeleteTarget(null)
-    },
-  })
+  const hasError = preset === 'custom' && isOutOfOrderRange(customStart, customEnd)
+
+  const { startDate, endDate } = preset === 'custom'
+    ? { startDate: appliedCustomStart, endDate: appliedCustomEnd }
+    : presetToDates(preset)
+
+  const { data, isLoading, isError } = useTrainings(page, size, startDate || undefined, endDate || undefined)
+  const deleteMutation = useDeleteTraining()
+
+  const handlePreset = (p: Preset) => { setPreset(p); setPage(0) }
+  const handleCustomStart = (v: string) => {
+    if (hasYearOverflow(v)) return
+    setCustomStart(v); setPage(0)
+  }
+  const handleCustomEnd = (v: string) => {
+    if (hasYearOverflow(v)) return
+    setCustomEnd(v); setPage(0)
+  }
 
   const handleDelete = () => {
     if (deleteTarget) {
-      deleteMutation.mutate(deleteTarget.id)
+      deleteMutation.mutate(deleteTarget.id, {
+        onSuccess: () => setDeleteTarget(null),
+      })
     }
   }
 
@@ -398,15 +435,61 @@ export default function HistoryPage() {
               : translate('history.loading')}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <button
+          onClick={() => navigate('/training/new')}
+          className="whitespace-nowrap rounded-lg bg-[var(--text-primary)] px-4 py-2 text-sm font-medium text-[var(--bg-page)] hover:opacity-90"
+        >
+          {translate('nav.newTraining')}
+        </button>
+      </div>
+
+      {/* Time range filter */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+        {PRESETS.map(({ key, label }) => (
           <button
-            onClick={() => navigate('/training/new')}
-            className="whitespace-nowrap rounded-lg bg-[var(--text-primary)] px-4 py-2 text-sm font-medium text-[var(--bg-page)] hover:opacity-90"
+            key={key}
+            onClick={() => handlePreset(key)}
+            className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+              preset === key
+                ? 'bg-[var(--text-primary)] text-[var(--bg-page)]'
+                : 'border border-[var(--border-card)] text-[var(--text-muted)] hover:border-[var(--border-card-hover)] hover:text-[var(--text-primary)]'
+            }`}
           >
-            {translate('nav.newTraining')}
+            {label}
           </button>
-          <PageSizeSelector value={size} onChange={(s) => { setSize(s); setPage(0) }} />
+        ))}
+        {preset === 'custom' && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <input
+              type="date"
+              value={customStart}
+              max={customEnd || MAX_DATE}
+              onChange={(e) => handleCustomStart(e.target.value)}
+              className={`rounded-md border bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)] ${
+                hasError ? 'border-rose-500' : 'border-[var(--border-select)]'
+              }`}
+            />
+            <span className="text-xs text-[var(--text-subtle)]">—</span>
+            <input
+              type="date"
+              value={customEnd}
+              min={customStart || undefined}
+              max={MAX_DATE}
+              onChange={(e) => handleCustomEnd(e.target.value)}
+              className={`rounded-md border bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)] ${
+                hasError ? 'border-rose-500' : 'border-[var(--border-select)]'
+              }`}
+            />
+            {hasError && (
+              <span className="text-xs text-rose-500">
+                {translate('filter.invalidRange')}
+              </span>
+            )}
+          </div>
+        )}
         </div>
+        <PageSizeSelector value={size} onChange={(s) => { setSize(s); setPage(0) }} />
       </div>
 
       {/* Loading */}

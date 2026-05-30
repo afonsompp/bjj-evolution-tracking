@@ -1,10 +1,13 @@
 import { useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '../api/client'
 import { useTranslation } from '../lib/i18n/I18nContext'
+import { useTechniques } from '../features/technique/hooks/useTechniques'
+import {
+  useCreateTechnique,
+  useUpdateTechnique,
+  useDeleteTechnique,
+} from '../features/technique/hooks/useManageTechnique'
 import type {
   TechniqueResponse, TechniqueType, TechniqueTarget,
-  ProfileResponse, Page,
 } from '../types/api'
 import {
   PencilIcon,
@@ -48,7 +51,6 @@ function TechniqueEditModal({
   onClose: () => void
 }) {
   const { translate } = useTranslation()
-  const queryClient = useQueryClient()
   const isNew = !technique
 
   const [name, setName] = useState(technique?.name ?? '')
@@ -56,19 +58,17 @@ function TechniqueEditModal({
   const [target, setTarget] = useState<TechniqueTarget>(technique?.target ?? 'ARM')
   const [error, setError] = useState<string | null>(null)
 
-  const mutation = useMutation({
-    mutationFn: (data: { name: string; type: TechniqueType; target: TechniqueTarget }) =>
-      isNew
-        ? apiClient.post<TechniqueResponse>('/techniques', data).then(r => r.data)
-        : apiClient.put<TechniqueResponse>(`/techniques/${technique.id}`, data).then(r => r.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-techniques'] })
-      onClose()
-    },
-    onError: (err: any) => {
+  const create = useCreateTechnique()
+  const update = useUpdateTechnique()
+  const mutation = isNew ? create : update
+
+  const submit = (data: { name: string; type: TechniqueType; target: TechniqueTarget }) => {
+    const onSuccess = () => onClose()
+    const onError = (err: any) =>
       setError(err?.response?.data?.message ?? `Failed to ${isNew ? 'create' : 'update'} technique.`)
-    },
-  })
+    if (isNew) create.mutate(data, { onSuccess, onError })
+    else update.mutate({ id: technique!.id, body: data }, { onSuccess, onError })
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
@@ -86,7 +86,7 @@ function TechniqueEditModal({
           onSubmit={(e) => {
             e.preventDefault()
             if (!name.trim()) return
-            mutation.mutate({ name: name.trim(), type, target })
+            submit({ name: name.trim(), type, target })
           }}
           className="space-y-4"
         >
@@ -205,7 +205,6 @@ function DeleteConfirmModal({
 // ── Main Page ────────────────────────────────────────────
 export default function TechniqueManagePage() {
   const { translate } = useTranslation()
-  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
   const [editTarget, setEditTarget] = useState<TechniqueResponse | null>(null)
@@ -214,24 +213,8 @@ export default function TechniqueManagePage() {
 
   const SIZE = 20
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['admin-techniques', search, page],
-    queryFn: () =>
-      apiClient
-        .get<Page<TechniqueResponse>>('/techniques', {
-          params: { query: search || undefined, page, size: SIZE },
-        })
-        .then((r) => r.data),
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiClient.delete(`/techniques/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-techniques'] })
-      queryClient.invalidateQueries({ queryKey: ['techniques'] })
-      setDeleteTarget(null)
-    },
-  })
+  const { data, isLoading, isError } = useTechniques(search, page, SIZE)
+  const deleteMutation = useDeleteTechnique()
 
   const totalPages = data?.totalPages ?? 0
   const techniques = data?.content ?? []
@@ -370,7 +353,12 @@ export default function TechniqueManagePage() {
       )}
       <DeleteConfirmModal
         technique={deleteTarget}
-        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+        onConfirm={() =>
+          deleteTarget &&
+          deleteMutation.mutate(deleteTarget.id, {
+            onSuccess: () => setDeleteTarget(null),
+          })
+        }
         onClose={() => setDeleteTarget(null)}
         isPending={deleteMutation.isPending}
       />

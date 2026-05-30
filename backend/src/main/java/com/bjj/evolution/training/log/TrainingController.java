@@ -18,9 +18,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 @RestController
@@ -56,9 +56,9 @@ public class TrainingController {
     ) {
         UUID userId = extractUserId(jwt);
         return ResponseEntity.ok(
-                service.findAll(userId, 
-                        startDate != null ? startDate.atStartOfDay() : null, 
-                        endDate != null ? endDate.atTime(23, 59, 59) : null, 
+                service.findAll(userId,
+                        startDate != null ? startDate.atStartOfDay(ZoneOffset.UTC).toInstant() : null,
+                        endDate != null ? endDate.atTime(23, 59, 59).toInstant(ZoneOffset.UTC) : null,
                         pageable)
         );
     }
@@ -102,9 +102,9 @@ public class TrainingController {
             @RequestParam(required = false) LocalDate endDate) {
 
         UUID userId = SecurityUtils.getCurrentUserId();
-        return ResponseEntity.ok(service.getStats(userId, 
-                startDate != null ? startDate.atStartOfDay() : null, 
-                endDate != null ? endDate.atTime(23, 59, 59) : null));
+        return ResponseEntity.ok(service.getStats(userId,
+                startDate != null ? startDate.atStartOfDay(ZoneOffset.UTC).toInstant() : null,
+                endDate != null ? endDate.atTime(23, 59, 59).toInstant(ZoneOffset.UTC) : null));
     }
 
     @GetMapping("/dashboard")

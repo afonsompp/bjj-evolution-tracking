@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,8 +20,8 @@ public interface TrainingRepository extends JpaRepository<Training, Long> {
 
     Page<Training> findAllByUserProfileIdAndSessionDateBetween(
             UUID userProfileId,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
+            Instant startDate,
+            Instant endDate,
             Pageable pageable
     );
 
@@ -38,8 +38,8 @@ public interface TrainingRepository extends JpaRepository<Training, Long> {
            "AND t.sessionDate >= COALESCE(:startDate, t.sessionDate) " +
            "AND t.sessionDate <= COALESCE(:endDate, t.sessionDate)")
     List<Object[]> computeStats(@Param("userId") UUID userId,
-                          @Param("startDate") LocalDateTime startDate,
-                          @Param("endDate") LocalDateTime endDate);
+                          @Param("startDate") Instant startDate,
+                          @Param("endDate") Instant endDate);
 
     @Query("SELECT t.name, COUNT(t) FROM Training tr " +
            "JOIN tr.submissionTechniques t " +
@@ -48,8 +48,8 @@ public interface TrainingRepository extends JpaRepository<Training, Long> {
            "AND tr.sessionDate <= COALESCE(:endDate, tr.sessionDate) " +
            "GROUP BY t.name ORDER BY COUNT(t) DESC")
     List<Object[]> findTopAttackTechniques(@Param("userId") UUID userId,
-                                            @Param("startDate") LocalDateTime startDate,
-                                            @Param("endDate") LocalDateTime endDate);
+                                            @Param("startDate") Instant startDate,
+                                            @Param("endDate") Instant endDate);
 
     @Query("SELECT t.name, COUNT(t) FROM Training tr " +
            "JOIN tr.submissionTechniquesAllowed t " +
@@ -58,6 +58,6 @@ public interface TrainingRepository extends JpaRepository<Training, Long> {
            "AND tr.sessionDate <= COALESCE(:endDate, tr.sessionDate) " +
            "GROUP BY t.name ORDER BY COUNT(t) DESC")
     List<Object[]> findTopDefenseTechniques(@Param("userId") UUID userId,
-                                             @Param("startDate") LocalDateTime startDate,
-                                             @Param("endDate") LocalDateTime endDate);
+                                             @Param("startDate") Instant startDate,
+                                             @Param("endDate") Instant endDate);
 }

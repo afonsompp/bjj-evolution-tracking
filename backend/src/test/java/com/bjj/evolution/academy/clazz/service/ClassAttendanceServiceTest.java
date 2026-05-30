@@ -26,8 +26,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -55,6 +54,7 @@ class ClassAttendanceServiceTest {
     private UUID academyId;
     private Long classId;
     private UUID studentId;
+    private UUID instructorId;
     private Academy academy;
     private ScheduledClass publishedClass;
     private ScheduledClass draftClass;
@@ -71,6 +71,7 @@ class ClassAttendanceServiceTest {
         academyId = UUID.randomUUID();
         classId = 1L;
         studentId = UUID.randomUUID();
+        instructorId = UUID.randomUUID();
 
         academy = new Academy("Gracie Barra", "123 Main St");
         // Set ID via reflection since Academy uses generated UUID
@@ -98,8 +99,8 @@ class ClassAttendanceServiceTest {
         ScheduledClass sc = ScheduledClass.builder()
                 .academy(academy)
                 .instructor(instructor)
-                .startTime(LocalDateTime.of(2025, 6, 1, 10, 0))
-                .duration(Duration.ofMinutes(90))
+                .startTime(Instant.parse("2025-06-01T10:00:00Z"))
+                .durationMinutes(90)
                 .classType(com.bjj.evolution.catalog.domain.ClassType.REGULAR)
                 .trainingType(com.bjj.evolution.catalog.domain.TrainingType.GI)
                 .scheduledTechniques(List.of())
@@ -111,13 +112,18 @@ class ClassAttendanceServiceTest {
         return sc;
     }
 
+    private UserProfile createInstructor() {
+        return new UserProfile(instructorId, "John", "Doe", "johnny_bjj",
+                null, null, null, null);
+    }
+
     private UserProfile createStudent() {
         return new UserProfile(studentId, "Jane", "Doe", "jane_bjj",
                 null, null, null, null);
     }
 
     private ClassAttendance createAttendance(ScheduledClass scheduledClass, UserProfile student,
-                                              CheckInStatus status, LocalDateTime checkInTime) {
+                                              CheckInStatus status, Instant checkInTime) {
         ClassAttendance attendance = new ClassAttendance(scheduledClass, student, status);
         if (checkInTime != null) {
             attendance.setCheckInTime(checkInTime);
@@ -137,7 +143,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should register student successfully for a published class")
         void shouldRegisterSuccessfully() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
             var student = createStudent();
 
@@ -164,7 +170,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should throw BusinessRuleException when class is DRAFT")
         void shouldThrow_whenClassIsDraft() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.DRAFT);
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
@@ -181,7 +187,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should throw BusinessRuleException when class is COMPLETED")
         void shouldThrow_whenClassIsCompleted() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.COMPLETED);
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
@@ -198,7 +204,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should throw BusinessRuleException when class is CANCELED")
         void shouldThrow_whenClassIsCanceled() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.CANCELED);
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
@@ -215,7 +221,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should throw BusinessRuleException when student is already registered")
         void shouldThrow_whenAlreadyRegistered() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
@@ -233,7 +239,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should throw BusinessRuleException when student already registered with CONFIRMED status")
         void shouldThrow_whenAlreadyConfirmed() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
@@ -264,7 +270,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should throw ResourceNotFoundException when student profile does not exist")
         void shouldThrow_whenStudentNotFound() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
@@ -283,7 +289,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should throw BusinessRuleException when class belongs to a different academy")
         void shouldThrow_whenAcademyMismatch() {
             var wrongAcademy = createAcademy(UUID.randomUUID(), "Wrong Academy");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, wrongAcademy, instructor, ClassStatus.PUBLISHED);
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
@@ -297,10 +303,26 @@ class ClassAttendanceServiceTest {
         }
 
         @Test
+        @DisplayName("should throw BusinessRuleException when student is the class instructor")
+        void shouldThrow_whenStudentIsInstructor() {
+            var ac = createAcademy(academyId, "Gracie Barra");
+            var instructor = new UserProfile(studentId, "John", "Doe", "johnny", null, null, null, null);
+            var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
+
+            when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
+
+            assertThatThrownBy(() -> service.register(academyId, classId, studentId))
+                    .isInstanceOf(BusinessRuleException.class)
+                    .hasMessageContaining("instructor");
+
+            verify(attendanceRepository, never()).save(any());
+        }
+
+        @Test
         @DisplayName("should throw BusinessRuleException when academyId is null")
         void shouldThrow_whenAcademyIdNull() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
@@ -325,7 +347,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should confirm attendance successfully when status is REGISTERED")
         void shouldConfirmSuccessfully() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
             var student = createStudent();
             var attendance = createAttendance(sClass, student, CheckInStatus.REGISTERED, null);
@@ -348,7 +370,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should throw ResourceNotFoundException when attendance does not exist")
         void shouldThrow_whenAttendanceNotFound() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
@@ -366,7 +388,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should throw BusinessRuleException when attendance is already CANCELED")
         void shouldThrow_whenAlreadyCanceled() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
             var student = createStudent();
             var attendance = createAttendance(sClass, student, CheckInStatus.CANCELED, null);
@@ -386,7 +408,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should throw BusinessRuleException when class belongs to a different academy")
         void shouldThrow_whenAcademyMismatch() {
             var wrongAcademy = createAcademy(UUID.randomUUID(), "Wrong Academy");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, wrongAcademy, instructor, ClassStatus.PUBLISHED);
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
@@ -403,10 +425,10 @@ class ClassAttendanceServiceTest {
         @DisplayName("should confirm attendance successfully when status is already CONFIRMED (idempotent)")
         void shouldConfirm_whenAlreadyConfirmed() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
             var student = createStudent();
-            var now = LocalDateTime.of(2025, 6, 1, 10, 30);
+            var now = Instant.parse("2025-06-01T10:30:00Z");
             var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, now);
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
@@ -448,7 +470,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should cancel attendance successfully")
         void shouldCancelSuccessfully() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
             var student = createStudent();
             var attendance = createAttendance(sClass, student, CheckInStatus.REGISTERED, null);
@@ -470,7 +492,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should throw ResourceNotFoundException when attendance does not exist")
         void shouldThrow_whenAttendanceNotFound() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
@@ -488,7 +510,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should throw BusinessRuleException when class is already COMPLETED")
         void shouldThrow_whenClassIsCompleted() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.COMPLETED);
             var student = createStudent();
             var attendance = createAttendance(sClass, student, CheckInStatus.REGISTERED, null);
@@ -508,7 +530,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should throw BusinessRuleException when class belongs to a different academy")
         void shouldThrow_whenAcademyMismatch() {
             var wrongAcademy = createAcademy(UUID.randomUUID(), "Wrong Academy");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, wrongAcademy, instructor, ClassStatus.PUBLISHED);
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
@@ -525,10 +547,10 @@ class ClassAttendanceServiceTest {
         @DisplayName("should cancel CONFIRMED attendance successfully")
         void shouldCancel_whenAlreadyConfirmed() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
             var student = createStudent();
-            var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, LocalDateTime.now());
+            var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, Instant.now());
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
             when(attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId))
@@ -567,7 +589,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should return paginated attendances")
         void shouldReturnPage() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var student = createStudent();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
             var attendance = createAttendance(sClass, student, CheckInStatus.REGISTERED, null);
@@ -588,7 +610,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should return empty page when no attendances exist")
         void shouldReturnEmptyPage() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
             Pageable pageable = PageRequest.of(0, 20);
             Page<ClassAttendance> emptyPage = new PageImpl<>(List.of(), pageable, 0);
@@ -618,7 +640,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should throw BusinessRuleException when class belongs to a different academy")
         void shouldThrow_whenAcademyMismatch() {
             var wrongAcademy = createAcademy(UUID.randomUUID(), "Wrong Academy");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var sClass = createScheduledClass(classId, wrongAcademy, instructor, ClassStatus.PUBLISHED);
 
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
@@ -628,6 +650,154 @@ class ClassAttendanceServiceTest {
                     .hasMessageContaining("academy");
 
             verify(attendanceRepository, never()).findAllByScheduledClassId(any(), any());
+        }
+    }
+
+    // -----------------------------------------------------------
+    // getMyAttendance()
+    // -----------------------------------------------------------
+
+    @Nested
+    @DisplayName("getMyAttendance()")
+    class GetMyAttendanceTests {
+
+        @Test
+        @DisplayName("should return present Optional when attendance exists")
+        void shouldReturnPresent_whenFound() {
+            var ac = createAcademy(academyId, "Gracie Barra");
+            var instructor = createInstructor();
+            var student = createStudent();
+            var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
+            var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, Instant.now());
+
+            when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
+            when(attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId))
+                    .thenReturn(Optional.of(attendance));
+
+            var result = service.getMyAttendance(academyId, classId, studentId);
+
+            assertThat(result).isPresent();
+            assertThat(result.get().status()).isEqualTo(CheckInStatus.CONFIRMED);
+            assertThat(result.get().classId()).isEqualTo(classId);
+        }
+
+        @Test
+        @DisplayName("should return empty Optional when student has no attendance record")
+        void shouldReturnEmpty_whenNotFound() {
+            var ac = createAcademy(academyId, "Gracie Barra");
+            var instructor = createInstructor();
+            var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
+
+            when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
+            when(attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId))
+                    .thenReturn(Optional.empty());
+
+            var result = service.getMyAttendance(academyId, classId, studentId);
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should throw ResourceNotFoundException when class does not exist")
+        void shouldThrow_whenClassNotFound() {
+            when(scheduledClassRepository.findById(classId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.getMyAttendance(academyId, classId, studentId))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Class");
+
+            verify(attendanceRepository, never()).findByScheduledClassIdAndStudentId(any(), any());
+        }
+
+        @Test
+        @DisplayName("should throw BusinessRuleException when class belongs to a different academy")
+        void shouldThrow_whenAcademyMismatch() {
+            var wrongAcademy = createAcademy(UUID.randomUUID(), "Wrong Academy");
+            var instructor = createInstructor();
+            var sClass = createScheduledClass(classId, wrongAcademy, instructor, ClassStatus.PUBLISHED);
+
+            when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
+
+            assertThatThrownBy(() -> service.getMyAttendance(academyId, classId, studentId))
+                    .isInstanceOf(BusinessRuleException.class)
+                    .hasMessageContaining("academy");
+
+            verify(attendanceRepository, never()).findByScheduledClassIdAndStudentId(any(), any());
+        }
+    }
+
+    // -----------------------------------------------------------
+    // deleteAttendance()
+    // -----------------------------------------------------------
+
+    @Nested
+    @DisplayName("deleteAttendance()")
+    class DeleteAttendanceTests {
+
+        @Test
+        @DisplayName("should delete attendance successfully")
+        void shouldDeleteSuccessfully() {
+            var ac = createAcademy(academyId, "Gracie Barra");
+            var instructor = createInstructor();
+            var student = createStudent();
+            var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
+            var attendance = createAttendance(sClass, student, CheckInStatus.REGISTERED, null);
+
+            when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
+            when(attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId))
+                    .thenReturn(Optional.of(attendance));
+
+            service.deleteAttendance(academyId, classId, studentId);
+
+            verify(attendanceRepository).delete(attendance);
+        }
+
+        @Test
+        @DisplayName("should throw ResourceNotFoundException when attendance does not exist")
+        void shouldThrow_whenAttendanceNotFound() {
+            var ac = createAcademy(academyId, "Gracie Barra");
+            var instructor = createInstructor();
+            var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
+
+            when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
+            when(attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId))
+                    .thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.deleteAttendance(academyId, classId, studentId))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Attendance record not found");
+
+            verify(attendanceRepository, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("should throw ResourceNotFoundException when class does not exist")
+        void shouldThrow_whenClassNotFound() {
+            when(scheduledClassRepository.findById(classId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.deleteAttendance(academyId, classId, studentId))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Class");
+
+            verify(attendanceRepository, never()).findByScheduledClassIdAndStudentId(any(), any());
+            verify(attendanceRepository, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("should throw BusinessRuleException when class belongs to a different academy")
+        void shouldThrow_whenAcademyMismatch() {
+            var wrongAcademy = createAcademy(UUID.randomUUID(), "Wrong Academy");
+            var instructor = createInstructor();
+            var sClass = createScheduledClass(classId, wrongAcademy, instructor, ClassStatus.PUBLISHED);
+
+            when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
+
+            assertThatThrownBy(() -> service.deleteAttendance(academyId, classId, studentId))
+                    .isInstanceOf(BusinessRuleException.class)
+                    .hasMessageContaining("academy");
+
+            verify(attendanceRepository, never()).findByScheduledClassIdAndStudentId(any(), any());
+            verify(attendanceRepository, never()).delete(any());
         }
     }
 
@@ -643,7 +813,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should return paginated results without status filter")
         void shouldReturnPageWithoutStatus() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var student = createStudent();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
             var attendance = createAttendance(sClass, student, CheckInStatus.REGISTERED, null);
@@ -665,10 +835,10 @@ class ClassAttendanceServiceTest {
         @DisplayName("should return paginated results with status filter")
         void shouldReturnPageWithStatus() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var student = createStudent();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
-            var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, LocalDateTime.now());
+            var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, Instant.now());
             Pageable pageable = PageRequest.of(0, 20);
             Page<ClassAttendance> page = new PageImpl<>(List.of(attendance), pageable, 1);
 
@@ -726,7 +896,7 @@ class ClassAttendanceServiceTest {
         @DisplayName("should return paginated results without status filter")
         void shouldReturnPageWithoutStatus() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var student = createStudent();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
             var attendance = createAttendance(sClass, student, CheckInStatus.REGISTERED, null);
@@ -749,10 +919,10 @@ class ClassAttendanceServiceTest {
         @DisplayName("should return paginated results with status filter")
         void shouldReturnPageWithStatus() {
             var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createStudent();
+            var instructor = createInstructor();
             var student = createStudent();
             var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
-            var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, LocalDateTime.now());
+            var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, Instant.now());
             Pageable pageable = PageRequest.of(0, 20);
             Page<ClassAttendance> page = new PageImpl<>(List.of(attendance), pageable, 1);
 

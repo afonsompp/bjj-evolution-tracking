@@ -9,11 +9,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 public interface AcademyMemberRepository extends JpaRepository<AcademyMember, AcademyMemberId> {
 
     Page<AcademyMember> findAllByAcademyId(UUID academyId, Pageable pageable);
+
+    /** Members of an academy holding any of the given roles with the given status — used to notify staff (owners/managers). */
+    List<AcademyMember> findByAcademyIdAndRoleInAndStatus(UUID academyId, Collection<MemberRole> roles, MemberStatus status);
 
     Page<AcademyMember> findAllByAcademyIdAndStatus(UUID academyId, MemberStatus status, Pageable pageable);
 
@@ -31,6 +36,10 @@ public interface AcademyMemberRepository extends JpaRepository<AcademyMember, Ac
     Page<AcademyMember> findByAcademyIdAndUserNameAndStatus(UUID academyId, String name, MemberStatus status, Pageable pageable);
 
     long countByAcademyIdAndRole(UUID academyId, MemberRole role);
-    
+
     boolean existsByUserIdAndRole(UUID userId, MemberRole role);
+
+    Page<AcademyMember> findAllByUserId(UUID userId, Pageable pageable);
+
+    Page<AcademyMember> findAllByUserIdAndStatus(UUID userId, MemberStatus status, Pageable pageable);
 }

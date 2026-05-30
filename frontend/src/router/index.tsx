@@ -21,12 +21,16 @@ import TemplateFormPage from '../pages/TemplateFormPage'
 import AdminUsersPage from '../pages/AdminUsersPage'
 import { RequireAcademyCap } from '../features/academy/permissions/RequireAcademyCap'
 import { RequireAdmin } from '../features/admin/RequireAdmin'
+import ErrorPage from '../pages/ErrorPage'
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <Navigate to="/dashboard" replace />,
   },
+  // Standalone (outside AppLayout) so it renders even when the app shell or a
+  // server error would otherwise break. The 401/5xx interceptor redirects here.
+  { path: '/error', element: <ErrorPage /> },
   {
     element: <AuthLayout />,
     children: [

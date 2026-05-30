@@ -12,6 +12,10 @@ spring:
       max-request-size: 5MB
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      # Flyway owns the schema (db/migration/V*.sql); Hibernate only validates
+      # that the entities match what the migrations produced.
+      ddl-auto: validate
   security:
     oauth2:
       resourceserver:

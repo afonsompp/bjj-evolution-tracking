@@ -179,6 +179,31 @@ class UserProfileServiceTest {
     }
 
     @Test
+    void updateRole_shouldThrowException_whenAdminDemotesThemselves() {
+        UserProfile adminUser = createUserProfile(userId, "admin", UserRole.ADMIN);
+        when(repository.findById(userId)).thenReturn(Optional.of(adminUser));
+
+        var exception = assertThrows(ForbiddenException.class,
+                () -> service.updateRole(jwt, userId, UserRole.CUSTOMER));
+        assertThat(exception.getMessage()).isEqualTo("Admins cannot remove their own admin role.");
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void updateRole_shouldSucceed_whenAdminKeepsOwnAdminRole() {
+        UserProfile adminUser = createUserProfile(userId, "admin", UserRole.ADMIN);
+        when(repository.findById(userId)).thenReturn(Optional.of(adminUser));
+        when(repository.save(any(UserProfile.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Re-applying ADMIN to self is a no-op, not a demotion, so it must be allowed.
+        service.updateRole(jwt, userId, UserRole.ADMIN);
+
+        ArgumentCaptor<UserProfile> captor = ArgumentCaptor.forClass(UserProfile.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getRole()).isEqualTo(UserRole.ADMIN);
+    }
+
+    @Test
     void getMyProfile_shouldReturnProfile_whenExists() {
         UserProfile userProfile = createUserProfile(userId, "test", UserRole.PLATFORM_MANAGER);
         when(repository.findActiveById(userId)).thenReturn(Optional.of(userProfile));

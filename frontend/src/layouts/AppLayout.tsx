@@ -50,6 +50,7 @@ export default function AppLayout() {
     { to: '/training', labelKey: 'nav.training', end: true },
     { to: '/academies', labelKey: 'nav.academies' },
     ...(isAdmin ? [{ to: '/techniques', labelKey: 'nav.techniques' } as const] : []),
+    ...(isAdmin ? [{ to: '/admin/users', labelKey: 'nav.admin' } as const] : []),
   ]
 
   const handleSignOut = async () => {

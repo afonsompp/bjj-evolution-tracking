@@ -103,6 +103,16 @@ public class UserProfileService {
             throw new ForbiddenException("Only admins can assign the ADMIN role.");
         }
 
+        // Self-demotion guard: an admin can't strip their own ADMIN role, which
+        // would risk locking the platform out of admin access.
+        if (targetUserId.equals(currentUserId)
+                && currentUser.getRole() == UserRole.ADMIN
+                && newRole != UserRole.ADMIN) {
+            log.warn("Role update denied: admin actor={} attempted to demote themselves to {}",
+                    currentUserId, newRole);
+            throw new ForbiddenException("Admins cannot remove their own admin role.");
+        }
+
         UserProfile targetUser = repository.findById(targetUserId)
                 .orElseThrow(() -> {
                     log.error("Role update failed: target user not found user={}", targetUserId);

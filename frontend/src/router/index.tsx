@@ -18,7 +18,9 @@ import AcademyMembersPage from '../pages/AcademyMembersPage'
 import ClassManagementPage from '../pages/ClassManagementPage'
 import ClassFormPage from '../pages/ClassFormPage'
 import TemplateFormPage from '../pages/TemplateFormPage'
+import AdminUsersPage from '../pages/AdminUsersPage'
 import { RequireAcademyCap } from '../features/academy/permissions/RequireAcademyCap'
+import { RequireAdmin } from '../features/admin/RequireAdmin'
 
 export const router = createBrowserRouter([
   {
@@ -42,6 +44,14 @@ export const router = createBrowserRouter([
       { path: '/onboarding', element: <OnboardingPage /> },
       { path: '/profile', element: <ProfilePage /> },
       { path: '/techniques', element: <TechniqueManagePage /> },
+      {
+        path: '/admin/users',
+        element: (
+          <RequireAdmin>
+            <AdminUsersPage />
+          </RequireAdmin>
+        ),
+      },
       { path: '/academies', element: <AcademyListPage /> },
       { path: '/academies/new', element: <AcademyCreatePage /> },
       { path: '/academies/:id', element: <AcademyDetailPage /> },

@@ -22,4 +22,13 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, UUID> 
             "LOWER(u.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
             "LOWER(u.secondName) LIKE LOWER(CONCAT('%', :query, '%')))")
     Page<UserProfile> searchByTerm(String query, Pageable pageable);
+
+    // Admin user management: same active-only filter as searchByTerm, but also
+    // matches on email so admins can look users up by their login address.
+    @Query("SELECT u FROM UserProfile u WHERE u.anonymizedAt IS NULL AND (" +
+            "LOWER(u.nickname) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(u.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(u.secondName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')))")
+    Page<UserProfile> searchForAdmin(String query, Pageable pageable);
 }

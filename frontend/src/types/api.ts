@@ -107,6 +107,19 @@ export interface SearchProfileResponse {
   startsIn?: string
 }
 
+// ── Admin ────────────────────────────────────────────────
+export interface AdminUserResponse {
+  id: string
+  name: string
+  secondName?: string
+  nickname: string
+  email?: string
+  belt?: Belt
+  beltStripe?: number
+  photoUrl?: string
+  role: UserRole
+}
+
 // ── Technique ────────────────────────────────────────────
 export interface TechniqueRequest {
   name: string

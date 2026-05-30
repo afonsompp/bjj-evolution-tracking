@@ -1,0 +1,24 @@
+# Render Blueprint (Infrastructure as Code).
+#
+# This documents the frontend static site's SPA rewrite so deep links like
+# /dashboard don't 404. The app uses createBrowserRouter (HTML5 history), so the
+# host must serve index.html for any unknown path and let the client router take
+# over.
+#
+# NOTE: a service created via the Render dashboard does NOT read this file
+# automatically — add the same rule under the static site's "Redirects/Rewrites"
+# (Source: /*  Destination: /index.html  Action: Rewrite). This blueprint only
+# takes effect if the service is managed as a Render Blueprint.
+services:
+  - type: web
+    runtime: static
+    name: bjj-evolution-frontend     # adjust to match your static site's name
+    repo: https://github.com/afonsompp/bjj-evolution-tracking
+    branch: master
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

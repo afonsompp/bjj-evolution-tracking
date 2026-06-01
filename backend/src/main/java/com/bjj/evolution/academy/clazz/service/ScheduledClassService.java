@@ -1,7 +1,10 @@
 package com.bjj.evolution.academy.clazz.service;
 
 import com.bjj.evolution.academy.AcademyRepository;
+import com.bjj.evolution.academy.clazz.ClassAttendanceRepository;
 import com.bjj.evolution.academy.clazz.ScheduledClassRepository;
+import com.bjj.evolution.academy.clazz.domain.ClassAttendance;
+import com.bjj.evolution.academy.clazz.domain.CheckInStatus;
 import com.bjj.evolution.academy.clazz.domain.ClassStatus;
 import com.bjj.evolution.academy.clazz.domain.ScheduledClass;
 import com.bjj.evolution.academy.clazz.domain.dto.ScheduledClassRequest;
@@ -26,6 +29,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,17 +44,20 @@ public class ScheduledClassService {
     private final AcademyRepository academyRepository;
     private final UserProfileRepository userProfileRepository;
     private final TechniqueRepository techniqueRepository;
+    private final ClassAttendanceRepository attendanceRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public ScheduledClassService(ScheduledClassRepository repository,
                                  AcademyRepository academyRepository,
                                  UserProfileRepository userProfileRepository,
                                  TechniqueRepository techniqueRepository,
+                                 ClassAttendanceRepository attendanceRepository,
                                  ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.academyRepository = academyRepository;
         this.userProfileRepository = userProfileRepository;
         this.techniqueRepository = techniqueRepository;
+        this.attendanceRepository = attendanceRepository;
         this.eventPublisher = eventPublisher;
     }
 
@@ -155,11 +162,24 @@ public class ScheduledClassService {
         ClassStatus oldStatus = scheduledClass.getStatus();
         scheduledClass.setStatus(ClassStatus.CANCELED);
         repository.save(scheduledClass);
-        log.info("Scheduled class canceled: id={} academy={} wasStatus={}", id, scheduledClass.getAcademy().getId(), oldStatus);
+
+        // A canceled class has no attendance: cancel any active check-ins so they
+        // don't linger as pending. Capture the affected students to notify them —
+        // the notification listener runs after commit, when these are no longer active.
+        List<ClassAttendance> activeAttendances = attendanceRepository.findByScheduledClassIdAndStatusIn(
+                id, List.of(CheckInStatus.REGISTERED, CheckInStatus.CONFIRMED));
+        List<UUID> affectedStudentIds = new ArrayList<>();
+        for (ClassAttendance attendance : activeAttendances) {
+            attendance.setStatus(CheckInStatus.CANCELED);
+            affectedStudentIds.add(attendance.getStudent().getId());
+        }
+        attendanceRepository.saveAll(activeAttendances);
+        log.info("Scheduled class canceled: id={} academy={} wasStatus={} canceledCheckIns={}",
+                id, scheduledClass.getAcademy().getId(), oldStatus, activeAttendances.size());
 
         // Only worth notifying students if the class had been published to them.
         if (oldStatus == ClassStatus.PUBLISHED) {
-            eventPublisher.publishEvent(new ClassCanceledEvent(id));
+            eventPublisher.publishEvent(new ClassCanceledEvent(id, affectedStudentIds));
         }
     }
 

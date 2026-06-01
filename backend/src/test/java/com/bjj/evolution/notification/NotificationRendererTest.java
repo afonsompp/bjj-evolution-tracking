@@ -3,8 +3,6 @@ package com.bjj.evolution.notification;
 import com.bjj.evolution.academy.AcademyRepository;
 import com.bjj.evolution.academy.clazz.ClassAttendanceRepository;
 import com.bjj.evolution.academy.clazz.ScheduledClassRepository;
-import com.bjj.evolution.academy.clazz.domain.CheckInStatus;
-import com.bjj.evolution.academy.clazz.domain.ClassAttendance;
 import com.bjj.evolution.academy.clazz.domain.ClassStatus;
 import com.bjj.evolution.academy.clazz.domain.ScheduledClass;
 import com.bjj.evolution.academy.domain.Academy;
@@ -28,8 +26,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -103,14 +99,13 @@ class NotificationRendererTest {
 
         UserProfile withEmail = profile("Aluno Um", "aluno1@x.com");
         UserProfile withoutEmail = profile("Aluno Dois", null);
-        when(classAttendanceRepository.findByScheduledClassIdAndStatusIn(eq(classId), any()))
-                .thenReturn(List.of(
-                        new ClassAttendance(clazz, withEmail, CheckInStatus.REGISTERED),
-                        new ClassAttendance(clazz, withoutEmail, CheckInStatus.CONFIRMED)));
-        when(recipients.forProfile(withEmail)).thenReturn(new Recipient(withEmail.getId(), "aluno1@x.com", "Aluno Um"));
-        when(recipients.forProfile(withoutEmail)).thenReturn(new Recipient(withoutEmail.getId(), null, "Aluno Dois"));
+        when(recipients.forUser(withEmail.getId()))
+                .thenReturn(Optional.of(new Recipient(withEmail.getId(), "aluno1@x.com", "Aluno Um")));
+        when(recipients.forUser(withoutEmail.getId()))
+                .thenReturn(Optional.of(new Recipient(withoutEmail.getId(), null, "Aluno Dois")));
 
-        List<OutboundNotification> result = renderer.render(new ClassCanceledEvent(classId));
+        List<OutboundNotification> result =
+                renderer.render(new ClassCanceledEvent(classId, List.of(withEmail.getId(), withoutEmail.getId())));
 
         assertThat(result).hasSize(1);
         OutboundNotification n = result.get(0);

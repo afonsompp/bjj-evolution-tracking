@@ -51,11 +51,12 @@ function isoDateOffset(days: number): string {
   return d.toISOString().slice(0, 10)
 }
 
-function presetForwardRange(preset: Preset): { startDate: string; endDate: string } {
+function presetRange(preset: Preset): { startDate: string; endDate: string } {
   if (preset === 'custom') return { startDate: '', endDate: '' }
   if (preset === 'all') return { startDate: isoDateOffset(-365 * 10), endDate: isoDateOffset(365 * 5) }
   const days = preset === '7d' ? 7 : preset === '30d' ? 30 : preset === '90d' ? 90 : 365
-  return { startDate: isoDateOffset(0), endDate: isoDateOffset(days) }
+  // The agenda shows past and upcoming classes, so the window spans both directions around today.
+  return { startDate: isoDateOffset(-days), endDate: isoDateOffset(days) }
 }
 
 function countGeneratedClasses(
@@ -108,7 +109,7 @@ export function ClassesSection({ academyId }: Props) {
 
   const { startDate, endDate } = preset === 'custom'
     ? { startDate: appliedCustomStart, endDate: appliedCustomEnd }
-    : presetForwardRange(preset)
+    : presetRange(preset)
 
   const { data: classesPage, isLoading: classesLoading, isError: classesError } = useClasses(
     academyId,

@@ -99,28 +99,30 @@ export default function AdminUsersPage() {
             return (
               <div
                 key={u.id}
-                className="flex items-center gap-4 rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] px-5 py-4 shadow-sm"
+                className="flex flex-col gap-3 rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:gap-4 sm:px-5"
               >
-                <Avatar photoUrl={u.photoUrl} name={u.name} size={40} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-[var(--text-primary)]">
-                    {u.name}
-                    {u.secondName ? ` ${u.secondName}` : ''}
-                    <span className="ml-1.5 text-[var(--text-subtle)]">@{u.nickname}</span>
-                    {isSelf && (
-                      <span className="ml-1.5 text-[var(--text-subtle)]">({translate('admin.you')})</span>
+                <div className="flex min-w-0 items-center gap-3 sm:flex-1 sm:gap-4">
+                  <Avatar photoUrl={u.photoUrl} name={u.name} size={40} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-[var(--text-primary)]">
+                      {u.name}
+                      {u.secondName ? ` ${u.secondName}` : ''}
+                      <span className="ml-1.5 text-[var(--text-subtle)]">@{u.nickname}</span>
+                      {isSelf && (
+                        <span className="ml-1.5 text-[var(--text-subtle)]">({translate('admin.you')})</span>
+                      )}
+                    </p>
+                    {u.email && (
+                      <p className="mt-0.5 truncate text-xs text-[var(--text-subtle)]">{u.email}</p>
                     )}
-                  </p>
-                  {u.email && (
-                    <p className="mt-0.5 truncate text-xs text-[var(--text-subtle)]">{u.email}</p>
-                  )}
+                  </div>
                 </div>
                 <select
                   value={u.role}
                   disabled={savingThis || isSelf}
                   title={isSelf ? translate('admin.selfRoleLocked') : undefined}
                   onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
-                  className="shrink-0 rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)] disabled:opacity-50"
+                  className="w-full shrink-0 rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)] disabled:opacity-50 sm:w-auto"
                 >
                   {ROLES.map((r) => (
                     <option key={r} value={r}>

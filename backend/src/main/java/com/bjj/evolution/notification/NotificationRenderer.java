@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Turns a {@link NotificationEvent} into the concrete {@link OutboundNotification}s
@@ -127,7 +128,15 @@ public class NotificationRenderer {
             return List.of();
         }
         Rendered rendered = templates.classCanceled(clazz.getAcademy().getName(), clazz.getStartTime());
-        return attendeeNotifications(clazz, rendered, "CLASS_CANCELED");
+        // Recipients were captured at cancellation time — their check-ins are no
+        // longer active, so we resolve them by id instead of re-querying attendance.
+        List<OutboundNotification> out = new ArrayList<>();
+        for (UUID studentId : e.recipientStudentIds()) {
+            recipients.forUser(studentId)
+                    .filter(Recipient::hasEmail)
+                    .ifPresent(recipient -> out.add(email(recipient, rendered, "CLASS_CANCELED")));
+        }
+        return out;
     }
 
     private List<OutboundNotification> attendeeNotifications(ScheduledClass clazz, Rendered rendered, String type) {

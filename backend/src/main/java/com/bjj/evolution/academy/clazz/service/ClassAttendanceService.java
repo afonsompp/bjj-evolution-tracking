@@ -54,10 +54,21 @@ public class ClassAttendanceService {
             throw new BusinessRuleException("The instructor is already confirmed as the teacher of this class.");
         }
 
-        attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId).ifPresent(a -> {
-            log.warn("Check-in registration denied: duplicate classId={} student={} existingStatus={}", classId, studentId, a.getStatus());
-            throw new BusinessRuleException("Student is already registered for this class.");
-        });
+        Optional<ClassAttendance> existing = attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId);
+        if (existing.isPresent()) {
+            ClassAttendance attendance = existing.get();
+            // A canceled check-in can be re-registered (one record per student/class
+            // is enforced by a unique constraint, so we reuse it rather than insert).
+            if (attendance.getStatus() != CheckInStatus.CANCELED) {
+                log.warn("Check-in registration denied: duplicate classId={} student={} existingStatus={}", classId, studentId, attendance.getStatus());
+                throw new BusinessRuleException("Student is already registered for this class.");
+            }
+            attendance.setStatus(CheckInStatus.REGISTERED);
+            attendance.setCheckInTime(null);
+            ClassAttendance saved = attendanceRepository.save(attendance);
+            log.info("Check-in re-registered: classId={} student={} academy={}", classId, studentId, academyId);
+            return CheckInResponse.fromEntity(saved);
+        }
 
         UserProfile student = userProfileRepository.findById(studentId)
                 .orElseThrow(() -> {

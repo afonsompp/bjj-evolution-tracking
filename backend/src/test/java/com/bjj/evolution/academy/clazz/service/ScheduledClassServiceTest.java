@@ -2,8 +2,11 @@ package com.bjj.evolution.academy.clazz.service;
 
 import com.bjj.evolution.academy.AcademyRepository;
 import com.bjj.evolution.academy.clazz.ScheduledClassRepository;
+import com.bjj.evolution.academy.clazz.domain.CheckInStatus;
+import com.bjj.evolution.academy.clazz.domain.ClassAttendance;
 import com.bjj.evolution.academy.clazz.domain.ClassStatus;
 import com.bjj.evolution.academy.clazz.domain.ScheduledClass;
+import com.bjj.evolution.notification.event.ClassCanceledEvent;
 import com.bjj.evolution.academy.clazz.domain.dto.ScheduledClassRequest;
 import com.bjj.evolution.academy.clazz.domain.dto.ScheduledClassResponse;
 import com.bjj.evolution.academy.domain.Academy;
@@ -57,6 +60,9 @@ class ScheduledClassServiceTest {
 
     @Mock
     private TechniqueRepository techniqueRepository;
+
+    @Mock
+    private com.bjj.evolution.academy.clazz.ClassAttendanceRepository attendanceRepository;
 
     @Mock
     private org.springframework.context.ApplicationEventPublisher eventPublisher;
@@ -285,6 +291,31 @@ class ScheduledClassServiceTest {
 
         assertThrows(BusinessRuleException.class, () -> service.cancel(classId));
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("cancel should cancel active check-ins and notify those students")
+    void cancel_shouldCancelActiveCheckIns() {
+        ScheduledClass existingClass = buildScheduledClass(ClassStatus.PUBLISHED, List.of(technique));
+        existingClass.setId(classId);
+        when(repository.findById(classId)).thenReturn(Optional.of(existingClass));
+        when(repository.save(any(ScheduledClass.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UUID studentId = UUID.randomUUID();
+        UserProfile student = new UserProfile();
+        student.setId(studentId);
+        ClassAttendance attendance = new ClassAttendance(existingClass, student, CheckInStatus.REGISTERED);
+        when(attendanceRepository.findByScheduledClassIdAndStatusIn(eq(classId), any()))
+                .thenReturn(List.of(attendance));
+
+        service.cancel(classId);
+
+        assertEquals(CheckInStatus.CANCELED, attendance.getStatus());
+        verify(attendanceRepository).saveAll(List.of(attendance));
+
+        ArgumentCaptor<ClassCanceledEvent> eventCaptor = ArgumentCaptor.forClass(ClassCanceledEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertEquals(List.of(studentId), eventCaptor.getValue().recipientStudentIds());
     }
 
     @Test

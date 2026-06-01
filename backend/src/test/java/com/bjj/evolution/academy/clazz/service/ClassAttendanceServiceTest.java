@@ -246,6 +246,34 @@ class ClassAttendanceServiceTest {
         }
 
         @Test
+        @DisplayName("should re-register by reusing a previously CANCELED check-in")
+        void shouldReRegister_whenPreviouslyCanceled() {
+            var ac = createAcademy(academyId, "Gracie Barra");
+            var instructor = createInstructor();
+            var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
+            var student = createStudent();
+            var canceled = createAttendance(sClass, student, CheckInStatus.CANCELED, Instant.now());
+
+            when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
+            when(attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId))
+                    .thenReturn(Optional.of(canceled));
+            when(attendanceRepository.save(any(ClassAttendance.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            var response = service.register(academyId, classId, studentId);
+
+            assertThat(response.status()).isEqualTo(CheckInStatus.REGISTERED);
+
+            verify(attendanceRepository).save(attendanceCaptor.capture());
+            ClassAttendance saved = attendanceCaptor.getValue();
+            assertThat(saved).isSameAs(canceled);
+            assertThat(saved.getStatus()).isEqualTo(CheckInStatus.REGISTERED);
+            assertThat(saved.getCheckInTime()).isNull();
+            // Reuses the existing record, never looks up the student to build a new one.
+            verify(userProfileRepository, never()).findById(any());
+        }
+
+        @Test
         @DisplayName("should throw ResourceNotFoundException when class does not exist")
         void shouldThrow_whenClassNotFound() {
             when(scheduledClassRepository.findById(classId)).thenReturn(Optional.empty());

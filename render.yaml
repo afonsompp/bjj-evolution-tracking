@@ -22,3 +22,31 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+    # Observability env vars. Values are set in the Render dashboard (sync: false),
+    # not committed. VITE_* are baked into the bundle at build time; SENTRY_AUTH_TOKEN
+    # /ORG/PROJECT are build-only (drive source-map upload, never shipped). Leaving
+    # VITE_SENTRY_DSN unset makes the frontend SDK a no-op.
+    envVars:
+      - key: VITE_SENTRY_DSN
+        sync: false
+      - key: VITE_SENTRY_ENVIRONMENT
+        value: production
+      - key: VITE_SENTRY_TRACES_SAMPLE_RATE
+        value: "0.05"
+      - key: SENTRY_AUTH_TOKEN
+        sync: false
+      - key: SENTRY_ORG
+        sync: false
+      - key: SENTRY_PROJECT
+        sync: false
+
+# ---------------------------------------------------------------------------
+# Backend (Spring Boot) — managed via the Render dashboard, not this blueprint.
+# Set these env vars on that service for observability:
+#   SENTRY_DSN                  enable error tracking + tracing (unset = no-op)
+#   SENTRY_ENVIRONMENT          e.g. production
+#   SENTRY_TRACES_SAMPLE_RATE   performance sampling, e.g. 0.05 (raise to validate)
+#   SENTRY_RELEASE              optional, e.g. tracking@<commit>
+# Actuator: health is public at /actuator/health (point Render's health check
+# path here); /actuator/metrics and /actuator/prometheus require authentication.
+# Logs are JSON on stdout in every non-"local" profile (Render captures stdout).

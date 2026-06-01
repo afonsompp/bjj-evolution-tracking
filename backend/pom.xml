@@ -28,6 +28,8 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<sentry.version>8.39.1</sentry.version>
+		<logstash-logback-encoder.version>8.1</logstash-logback-encoder.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -41,6 +43,39 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+
+		<!-- Observability: health checks, metrics and a Prometheus scrape endpoint. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- Observability: error tracking + performance tracing via Sentry. The
+		     -boot-4 module is the autoconfiguration for Spring Boot 4 (pulls in
+		     sentry-spring-7); sentry-logback ships the appender that turns ERROR
+		     logs into Sentry events. Both no-op when SENTRY_DSN is unset. -->
+		<dependency>
+			<groupId>io.sentry</groupId>
+			<artifactId>sentry-spring-boot-4</artifactId>
+			<version>${sentry.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.sentry</groupId>
+			<artifactId>sentry-logback</artifactId>
+			<version>${sentry.version}</version>
+		</dependency>
+
+		<!-- Structured (JSON) logging for production so logs are queryable. -->
+		<dependency>
+			<groupId>net.logstash.logback</groupId>
+			<artifactId>logstash-logback-encoder</artifactId>
+			<version>${logstash-logback-encoder.version}</version>
 		</dependency>
 
 		<dependency>

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import * as Sentry from '@sentry/react'
 import { authClient } from '../lib/auth/authClient'
 
 const apiOrigin = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -12,6 +13,9 @@ apiClient.interceptors.request.use(async (config) => {
   if (session?.accessToken) {
     config.headers.Authorization = `Bearer ${session.accessToken}`
   }
+  // Correlation id echoed back by the backend as X-Trace-Id and used as its log
+  // traceId, so a frontend error can be traced to the exact server-side request.
+  config.headers['X-Request-Id'] = crypto.randomUUID().replace(/-/g, '')
   return config
 })
 
@@ -33,9 +37,18 @@ apiClient.interceptors.response.use(
       // Token missing/expired/invalid — clear the stale session and go to login.
       await authClient.signOut()
       await redirectTo('/login', { unless: '/login' })
-    } else if (status >= 500) {
-      // Server-side failure — show the global error page.
-      await redirectTo('/error')
+    } else if ((status >= 500 || status === undefined) && !axios.isCancel(error)) {
+      // Server-side failure or network error (no response). Skip canceled
+      // requests (e.g. React Query aborting on unmount) so they don't spam
+      // Sentry. Tag the request id so it links to the backend logs/trace.
+      Sentry.captureException(error, {
+        tags: { request_id: error.config?.headers?.['X-Request-Id'] },
+        extra: { url: error.config?.url, method: error.config?.method, status },
+      })
+      if (status >= 500) {
+        // Server-side failure — show the global error page.
+        await redirectTo('/error')
+      }
     }
     return Promise.reject(error)
   },

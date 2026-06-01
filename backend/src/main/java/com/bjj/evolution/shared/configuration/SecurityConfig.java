@@ -30,6 +30,11 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
+                        // Liveness/readiness probes are public (used by Render's
+                        // health checks). Every other actuator endpoint (metrics,
+                        // prometheus, info) requires authentication.
+                        .requestMatchers("/actuator/health/**", "/actuator/health").permitAll()
+                        .requestMatchers("/actuator/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->
@@ -46,7 +51,13 @@ public class SecurityConfig {
 
         configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        // X-Request-Id correlates frontend errors with backend logs; sentry-trace
+        // and baggage carry Sentry's distributed trace across the origin boundary.
+        // Without these the browser's CORS preflight would reject the requests.
+        configuration.setAllowedHeaders(List.of(
+                "Authorization", "Content-Type", "X-Request-Id", "sentry-trace", "baggage"));
+        // Let the SPA read back the resolved trace id from the response.
+        configuration.setExposedHeaders(List.of("X-Trace-Id"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

@@ -73,6 +73,40 @@ rate-limit:
       capacity: 60
       refill-per-minute: 60
 
-logging:
-  pattern:
-    console: "%d{HH:mm:ss.SSS} %highlight(%-5level) [%X{traceId:-no-trace}] [%15.15t] %-40.40logger{39} - %msg%n"
+# Logging patterns live in logback-spring.xml (pretty console for dev, JSON for
+# prod) so they can switch on the active Spring profile. The traceId in the
+# pattern is populated by RequestCorrelationFilter.
+
+# Observability — Spring Boot Actuator. Health is public (used by Render's
+# health checks / uptime probes); every other endpoint requires an authenticated
+# request (see SecurityConfig). /actuator/prometheus exposes Micrometer metrics.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  info:
+    env:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# Error tracking + performance tracing via Sentry. Leave SENTRY_DSN unset to
+# disable (the SDK becomes a no-op). traces-sample-rate controls performance
+# sampling — keep it low in prod to stay within quota; 1.0 is fine while testing.
+sentry:
+  dsn: ${SENTRY_DSN:}
+  environment: ${SENTRY_ENVIRONMENT:local}
+  release: ${SENTRY_RELEASE:tracking@${project.version:unknown}}
+  send-default-pii: false
+  traces-sample-rate: ${SENTRY_TRACES_SAMPLE_RATE:0.05}
+  # Logback integration: send ERROR logs as events, INFO+ as breadcrumbs.
+  logging:
+    minimum-event-level: error
+    minimum-breadcrumb-level: info

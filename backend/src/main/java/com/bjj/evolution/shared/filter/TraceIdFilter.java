@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.sentry.Sentry;
 import org.slf4j.MDC;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -40,6 +41,10 @@ public class TraceIdFilter extends OncePerRequestFilter {
 
         MDC.put(MDC_TRACE_ID_KEY, traceId);
         response.setHeader(TRACE_ID_HEADER, traceId);
+        // Tag Sentry events with the same id so a captured exception links back to
+        // these logs (and to the frontend, which sends X-Request-Id). No-op when
+        // SENTRY_DSN is unset.
+        Sentry.configureScope(scope -> scope.setTag("request_id", traceId));
 
         if (isPropagated) {
             log.debug("Propagating requestId={} from upstream (header {})", traceId, REQUEST_ID_HEADER);
@@ -86,8 +91,10 @@ public class TraceIdFilter extends OncePerRequestFilter {
             // Copy body back to the original response
             wrappedResponse.copyBodyToResponse();
 
-            // Clean up MDC
+            // Clean up MDC and the Sentry tag (threads are pooled, so leaving
+            // them set would bleed into the next request on this thread).
             MDC.remove(MDC_TRACE_ID_KEY);
+            Sentry.configureScope(scope -> scope.removeTag("request_id"));
         }
     }
 

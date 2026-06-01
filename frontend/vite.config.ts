@@ -2,9 +2,14 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd())
+  // Source maps are uploaded to Sentry (and then stripped from the deploy) only
+  // when a SENTRY_AUTH_TOKEN is present at build time. Without it the plugin is
+  // skipped, so local/PR builds are unaffected.
+  const sentryEnabled = Boolean(env.SENTRY_AUTH_TOKEN)
   // Dev-only: where `npm run dev` forwards /api. Override via VITE_DEV_PROXY_TARGET
   // (e.g. your LAN IP to test from a phone). Not used by the production build.
   const proxyTarget = env.VITE_DEV_PROXY_TARGET || 'http://localhost:8080'
@@ -59,7 +64,27 @@ export default defineConfig(({ mode }) => {
           cleanupOutdatedCaches: true,
         },
       }),
+      // Must come last so it sees the final bundle. Uploads source maps so Sentry
+      // stack traces are de-minified, then deletes them from the output.
+      ...(sentryEnabled
+        ? [
+            sentryVitePlugin({
+              org: env.SENTRY_ORG,
+              project: env.SENTRY_PROJECT,
+              authToken: env.SENTRY_AUTH_TOKEN,
+              release: env.VITE_SENTRY_RELEASE
+                ? { name: env.VITE_SENTRY_RELEASE }
+                : undefined,
+              sourcemaps: { filesToDeleteAfterUpload: ['./dist/**/*.map'] },
+            }),
+          ]
+        : []),
     ],
+    // Generate source maps so the Sentry plugin can upload them (and strip them
+    // from the deploy afterwards).
+    build: {
+      sourcemap: sentryEnabled,
+    },
     server: {
       port: 3000,
       proxy: {

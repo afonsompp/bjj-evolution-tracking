@@ -27,6 +27,14 @@ function formatDate(iso: string, locale: string): string {
   })
 }
 
+// Compact numeric date (e.g. "01/06/2026") used on narrow/mobile screens.
+function formatDateShort(iso: string, locale: string): string {
+  const d = new Date(iso)
+  return d.toLocaleDateString(locale === 'pt-BR' ? 'pt-BR' : 'en-US', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+  })
+}
+
 function formatTime(iso: string, locale: string): string {
   const d = new Date(iso)
   return d.toLocaleTimeString(locale === 'pt-BR' ? 'pt-BR' : 'en-US', {
@@ -104,73 +112,79 @@ function TrainingCard({
     <div className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] shadow-sm transition-colors">
       {/* ── Collapsed Header ── */}
       <div
-        className="flex cursor-pointer items-center justify-between px-5 py-4"
+        className="cursor-pointer px-5 py-4"
         onClick={() => setExpanded(!expanded)}
       >
-        {/* Left: date + type */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-[var(--text-primary)]">
+        {/* Row 1: date/time + actions */}
+        <div className="flex items-center justify-between gap-2">
+          {/* Left: date + time */}
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="whitespace-nowrap text-sm font-semibold text-[var(--text-primary)] sm:hidden">
+              {formatDateShort(training.sessionDate, locale)}
+            </span>
+            <span className="hidden whitespace-nowrap text-sm font-semibold text-[var(--text-primary)] sm:inline">
               {formatDate(training.sessionDate, locale)}
             </span>
-            <span className="text-xs text-[var(--text-subtle)]">
+            <span className="whitespace-nowrap text-xs text-[var(--text-subtle)]">
               {formatTime(training.sessionDate, locale)}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-full bg-[var(--bg-subtle)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-muted)]">
-              {typeLabel}
+
+          {/* Right: actions + expand */}
+          <div className="flex shrink-0 items-center gap-1">
+            {/* Duration */}
+            <span className="whitespace-nowrap text-xs text-[var(--text-subtle)]">
+              {training.durationMinutes}m
             </span>
-            {classLabel !== training.classType && (
-              <span className="rounded-full bg-[var(--bg-subtle)] px-2.5 py-0.5 text-xs text-[var(--text-subtle)]">
-                {classLabel}
-              </span>
-            )}
+
+            {/* Edit */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                navigate(`/training/${training.id}/edit`)
+              }}
+              className="rounded-lg p-2 text-[var(--text-subtle)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+              title={translate('history.edit')}
+            >
+              <PencilIcon />
+            </button>
+
+            {/* Delete */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete()
+              }}
+              disabled={isDeleting}
+              className="rounded-lg p-2 text-[var(--text-subtle)] hover:bg-[var(--bg-subtle)] hover:text-rose-500 disabled:opacity-40"
+              title={translate('history.delete')}
+            >
+              <TrashIcon />
+            </button>
+
+            {/* Expand toggle */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setExpanded(!expanded)
+              }}
+              className="rounded-lg p-1 text-[var(--text-subtle)] hover:text-[var(--text-primary)]"
+            >
+              {expanded ? <ChevronUpIcon size={18} /> : <ChevronDownIcon size={18} />}
+            </button>
           </div>
         </div>
 
-        {/* Right: actions + expand */}
-        <div className="flex items-center gap-2">
-          {/* Duration */}
-          <span className="text-xs text-[var(--text-subtle)]">
-            {training.durationMinutes}m
+        {/* Row 2: type / class badges */}
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-[var(--bg-subtle)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-muted)]">
+            {typeLabel}
           </span>
-
-          {/* Edit */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              navigate(`/training/${training.id}/edit`)
-            }}
-            className="rounded-lg p-2 text-[var(--text-subtle)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
-            title={translate('history.edit')}
-          >
-            <PencilIcon />
-          </button>
-
-          {/* Delete */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete()
-            }}
-            disabled={isDeleting}
-            className="rounded-lg p-2 text-[var(--text-subtle)] hover:bg-[var(--bg-subtle)] hover:text-rose-500 disabled:opacity-40"
-            title={translate('history.delete')}
-          >
-            <TrashIcon />
-          </button>
-
-          {/* Expand toggle */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setExpanded(!expanded)
-            }}
-            className="rounded-lg p-1 text-[var(--text-subtle)] hover:text-[var(--text-primary)]"
-          >
-            {expanded ? <ChevronUpIcon size={18} /> : <ChevronDownIcon size={18} />}
-          </button>
+          {classLabel !== training.classType && (
+            <span className="rounded-full bg-[var(--bg-subtle)] px-2.5 py-0.5 text-xs text-[var(--text-subtle)]">
+              {classLabel}
+            </span>
+          )}
         </div>
       </div>
 

@@ -191,7 +191,7 @@ class ClassAttendanceControllerTest {
 
         mockMvc.perform(patch("/api/v1/academies/{aid}/classes/{cid}/attendances/{sid}/confirm", academyId, classId, studentId)
                         .header("Authorization", "Bearer " + TOKEN))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.message").value("Cannot confirm a canceled check-in."));
 
         verify(classAttendanceService).confirm(academyId, classId, studentId);

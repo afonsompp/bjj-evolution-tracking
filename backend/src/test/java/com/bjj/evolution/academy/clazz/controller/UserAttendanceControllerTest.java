@@ -3,7 +3,6 @@ package com.bjj.evolution.academy.clazz.controller;
 import com.bjj.evolution.academy.clazz.domain.CheckInStatus;
 import com.bjj.evolution.academy.clazz.domain.ClassStatus;
 import com.bjj.evolution.academy.clazz.service.ClassAttendanceService;
-import com.bjj.evolution.academy.clazz.domain.dto.CheckInResponse;
 import com.bjj.evolution.academy.clazz.domain.dto.ScheduledClassResponse;
 import com.bjj.evolution.academy.member.domain.dto.AcademyMenberClassViewResponse;
 import com.bjj.evolution.catalog.domain.ClassType;
@@ -28,8 +27,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 

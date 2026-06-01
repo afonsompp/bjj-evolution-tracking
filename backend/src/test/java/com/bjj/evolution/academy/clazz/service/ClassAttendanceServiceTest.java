@@ -55,13 +55,6 @@ class ClassAttendanceServiceTest {
     private Long classId;
     private UUID studentId;
     private UUID instructorId;
-    private Academy academy;
-    private ScheduledClass publishedClass;
-    private ScheduledClass draftClass;
-    private ScheduledClass completedClass;
-    private ScheduledClass canceledClass;
-    private UserProfile student;
-    private ClassAttendance sampleAttendance;
 
     @Captor
     private ArgumentCaptor<ClassAttendance> attendanceCaptor;
@@ -73,7 +66,6 @@ class ClassAttendanceServiceTest {
         studentId = UUID.randomUUID();
         instructorId = UUID.randomUUID();
 
-        academy = new Academy("Gracie Barra", "123 Main St");
         // Set ID via reflection since Academy uses generated UUID
         // Use setId if available, otherwise use reflection
         // Academy has no setId — it's generated. Create with a known ID by setting the field.

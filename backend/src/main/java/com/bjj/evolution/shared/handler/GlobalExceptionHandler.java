@@ -42,7 +42,7 @@ public class GlobalExceptionHandler {
     // 422 — violated business rule (invalid state transition, etc.)
     @ExceptionHandler(BusinessRuleException.class)
     public ResponseEntity<ApiError> handleBusinessRule(BusinessRuleException ex) {
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
                 .body(ApiError.of(422, "Unprocessable Entity", ex.getMessage()));
     }
 

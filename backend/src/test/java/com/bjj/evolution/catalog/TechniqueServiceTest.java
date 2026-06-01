@@ -33,7 +33,6 @@ class TechniqueServiceTest {
     void create_shouldSaveAndReturnTechniqueResponse() {
         // Arrange
         TechniqueRequest request = new TechniqueRequest("Armbar", "Juji Gatame", null, null);
-        Technique techniqueToSave = request.toEntity();
         Technique savedTechnique = request.toEntity(1L);
 
         when(techniqueRepository.save(any(Technique.class))).thenReturn(savedTechnique);

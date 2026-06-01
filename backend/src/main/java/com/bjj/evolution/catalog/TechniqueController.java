@@ -3,8 +3,6 @@ package com.bjj.evolution.catalog;
 import com.bjj.evolution.catalog.domain.dto.TechniqueRequest;
 import com.bjj.evolution.catalog.domain.dto.TechniqueResponse;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -14,13 +12,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/techniques")
 public class TechniqueController {
 
-    private static final Logger log = LoggerFactory.getLogger(TechniqueController.class);
 
     private final TechniqueService service;
 

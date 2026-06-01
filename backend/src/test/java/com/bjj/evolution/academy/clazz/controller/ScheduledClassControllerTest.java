@@ -295,7 +295,7 @@ class ScheduledClassControllerTest {
 
         mockMvc.perform(patch("/api/v1/academies/{academyId}/classes/{classId}/cancel", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.message").value("Cannot cancel a class that is already completed."));
     }
 
@@ -404,7 +404,7 @@ class ScheduledClassControllerTest {
 
         mockMvc.perform(get("/api/v1/academies/{academyId}/classes/{classId}", academyId, classId)
                         .header("Authorization", "Bearer " + TOKEN))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.message").value("Class does not belong to the given academy."));
 
         verify(scheduledClassService).findById(academyId, classId);

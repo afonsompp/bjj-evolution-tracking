@@ -107,6 +107,11 @@ export function TechniquePicker({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={translate('form.searchTechniques')}
+            inputMode="search"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
             className="flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-subtle)]"
           />
           {search && (
@@ -158,11 +163,14 @@ export function TechniquePicker({
                   </div>
                   <div className="ml-3 space-y-0.5 border-l border-[var(--border-row)] pl-2">
                     {items.map((t) => (
-                      <label
+                      <button
                         key={t.id}
-                        className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]"
+                        type="button"
+                        role="checkbox"
+                        aria-checked={selectedIds.includes(t.id)}
+                        onClick={() => toggle(t.id)}
+                        className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]"
                       >
-                        <input type="checkbox" checked={selectedIds.includes(t.id)} onChange={() => toggle(t.id)} className="sr-only" />
                         <span
                           className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-xs transition-colors ${
                             selectedIds.includes(t.id)
@@ -173,7 +181,7 @@ export function TechniquePicker({
                           {selectedIds.includes(t.id) && <CheckIcon />}
                         </span>
                         {t.name}
-                      </label>
+                      </button>
                     ))}
                   </div>
                 </div>

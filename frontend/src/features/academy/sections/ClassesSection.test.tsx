@@ -83,6 +83,11 @@ describe('ClassesSection', () => {
     expect(screen.getByText('No templates yet')).toBeInTheDocument()
   })
 
+  it('opens directly on the templates view when ?sub=templates is set', () => {
+    renderWithProviders(<ClassesSection academyId="a1" />, { route: '/?sub=templates' })
+    expect(screen.getByText('No templates yet')).toBeInTheDocument()
+  })
+
   it('generates classes with the chosen draft status', async () => {
     const user = userEvent.setup()
     templatesState.value = {

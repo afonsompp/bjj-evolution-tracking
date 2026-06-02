@@ -3,8 +3,11 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
-const { signUp } = vi.hoisted(() => ({ signUp: vi.fn() }))
-vi.mock('../../lib/auth/authClient', () => ({ authClient: { signUp } }))
+const { signUp, resendConfirmation } = vi.hoisted(() => ({
+  signUp: vi.fn(),
+  resendConfirmation: vi.fn(),
+}))
+vi.mock('../../lib/auth/authClient', () => ({ authClient: { signUp, resendConfirmation } }))
 
 import RegisterForm from './RegisterForm'
 
@@ -52,6 +55,22 @@ describe('RegisterForm', () => {
 
     expect(signUp).toHaveBeenCalledWith('me@example.com', 'password1')
     expect(await screen.findByText('Verification email sent!')).toBeInTheDocument()
+  })
+
+  it('resends the confirmation email from the verification screen', async () => {
+    const user = userEvent.setup()
+    signUp.mockResolvedValue({ error: null })
+    resendConfirmation.mockResolvedValue({ error: null })
+    renderWithProviders(<RegisterForm />)
+
+    await fill(user)
+    await user.click(screen.getByRole('button', { name: 'Create Account' }))
+    await screen.findByText('Verification email sent!')
+
+    await user.click(screen.getByRole('button', { name: 'Resend email' }))
+
+    expect(resendConfirmation).toHaveBeenCalledWith('me@example.com')
+    expect(await screen.findByText('Email resent.')).toBeInTheDocument()
   })
 
   it('surfaces a sign-up error and keeps the form visible', async () => {

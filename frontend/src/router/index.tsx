@@ -4,6 +4,9 @@ import AuthLayout from '../layouts/AuthLayout'
 import AppLayout from '../layouts/AppLayout'
 import LoginPage from '../pages/LoginPage'
 import RegisterPage from '../pages/RegisterPage'
+import ForgotPasswordPage from '../pages/ForgotPasswordPage'
+import ResetPasswordPage from '../pages/ResetPasswordPage'
+import AuthCallbackPage from '../pages/AuthCallbackPage'
 import OnboardingPage from '../pages/OnboardingPage'
 import DashboardPage from '../pages/DashboardPage'
 import ProfilePage from '../pages/ProfilePage'
@@ -36,6 +39,9 @@ export const router = createBrowserRouter([
     children: [
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
+      { path: '/forgot-password', element: <ForgotPasswordPage /> },
+      { path: '/reset-password', element: <ResetPasswordPage /> },
+      { path: '/auth/callback', element: <AuthCallbackPage /> },
     ],
   },
   {

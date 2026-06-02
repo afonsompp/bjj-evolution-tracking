@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from '../../lib/i18n/I18nContext'
 import { authClient } from '../../lib/auth/authClient'
 
 export default function RegisterForm() {
+  const { translate } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -12,9 +14,9 @@ export default function RegisterForm() {
   const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle')
 
   const validate = () => {
-    if (!email.includes('@')) return 'Please enter a valid email.'
-    if (password.length < 8) return 'Password must be at least 8 characters.'
-    if (password !== confirmPassword) return 'Passwords do not match.'
+    if (!email.includes('@')) return translate('auth.invalidEmail')
+    if (password.length < 8) return translate('auth.passwordTooShort')
+    if (password !== confirmPassword) return translate('auth.passwordsMismatch')
     return null
   }
 
@@ -51,12 +53,12 @@ export default function RegisterForm() {
   if (verificationSent) {
     return (
       <div className="text-center text-sm text-[var(--text-muted)]">
-        <p className="mb-2 text-[var(--text-primary)]">Verification email sent!</p>
-        <p>Check your inbox and click the link to confirm your account, then log in.</p>
+        <p className="mb-2 text-[var(--text-primary)]">{translate('auth.verificationSent')}</p>
+        <p>{translate('auth.verificationSentHint')}</p>
         <p className="mt-4 text-xs text-[var(--text-subtle)]">
-          Didn't get it?{' '}
+          {translate('auth.didntGetIt')}{' '}
           {resendState === 'sent' ? (
-            <span className="text-[var(--text-primary)]">Email resent.</span>
+            <span className="text-[var(--text-primary)]">{translate('auth.emailResent')}</span>
           ) : (
             <button
               type="button"
@@ -64,7 +66,7 @@ export default function RegisterForm() {
               disabled={resendState === 'sending'}
               className="text-[var(--text-primary)] underline hover:opacity-80 disabled:opacity-50"
             >
-              {resendState === 'sending' ? 'Resending…' : 'Resend email'}
+              {resendState === 'sending' ? translate('auth.resending') : translate('auth.resendEmail')}
             </button>
           )}
         </p>
@@ -76,7 +78,7 @@ export default function RegisterForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="email" className="block text-sm text-[var(--text-muted)]">Email</label>
+        <label htmlFor="email" className="block text-sm text-[var(--text-muted)]">{translate('auth.email')}</label>
         <input
           id="email"
           type="email"
@@ -84,12 +86,12 @@ export default function RegisterForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="mt-1 w-full rounded border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-subtle)] focus:border-[var(--border-card-hover)]"
-          placeholder="you@example.com"
+          placeholder={translate('auth.emailPlaceholder')}
         />
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm text-[var(--text-muted)]">Password</label>
+        <label htmlFor="password" className="block text-sm text-[var(--text-muted)]">{translate('auth.password')}</label>
         <input
           id="password"
           type="password"
@@ -101,7 +103,7 @@ export default function RegisterForm() {
       </div>
 
       <div>
-        <label htmlFor="confirmPassword" className="block text-sm text-[var(--text-muted)]">Confirm Password</label>
+        <label htmlFor="confirmPassword" className="block text-sm text-[var(--text-muted)]">{translate('auth.confirmPassword')}</label>
         <input
           id="confirmPassword"
           type="password"
@@ -119,12 +121,12 @@ export default function RegisterForm() {
         disabled={loading}
         className="w-full rounded bg-[var(--text-primary)] px-3 py-2 text-sm font-medium text-[var(--bg-page)] hover:opacity-90 disabled:opacity-50"
       >
-        {loading ? 'Creating account…' : 'Create Account'}
+        {loading ? translate('auth.creatingAccount') : translate('auth.createAccount')}
       </button>
 
       <p className="text-center text-xs text-[var(--text-subtle)]">
-        Already have an account?{' '}
-        <Link to="/login" className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">Sign In</Link>
+        {translate('auth.haveAccount')}{' '}
+        <Link to="/login" className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">{translate('auth.signIn')}</Link>
       </p>
     </form>
   )

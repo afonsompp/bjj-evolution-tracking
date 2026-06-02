@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from '../../lib/i18n/I18nContext'
 import { authClient } from '../../lib/auth/authClient'
 
 export default function LoginForm() {
   const navigate = useNavigate()
+  const { translate } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -22,9 +24,9 @@ export default function LoginForm() {
 
     if (signInError) {
       if (signInError.code === 'invalid_credentials') {
-        setError('Invalid email or password.')
+        setError(translate('auth.invalidCredentials'))
       } else if (signInError.code === 'email_not_confirmed') {
-        setError('Please confirm your email before logging in.')
+        setError(translate('auth.emailNotConfirmed'))
         setNeedsConfirmation(true)
       } else {
         setError(signInError.message)
@@ -50,7 +52,7 @@ export default function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="email" className="block text-sm text-[var(--text-muted)]">Email</label>
+        <label htmlFor="email" className="block text-sm text-[var(--text-muted)]">{translate('auth.email')}</label>
         <input
           id="email"
           type="email"
@@ -58,12 +60,12 @@ export default function LoginForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="mt-1 w-full rounded border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-subtle)] focus:border-[var(--border-card-hover)]"
-          placeholder="you@example.com"
+          placeholder={translate('auth.emailPlaceholder')}
         />
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm text-[var(--text-muted)]">Password</label>
+        <label htmlFor="password" className="block text-sm text-[var(--text-muted)]">{translate('auth.password')}</label>
         <input
           id="password"
           type="password"
@@ -74,7 +76,7 @@ export default function LoginForm() {
         />
         <div className="mt-1">
           <Link to="/forgot-password" className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-            Forgot password?
+            {translate('auth.forgotPassword')}
           </Link>
         </div>
       </div>
@@ -84,7 +86,7 @@ export default function LoginForm() {
       {needsConfirmation && (
         <p className="text-xs text-[var(--text-muted)]">
           {resendState === 'sent' ? (
-            <span className="text-[var(--text-primary)]">Confirmation email resent.</span>
+            <span className="text-[var(--text-primary)]">{translate('auth.confirmationResent')}</span>
           ) : (
             <button
               type="button"
@@ -92,7 +94,7 @@ export default function LoginForm() {
               disabled={resendState === 'sending'}
               className="text-[var(--text-primary)] underline hover:opacity-80 disabled:opacity-50"
             >
-              {resendState === 'sending' ? 'Resending…' : 'Resend confirmation email'}
+              {resendState === 'sending' ? translate('auth.resending') : translate('auth.resendConfirmation')}
             </button>
           )}
         </p>
@@ -103,13 +105,13 @@ export default function LoginForm() {
         disabled={loading}
         className="w-full rounded bg-[var(--text-primary)] px-3 py-2 text-sm font-medium text-[var(--bg-page)] hover:opacity-90 disabled:opacity-50"
       >
-        {loading ? 'Signing in…' : 'Sign In'}
+        {loading ? translate('auth.signingIn') : translate('auth.signIn')}
       </button>
 
       <p className="text-center text-xs text-[var(--text-subtle)]">
-        Don't have an account?{' '}
+        {translate('auth.noAccount')}{' '}
         <Link to="/register" className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-          Register
+          {translate('auth.register')}
         </Link>
       </p>
     </form>

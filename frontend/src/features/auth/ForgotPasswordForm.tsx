@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from '../../lib/i18n/I18nContext'
 import { authClient } from '../../lib/auth/authClient'
 
 export default function ForgotPasswordForm() {
+  const { translate } = useTranslation()
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -11,7 +13,7 @@ export default function ForgotPasswordForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email.includes('@')) {
-      setError('Please enter a valid email.')
+      setError(translate('auth.invalidEmail'))
       return
     }
 
@@ -32,11 +34,11 @@ export default function ForgotPasswordForm() {
   if (sent) {
     return (
       <div className="text-center text-sm text-[var(--text-muted)]">
-        <p className="mb-2 text-[var(--text-primary)]">Check your email</p>
-        <p>If an account exists for that address, we sent a link to reset your password.</p>
+        <p className="mb-2 text-[var(--text-primary)]">{translate('auth.checkEmail')}</p>
+        <p>{translate('auth.resetSentHint')}</p>
         <p className="mt-4 text-xs text-[var(--text-subtle)]">
           <Link to="/login" className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-            Back to sign in
+            {translate('auth.backToSignIn')}
           </Link>
         </p>
       </div>
@@ -46,11 +48,11 @@ export default function ForgotPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <p className="text-sm text-[var(--text-muted)]">
-        Enter your email and we'll send you a link to reset your password.
+        {translate('auth.forgotHint')}
       </p>
 
       <div>
-        <label htmlFor="email" className="block text-sm text-[var(--text-muted)]">Email</label>
+        <label htmlFor="email" className="block text-sm text-[var(--text-muted)]">{translate('auth.email')}</label>
         <input
           id="email"
           type="email"
@@ -58,7 +60,7 @@ export default function ForgotPasswordForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="mt-1 w-full rounded border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-subtle)] focus:border-[var(--border-card-hover)]"
-          placeholder="you@example.com"
+          placeholder={translate('auth.emailPlaceholder')}
         />
       </div>
 
@@ -69,12 +71,12 @@ export default function ForgotPasswordForm() {
         disabled={loading}
         className="w-full rounded bg-[var(--text-primary)] px-3 py-2 text-sm font-medium text-[var(--bg-page)] hover:opacity-90 disabled:opacity-50"
       >
-        {loading ? 'Sending…' : 'Send reset link'}
+        {loading ? translate('auth.sending') : translate('auth.sendResetLink')}
       </button>
 
       <p className="text-center text-xs text-[var(--text-subtle)]">
-        Remembered it?{' '}
-        <Link to="/login" className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">Sign In</Link>
+        {translate('auth.rememberedIt')}{' '}
+        <Link to="/login" className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">{translate('auth.signIn')}</Link>
       </p>
     </form>
   )

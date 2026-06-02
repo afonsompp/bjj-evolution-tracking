@@ -8,7 +8,7 @@ export default function OnboardingPage() {
   const { translate } = useTranslation()
   const { data: profile, isLoading } = useProfile()
 
-  if (isLoading) return <p className="text-sm text-[var(--text-muted)]">Loading…</p>
+  if (isLoading) return <p className="text-sm text-[var(--text-muted)]">{translate('auth.loading')}</p>
 
   if (profile) {
     navigate('/dashboard', { replace: true })

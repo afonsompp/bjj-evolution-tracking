@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from '../../lib/i18n/I18nContext'
 import { authClient } from '../../lib/auth/authClient'
 import { supabase } from '../../lib/supabase'
 import { readAuthUrlError } from '../../lib/auth/authUrlError'
@@ -8,6 +9,7 @@ type Status = 'verifying' | 'ready' | 'error'
 
 export default function ResetPasswordForm() {
   const navigate = useNavigate()
+  const { translate } = useTranslation()
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -37,7 +39,7 @@ export default function ResetPasswordForm() {
         return
       }
       if (Date.now() > deadline) {
-        setState({ status: 'error', message: 'This reset link is invalid or has expired.' })
+        setState({ status: 'error', message: translate('auth.resetLinkInvalid') })
         return
       }
       setTimeout(check, 250)
@@ -47,16 +49,16 @@ export default function ResetPasswordForm() {
     return () => {
       active = false
     }
-  }, [])
+  }, [translate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.')
+      setError(translate('auth.passwordTooShort'))
       return
     }
     if (password !== confirmPassword) {
-      setError('Passwords do not match.')
+      setError(translate('auth.passwordsMismatch'))
       return
     }
 
@@ -76,7 +78,7 @@ export default function ResetPasswordForm() {
   }
 
   if (status === 'verifying') {
-    return <p className="text-center text-sm text-[var(--text-muted)]">Verifying your reset link…</p>
+    return <p className="text-center text-sm text-[var(--text-muted)]">{translate('auth.verifyingResetLink')}</p>
   }
 
   if (status === 'error') {
@@ -85,7 +87,7 @@ export default function ResetPasswordForm() {
         <p className="mb-2 text-red-400">{message}</p>
         <p>
           <Link to="/forgot-password" className="text-[var(--text-primary)] hover:opacity-80">
-            Request a new link
+            {translate('auth.requestNewLink')}
           </Link>
         </p>
       </div>
@@ -94,10 +96,10 @@ export default function ResetPasswordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <p className="text-sm text-[var(--text-muted)]">Choose a new password for your account.</p>
+      <p className="text-sm text-[var(--text-muted)]">{translate('auth.chooseNewPassword')}</p>
 
       <div>
-        <label htmlFor="password" className="block text-sm text-[var(--text-muted)]">New Password</label>
+        <label htmlFor="password" className="block text-sm text-[var(--text-muted)]">{translate('auth.newPassword')}</label>
         <input
           id="password"
           type="password"
@@ -109,7 +111,7 @@ export default function ResetPasswordForm() {
       </div>
 
       <div>
-        <label htmlFor="confirmPassword" className="block text-sm text-[var(--text-muted)]">Confirm New Password</label>
+        <label htmlFor="confirmPassword" className="block text-sm text-[var(--text-muted)]">{translate('auth.confirmNewPassword')}</label>
         <input
           id="confirmPassword"
           type="password"
@@ -127,7 +129,7 @@ export default function ResetPasswordForm() {
         disabled={loading}
         className="w-full rounded bg-[var(--text-primary)] px-3 py-2 text-sm font-medium text-[var(--bg-page)] hover:opacity-90 disabled:opacity-50"
       >
-        {loading ? 'Updating…' : 'Update password'}
+        {loading ? translate('auth.updating') : translate('auth.updatePassword')}
       </button>
     </form>
   )

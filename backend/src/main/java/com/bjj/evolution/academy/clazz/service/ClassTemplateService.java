@@ -171,6 +171,11 @@ public class ClassTemplateService {
             throw new BusinessRuleException("End date must be after start date.");
         }
 
+        ClassStatus status = request.status() != null ? request.status() : ClassStatus.PUBLISHED;
+        if (status != ClassStatus.DRAFT && status != ClassStatus.PUBLISHED) {
+            throw new BusinessRuleException("Generated classes can only be DRAFT or PUBLISHED.");
+        }
+
         List<ScheduledClass> toCreate = new ArrayList<>();
         LocalDate cursor = request.startDate();
 
@@ -186,7 +191,7 @@ public class ClassTemplateService {
                             .classType(template.getClassType())
                             .trainingType(template.getTrainingType())
                             .scheduledTechniques(new ArrayList<>(template.getDefaultTechniques()))
-                            .status(ClassStatus.PUBLISHED)
+                            .status(status)
                             .template(template)
                             .build();
                     toCreate.add(sc);
@@ -196,8 +201,8 @@ public class ClassTemplateService {
         }
 
         List<ScheduledClass> saved = scheduledClassRepository.saveAll(toCreate);
-        log.info("Generated {} classes from template id={} academy={} range=[{} to {}]",
-                saved.size(), templateId, academyId, request.startDate(), request.endDate());
+        log.info("Generated {} classes from template id={} academy={} range=[{} to {}] status={}",
+                saved.size(), templateId, academyId, request.startDate(), request.endDate(), status);
         return saved.stream().map(ScheduledClassResponse::fromEntity).toList();
     }
 

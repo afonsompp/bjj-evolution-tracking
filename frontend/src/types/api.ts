@@ -283,6 +283,7 @@ export interface ClassRecurrenceRule {
 export interface GenerateClassesRequest {
   startDate: string  // "YYYY-MM-DD"
   endDate: string
+  status?: Extract<ClassStatus, 'DRAFT' | 'PUBLISHED'>
 }
 
 export interface ClassTemplateRequest {

@@ -4,11 +4,15 @@ import com.bjj.evolution.academy.AcademyRepository;
 import com.bjj.evolution.academy.clazz.ClassTemplateRepository;
 import com.bjj.evolution.academy.clazz.ScheduledClassRepository;
 import com.bjj.evolution.academy.clazz.domain.ClassRecurrenceRule;
+import com.bjj.evolution.academy.clazz.domain.ClassStatus;
 import com.bjj.evolution.academy.clazz.domain.ClassTemplate;
+import com.bjj.evolution.academy.clazz.domain.ScheduledClass;
 import com.bjj.evolution.academy.clazz.domain.dto.ClassRecurrenceRequest;
 import com.bjj.evolution.academy.clazz.domain.dto.ClassTemplateRequest;
 import com.bjj.evolution.academy.clazz.domain.dto.ClassTemplateResponse;
+import com.bjj.evolution.academy.clazz.domain.dto.GenerateClassesRequest;
 import com.bjj.evolution.academy.domain.Academy;
+import com.bjj.evolution.shared.exception.BusinessRuleException;
 import com.bjj.evolution.catalog.TechniqueRepository;
 import com.bjj.evolution.catalog.domain.ClassType;
 import com.bjj.evolution.catalog.domain.Technique;
@@ -177,5 +181,61 @@ class ClassTemplateServiceTest {
         assertEquals(1, rules.size());
         assertEquals(DayOfWeek.WEDNESDAY, rules.get(0).getDayOfWeek());
         assertEquals(LocalTime.of(18, 30), rules.get(0).getStartTime());
+    }
+
+    // -------------------------------------------------------
+    // generateClasses
+    // -------------------------------------------------------
+
+    @Test
+    @DisplayName("generateClasses should default to PUBLISHED when status is omitted")
+    @SuppressWarnings("unchecked")
+    void generateClasses_whenStatusOmitted_shouldPublish() {
+        when(repository.findById(templateId)).thenReturn(Optional.of(existingTemplate));
+        when(scheduledClassRepository.saveAll(anyList())).thenReturn(List.of());
+
+        // 2026-06-01 is a Monday, matching the template's recurrence rule.
+        GenerateClassesRequest request = new GenerateClassesRequest(
+                LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 1), null);
+
+        service.generateClasses(academyId, templateId, request);
+
+        ArgumentCaptor<List<ScheduledClass>> captor = ArgumentCaptor.forClass(List.class);
+        verify(scheduledClassRepository).saveAll(captor.capture());
+        List<ScheduledClass> generated = captor.getValue();
+
+        assertEquals(1, generated.size());
+        assertEquals(ClassStatus.PUBLISHED, generated.get(0).getStatus());
+    }
+
+    @Test
+    @DisplayName("generateClasses should honor an explicit DRAFT status")
+    @SuppressWarnings("unchecked")
+    void generateClasses_whenDraftRequested_shouldCreateDrafts() {
+        when(repository.findById(templateId)).thenReturn(Optional.of(existingTemplate));
+        when(scheduledClassRepository.saveAll(anyList())).thenReturn(List.of());
+
+        GenerateClassesRequest request = new GenerateClassesRequest(
+                LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 1), ClassStatus.DRAFT);
+
+        service.generateClasses(academyId, templateId, request);
+
+        ArgumentCaptor<List<ScheduledClass>> captor = ArgumentCaptor.forClass(List.class);
+        verify(scheduledClassRepository).saveAll(captor.capture());
+
+        assertEquals(ClassStatus.DRAFT, captor.getValue().get(0).getStatus());
+    }
+
+    @Test
+    @DisplayName("generateClasses should reject a non-publishable status")
+    void generateClasses_whenInvalidStatus_shouldThrow() {
+        when(repository.findById(templateId)).thenReturn(Optional.of(existingTemplate));
+
+        GenerateClassesRequest request = new GenerateClassesRequest(
+                LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 7), ClassStatus.COMPLETED);
+
+        assertThrows(BusinessRuleException.class,
+                () -> service.generateClasses(academyId, templateId, request));
+        verify(scheduledClassRepository, never()).saveAll(anyList());
     }
 }

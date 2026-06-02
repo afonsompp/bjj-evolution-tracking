@@ -5,7 +5,11 @@ import { renderWithProviders } from '../../test/renderWithProviders'
 
 const { mutate } = vi.hoisted(() => ({ mutate: vi.fn() }))
 const mutationState = vi.hoisted(() => ({ value: { mutate, isPending: false, isError: false, error: null as unknown } }))
-vi.mock('./useProfile', () => ({ useUpsertProfile: () => mutationState.value }))
+const { uploadMutateAsync } = vi.hoisted(() => ({ uploadMutateAsync: vi.fn() }))
+vi.mock('./useProfile', () => ({
+  useUpsertProfile: () => mutationState.value,
+  useUploadPhoto: () => ({ mutateAsync: uploadMutateAsync, isPending: false }),
+}))
 
 const { navigate } = vi.hoisted(() => ({ navigate: vi.fn() }))
 vi.mock('react-router-dom', async (orig) => ({
@@ -17,6 +21,9 @@ import ProfileForm from './ProfileForm'
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // jsdom doesn't implement object URLs used by the photo preview.
+  URL.createObjectURL = vi.fn(() => 'blob:preview')
+  URL.revokeObjectURL = vi.fn()
   mutationState.value = { mutate, isPending: false, isError: false, error: null }
 })
 
@@ -51,6 +58,23 @@ describe('ProfileForm', () => {
       belt: 'BLUE',
       beltStripe: 2,
     })
+    expect(navigate).toHaveBeenCalledWith('/dashboard')
+  })
+
+  it('uploads the chosen photo after creating the profile, then navigates', async () => {
+    const user = userEvent.setup()
+    mutate.mockImplementation((_body, opts) => opts?.onSuccess?.())
+    uploadMutateAsync.mockResolvedValue(undefined)
+    renderWithProviders(<ProfileForm />)
+
+    const file = new File(['x'], 'avatar.png', { type: 'image/png' })
+    await user.upload(screen.getByTestId('onboarding-photo-input'), file)
+
+    await user.type(screen.getByLabelText('Name'), 'Afonso')
+    await user.type(screen.getByLabelText('Nickname'), 'fonso')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(uploadMutateAsync).toHaveBeenCalledWith(file))
     expect(navigate).toHaveBeenCalledWith('/dashboard')
   })
 

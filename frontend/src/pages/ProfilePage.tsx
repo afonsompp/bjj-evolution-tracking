@@ -4,41 +4,12 @@ import { z } from 'zod'
 import { useEffect, useRef, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '../lib/i18n/I18nContext'
+import { BELT_GROUPS, beltKey } from '../lib/i18n/belts'
 import type { ProfileRequest, Belt } from '../types/api'
 import { useProfile, useUpsertProfile, useUploadPhoto, useRemovePhoto } from '../features/profile/useProfile'
 import { GraduationHistorySection } from '../features/academy/sections/GraduationHistorySection'
 import { AttendanceHistorySection } from '../features/academy/sections/AttendanceHistorySection'
 import { UserIcon, LoaderIcon, TrashIcon } from '../assets/icons'
-
-const BELTS: { group: string; values: { label: string; value: Belt }[] }[] = [
-  {
-    group: 'Adulto',
-    values: [
-      { label: 'White', value: 'WHITE' },
-      { label: 'Blue', value: 'BLUE' },
-      { label: 'Purple', value: 'PURPLE' },
-      { label: 'Brown', value: 'BROWN' },
-      { label: 'Black', value: 'BLACK' },
-    ],
-  },
-  {
-    group: 'Infanto-Juvenil',
-    values: [
-      { label: 'Gray/White', value: 'GRAY_WHITE' },
-      { label: 'Gray', value: 'GRAY' },
-      { label: 'Gray/Black', value: 'GRAY_BLACK' },
-      { label: 'Yellow/White', value: 'YELLOW_WHITE' },
-      { label: 'Yellow', value: 'YELLOW' },
-      { label: 'Yellow/Black', value: 'YELLOW_BLACK' },
-      { label: 'Orange/White', value: 'ORANGE_WHITE' },
-      { label: 'Orange', value: 'ORANGE' },
-      { label: 'Orange/Black', value: 'ORANGE_BLACK' },
-      { label: 'Green/White', value: 'GREEN_WHITE' },
-      { label: 'Green', value: 'GREEN' },
-      { label: 'Green/Black', value: 'GREEN_BLACK' },
-    ],
-  },
-]
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -215,10 +186,10 @@ export default function ProfilePage() {
                 className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
               >
                 <option value="">—</option>
-                {BELTS.map(group => (
-                  <optgroup key={group.group} label={group.group}>
-                    {group.values.map(b => (
-                      <option key={b.value} value={b.value}>{b.label}</option>
+                {BELT_GROUPS.map(group => (
+                  <optgroup key={group.groupKey} label={translate(group.groupKey)}>
+                    {group.belts.map(b => (
+                      <option key={b} value={b}>{translate(beltKey(b))}</option>
                     ))}
                   </optgroup>
                 ))}

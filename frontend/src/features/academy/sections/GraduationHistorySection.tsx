@@ -5,6 +5,7 @@ import {
   useMyAllGraduations,
 } from '../hooks/useGraduationHistory'
 import { useTranslation } from '../../../lib/i18n/I18nContext'
+import { beltKey } from '../../../lib/i18n/belts'
 import { TrophyIcon, LoaderIcon, ChevronLeftIcon, ChevronRightIcon } from '../../../assets/icons'
 import type { Belt } from '../../../types/api'
 
@@ -26,20 +27,14 @@ function beltBadgeClass(belt: Belt | undefined): string {
   }
 }
 
-const BELT_LABELS: Partial<Record<Belt, string>> = {
-  WHITE: 'White', BLUE: 'Blue', PURPLE: 'Purple', BROWN: 'Brown', BLACK: 'Black',
-  GRAY_WHITE: 'Gray/White', GRAY: 'Gray', GRAY_BLACK: 'Gray/Black',
-  YELLOW_WHITE: 'Yellow/White', YELLOW: 'Yellow', YELLOW_BLACK: 'Yellow/Black',
-  ORANGE_WHITE: 'Orange/White', ORANGE: 'Orange', ORANGE_BLACK: 'Orange/Black',
-  GREEN_WHITE: 'Green/White', GREEN: 'Green', GREEN_BLACK: 'Green/Black',
-}
+type Translate = (key: string, params?: Record<string, string | number>) => string
 
-function beltLabel(belt: Belt | undefined): string {
-  return (belt && BELT_LABELS[belt]) ?? belt ?? '—'
-}
-
-function beltDisplay(belt: Belt | undefined, stripe: number | undefined): string {
-  const label = beltLabel(belt)
+function beltDisplay(
+  translate: Translate,
+  belt: Belt | undefined,
+  stripe: number | undefined,
+): string {
+  const label = belt ? translate(beltKey(belt)) : '—'
   return stripe && stripe > 0 ? `${label} · ${stripe}` : label
 }
 
@@ -163,14 +158,14 @@ export function GraduationHistorySection(props: Props) {
                 <div className="flex flex-wrap items-center gap-1.5">
                   {g.oldBelt ? (
                     <span className={`rounded px-2 py-0.5 text-xs font-medium ${beltBadgeClass(g.oldBelt)}`}>
-                      {beltDisplay(g.oldBelt, g.oldStripe)}
+                      {beltDisplay(translate, g.oldBelt, g.oldStripe)}
                     </span>
                   ) : (
                     <span className="text-xs text-[var(--text-muted)]">—</span>
                   )}
                   <span className="text-xs text-[var(--text-muted)]">→</span>
                   <span className={`rounded px-2 py-0.5 text-xs font-medium ${beltBadgeClass(g.newBelt)}`}>
-                    {beltDisplay(g.newBelt, g.newStripe)}
+                    {beltDisplay(translate, g.newBelt, g.newStripe)}
                   </span>
                 </div>
               </li>

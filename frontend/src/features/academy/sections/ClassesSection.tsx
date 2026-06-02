@@ -145,6 +145,7 @@ export function ClassesSection({ academyId }: Props) {
   const [generateTarget, setGenerateTarget] = useState<ClassTemplateResponse | null>(null)
   const [genStart, setGenStart] = useState(today)
   const [genEnd, setGenEnd] = useState(twoWeeksLater)
+  const [genStatus, setGenStatus] = useState<'DRAFT' | 'PUBLISHED'>('PUBLISHED')
   const [generateError, setGenerateError] = useState('')
 
   const handleCancelClass = () => {
@@ -165,7 +166,7 @@ export function ClassesSection({ academyId }: Props) {
     if (!generateTarget) return
     setGenerateError('')
     generateMutation.mutate(
-      { templateId: generateTarget.id, body: { startDate: genStart, endDate: genEnd } },
+      { templateId: generateTarget.id, body: { startDate: genStart, endDate: genEnd, status: genStatus } },
       {
         onSuccess: () => {
           setGenerateTarget(null)
@@ -551,6 +552,19 @@ export function ClassesSection({ academyId }: Props) {
                   onChange={(e) => setGenEnd(e.target.value)}
                   className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
                 />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-[var(--text-primary)]">
+                  {translate('template.publishAs')}
+                </label>
+                <select
+                  value={genStatus}
+                  onChange={(e) => setGenStatus(e.target.value as 'DRAFT' | 'PUBLISHED')}
+                  className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
+                >
+                  <option value="PUBLISHED">{translate('class.status.PUBLISHED')}</option>
+                  <option value="DRAFT">{translate('class.status.DRAFT')}</option>
+                </select>
               </div>
               {genStart && genEnd && (
                 <p className="text-xs font-medium text-emerald-400">

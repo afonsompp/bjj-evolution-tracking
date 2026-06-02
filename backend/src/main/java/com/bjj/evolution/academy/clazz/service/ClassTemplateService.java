@@ -122,18 +122,20 @@ public class ClassTemplateService {
         template.setDurationMinutes(request.durationMinutes());
         template.setClassType(request.classType());
         template.setTrainingType(request.trainingType());
-        template.setDefaultTechniques(request.techniqueIds() != null
-                ? techniqueRepository.findAllById(request.techniqueIds())
-                : List.of());
+        if (request.techniqueIds() != null) {
+            template.setDefaultTechniques(new ArrayList<>(techniqueRepository.findAllById(request.techniqueIds())));
+        }
 
-        template.getRecurrenceRules().clear();
-        request.recurrenceRules().forEach(ruleReq -> {
-            ClassRecurrenceRule rule = new ClassRecurrenceRule();
-            rule.setTemplate(template);
-            rule.setDayOfWeek(ruleReq.dayOfWeek());
-            rule.setStartTime(ruleReq.startTime());
-            template.getRecurrenceRules().add(rule);
-        });
+        if (request.recurrenceRules() != null) {
+            template.getRecurrenceRules().clear();
+            request.recurrenceRules().forEach(ruleReq -> {
+                ClassRecurrenceRule rule = new ClassRecurrenceRule();
+                rule.setTemplate(template);
+                rule.setDayOfWeek(ruleReq.dayOfWeek());
+                rule.setStartTime(ruleReq.startTime());
+                template.getRecurrenceRules().add(rule);
+            });
+        }
 
         ClassTemplate saved = repository.save(template);
         log.info("Class template updated: id={} name='{}'", saved.getId(), saved.getName());
@@ -169,6 +171,11 @@ public class ClassTemplateService {
             throw new BusinessRuleException("End date must be after start date.");
         }
 
+        ClassStatus status = request.status() != null ? request.status() : ClassStatus.PUBLISHED;
+        if (status != ClassStatus.DRAFT && status != ClassStatus.PUBLISHED) {
+            throw new BusinessRuleException("Generated classes can only be DRAFT or PUBLISHED.");
+        }
+
         List<ScheduledClass> toCreate = new ArrayList<>();
         LocalDate cursor = request.startDate();
 
@@ -184,7 +191,7 @@ public class ClassTemplateService {
                             .classType(template.getClassType())
                             .trainingType(template.getTrainingType())
                             .scheduledTechniques(new ArrayList<>(template.getDefaultTechniques()))
-                            .status(ClassStatus.PUBLISHED)
+                            .status(status)
                             .template(template)
                             .build();
                     toCreate.add(sc);
@@ -194,8 +201,8 @@ public class ClassTemplateService {
         }
 
         List<ScheduledClass> saved = scheduledClassRepository.saveAll(toCreate);
-        log.info("Generated {} classes from template id={} academy={} range=[{} to {}]",
-                saved.size(), templateId, academyId, request.startDate(), request.endDate());
+        log.info("Generated {} classes from template id={} academy={} range=[{} to {}] status={}",
+                saved.size(), templateId, academyId, request.startDate(), request.endDate(), status);
         return saved.stream().map(ScheduledClassResponse::fromEntity).toList();
     }
 

@@ -42,11 +42,28 @@ public class ClassAttendanceService {
 
     @Transactional
     public CheckInResponse register(UUID academyId, Long classId, UUID studentId) {
+        return register(academyId, classId, studentId, false);
+    }
+
+    /**
+     * Registers a student's attendance.
+     *
+     * @param allowCompleted when {@code true} (a manual add by staff), attendance may also be
+     *                       registered for a {@code COMPLETED} class to correct it retroactively;
+     *                       self check-in keeps it {@code PUBLISHED}-only.
+     */
+    @Transactional
+    public CheckInResponse register(UUID academyId, Long classId, UUID studentId, boolean allowCompleted) {
         ScheduledClass scheduledClass = getScheduledClassAndValidateAcademy(academyId, classId);
 
-        if (scheduledClass.getStatus() != ClassStatus.PUBLISHED) {
-            log.warn("Check-in registration denied: classId={} student={} classStatus={}", classId, studentId, scheduledClass.getStatus());
-            throw new BusinessRuleException("Check-in is only allowed for published classes.");
+        boolean registrable = scheduledClass.getStatus() == ClassStatus.PUBLISHED
+                || (allowCompleted && scheduledClass.getStatus() == ClassStatus.COMPLETED);
+        if (!registrable) {
+            log.warn("Check-in registration denied: classId={} student={} classStatus={} allowCompleted={}",
+                    classId, studentId, scheduledClass.getStatus(), allowCompleted);
+            throw new BusinessRuleException(allowCompleted
+                    ? "Check-in is only allowed for published or completed classes."
+                    : "Check-in is only allowed for published classes.");
         }
 
         if (scheduledClass.getInstructor().getId().equals(studentId)) {
@@ -84,7 +101,12 @@ public class ClassAttendanceService {
 
     @Transactional
     public CheckInResponse confirm(UUID academyId, Long classId, UUID studentId) {
-        getScheduledClassAndValidateAcademy(academyId, classId);
+        ScheduledClass scheduledClass = getScheduledClassAndValidateAcademy(academyId, classId);
+
+        if (scheduledClass.getStatus() == ClassStatus.CANCELED) {
+            log.warn("Check-in confirmation denied: class is canceled classId={} student={}", classId, studentId);
+            throw new BusinessRuleException("Cannot confirm attendance for a canceled class.");
+        }
 
         ClassAttendance attendance = attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId)
                 .orElseThrow(() -> {

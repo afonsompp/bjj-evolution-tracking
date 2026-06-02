@@ -51,10 +51,10 @@ export default function AcademyDetailPage() {
   const availableTabs = useMemo<Tab[]>(() => {
     if (!isMember) return []
     const tabs: Tab[] = ['schedule']
-    if (canManageMembers) tabs.push('members')
-    tabs.push('graduations')
-    tabs.push('attendances')
     if (canManageClasses) tabs.push('classes')
+    if (canManageMembers) tabs.push('members')
+    tabs.push('attendances')
+    tabs.push('graduations')
     if (canEditAcademy) tabs.push('settings')
     return tabs
   }, [isMember, canManageMembers, canManageClasses, canEditAcademy])

@@ -91,7 +91,7 @@ class ClassAttendanceControllerTest {
     @DisplayName("POST register should return 201 when registered successfully")
     void register_shouldReturn201() throws Exception {
         when(academySecurity.hasAccess(any(), eq(academyId))).thenReturn(true);
-        when(classAttendanceService.register(academyId, classId, studentId))
+        when(classAttendanceService.register(academyId, classId, studentId, true))
                 .thenReturn(sampleResponse);
 
         mockMvc.perform(post("/api/v1/academies/{aid}/classes/{cid}/attendances", academyId, classId)
@@ -104,7 +104,7 @@ class ClassAttendanceControllerTest {
                 .andExpect(jsonPath("$.status").value("REGISTERED"))
                 .andExpect(jsonPath("$.student.name").value("Jane"));
 
-        verify(classAttendanceService).register(academyId, classId, studentId);
+        verify(classAttendanceService).register(academyId, classId, studentId, true);
     }
 
     @Test
@@ -116,7 +116,7 @@ class ClassAttendanceControllerTest {
                         .content("{}"))
                 .andExpect(status().isBadRequest());
 
-        verify(classAttendanceService, never()).register(any(), anyLong(), any());
+        verify(classAttendanceService, never()).register(any(), anyLong(), any(), anyBoolean());
     }
 
     @Test
@@ -130,7 +130,7 @@ class ClassAttendanceControllerTest {
                         .content("{\"studentId\":\"%s\"}".formatted(studentId)))
                 .andExpect(status().isForbidden());
 
-        verify(classAttendanceService, never()).register(any(), anyLong(), any());
+        verify(classAttendanceService, never()).register(any(), anyLong(), any(), anyBoolean());
     }
 
     // -------------------------------------------------------

@@ -107,6 +107,34 @@ describe('AttendanceModal', () => {
     expect(m.register).toHaveBeenCalledWith('u3', expect.anything())
   })
 
+  it('does not offer Confirm for a canceled class', () => {
+    const canceledCls = { ...cls, status: 'CANCELED' } as unknown as ScheduledClassResponse
+    attendanceState.value = {
+      data: { content: [attendee('u2', 'Bruno', 'REGISTERED')] },
+      isLoading: false,
+    }
+    renderWithProviders(<AttendanceModal academyId="a1" cls={canceledCls} onClose={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument()
+  })
+
+  it('offers the add-student control for a completed class (retroactive add)', () => {
+    const completedCls = { ...cls, status: 'COMPLETED' } as unknown as ScheduledClassResponse
+    membersState.value = { data: { content: [{ user: { id: 'u3', name: 'Carla', secondName: null } }] } }
+    renderWithProviders(<AttendanceModal academyId="a1" cls={completedCls} onClose={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox')).toBeInTheDocument()
+  })
+
+  it('hides the add-student control and shows a notice for a draft class', () => {
+    const draftCls = { ...cls, status: 'DRAFT' } as unknown as ScheduledClassResponse
+    membersState.value = { data: { content: [{ user: { id: 'u3', name: 'Carla', secondName: null } }] } }
+    renderWithProviders(<AttendanceModal academyId="a1" cls={draftCls} onClose={vi.fn()} />)
+
+    expect(screen.queryByRole('button', { name: 'Add' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    expect(screen.getByText('Publish this class to register attendance.')).toBeInTheDocument()
+  })
+
   it('runs the close-class confirmation flow', async () => {
     const user = userEvent.setup()
     renderWithProviders(<AttendanceModal academyId="a1" cls={cls} onClose={vi.fn()} />)

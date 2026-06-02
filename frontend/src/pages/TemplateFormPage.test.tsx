@@ -13,6 +13,7 @@ vi.mock('../features/academy/hooks/useTemplateMutations', () => ({
   useCreateTemplate: () => ({ mutate: mut.create, isPending: false }),
   useUpdateTemplate: () => ({ mutate: mut.update, isPending: false }),
 }))
+vi.mock('../features/technique/components/TechniquePicker', () => ({ TechniquePicker: () => <div>technique-picker</div> }))
 
 const { navigate } = vi.hoisted(() => ({ navigate: vi.fn() }))
 vi.mock('react-router-dom', async (orig) => ({
@@ -77,6 +78,7 @@ describe('TemplateFormPage (edit)', () => {
         durationMinutes: 60,
         classType: 'REGULAR',
         trainingType: 'GI',
+        techniques: [{ id: 7 }],
         recurrenceRules: [{ dayOfWeek: 'TUESDAY', startTime: '18:00:00' }],
       },
     }
@@ -86,5 +88,36 @@ describe('TemplateFormPage (edit)', () => {
     })
     expect(screen.getByRole('heading', { name: 'Edit Template' })).toBeInTheDocument()
     expect((container.querySelector('input[type="text"]') as HTMLInputElement).value).toBe('Existing Template')
+  })
+
+  it('submits the hydrated technique ids on update', async () => {
+    const user = userEvent.setup()
+    templateState.value = {
+      data: {
+        id: 't1',
+        name: 'Existing Template',
+        instructor: { id: 'inst-1' },
+        durationMinutes: 60,
+        classType: 'REGULAR',
+        trainingType: 'GI',
+        techniques: [{ id: 7 }, { id: 9 }],
+        recurrenceRules: [{ dayOfWeek: 'TUESDAY', startTime: '18:00:00' }],
+      },
+    }
+    mut.update.mockImplementation((_args, o) => o.onSuccess())
+    renderWithProviders(<TemplateFormPage />, {
+      path: '/academies/:id/templates/:templateId/edit',
+      route: '/academies/a1/templates/t1/edit',
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(mut.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        templateId: 't1',
+        body: expect.objectContaining({ techniqueIds: [7, 9] }),
+      }),
+      expect.anything(),
+    )
   })
 })

@@ -176,7 +176,7 @@ class ClassAttendanceServiceTest {
         }
 
         @Test
-        @DisplayName("should throw BusinessRuleException when class is COMPLETED")
+        @DisplayName("should throw BusinessRuleException when self check-in on a COMPLETED class")
         void shouldThrow_whenClassIsCompleted() {
             var ac = createAcademy(academyId, "Gracie Barra");
             var instructor = createInstructor();
@@ -189,6 +189,44 @@ class ClassAttendanceServiceTest {
                     .hasMessageContaining("published");
 
             verify(attendanceRepository, never()).findByScheduledClassIdAndStudentId(any(), any());
+            verify(attendanceRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should register manually (allowCompleted) for a COMPLETED class")
+        void shouldRegisterManually_whenClassIsCompleted() {
+            var ac = createAcademy(academyId, "Gracie Barra");
+            var instructor = createInstructor();
+            var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.COMPLETED);
+            var student = createStudent();
+
+            when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
+            when(attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId))
+                    .thenReturn(Optional.empty());
+            when(userProfileRepository.findById(studentId)).thenReturn(Optional.of(student));
+            when(attendanceRepository.save(any(ClassAttendance.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            var response = service.register(academyId, classId, studentId, true);
+
+            assertThat(response.status()).isEqualTo(CheckInStatus.REGISTERED);
+            verify(attendanceRepository).save(attendanceCaptor.capture());
+            assertThat(attendanceCaptor.getValue().getStatus()).isEqualTo(CheckInStatus.REGISTERED);
+        }
+
+        @Test
+        @DisplayName("should throw BusinessRuleException for a manual add on a CANCELED class")
+        void shouldThrow_whenManualAddOnCanceledClass() {
+            var ac = createAcademy(academyId, "Gracie Barra");
+            var instructor = createInstructor();
+            var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.CANCELED);
+
+            when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
+
+            assertThatThrownBy(() -> service.register(academyId, classId, studentId, true))
+                    .isInstanceOf(BusinessRuleException.class)
+                    .hasMessageContaining("published or completed");
+
             verify(attendanceRepository, never()).save(any());
         }
 
@@ -421,6 +459,23 @@ class ClassAttendanceServiceTest {
                     .isInstanceOf(BusinessRuleException.class)
                     .hasMessageContaining("canceled");
 
+            verify(attendanceRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should throw BusinessRuleException when the class itself is canceled")
+        void shouldThrow_whenClassCanceled() {
+            var ac = createAcademy(academyId, "Gracie Barra");
+            var instructor = createInstructor();
+            var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.CANCELED);
+
+            when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
+
+            assertThatThrownBy(() -> service.confirm(academyId, classId, studentId))
+                    .isInstanceOf(BusinessRuleException.class)
+                    .hasMessageContaining("canceled class");
+
+            verify(attendanceRepository, never()).findByScheduledClassIdAndStudentId(any(), any());
             verify(attendanceRepository, never()).save(any());
         }
 

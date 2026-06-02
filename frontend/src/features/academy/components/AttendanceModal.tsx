@@ -120,7 +120,7 @@ export function AttendanceModal({ academyId, cls, onClose }: Props) {
                     {translate(`attendance.status.${a.status}`)}
                   </span>
                   <div className="flex gap-1">
-                    {a.status === 'REGISTERED' && (
+                    {a.status === 'REGISTERED' && cls.status !== 'CANCELED' && (
                       <button
                         onClick={() => confirmMutation.mutate(a.student.id)}
                         disabled={confirmMutation.isPending}
@@ -145,37 +145,43 @@ export function AttendanceModal({ academyId, cls, onClose }: Props) {
 
         {/* Footer: add student + close class */}
         <div className="shrink-0 space-y-3 border-t border-[var(--border-card)] p-5">
-          {/* Add student */}
-          <div>
-            <p className="mb-1.5 text-xs font-medium text-[var(--text-muted)]">
-              {translate('attendance.addStudent')}
-            </p>
-            <div className="flex gap-2">
-              <select
-                value={addStudentId}
-                onChange={(e) => setAddStudentId(e.target.value)}
-                className="flex-1 rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
-              >
-                <option value="">—</option>
-                {eligibleMembers.map((m) => (
-                  <option key={m.user.id} value={m.user.id}>
-                    {m.user.name} {m.user.secondName ?? ''}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={handleAddStudent}
-                disabled={!addStudentId || registerMutation.isPending}
-                className="rounded-lg bg-[var(--text-primary)] px-3 py-2 text-sm font-medium text-[var(--bg-page)] hover:opacity-90 disabled:opacity-50"
-              >
-                {registerMutation.isPending ? (
-                  <LoaderIcon size={14} className="inline animate-spin" />
-                ) : (
-                  translate('attendance.add')
-                )}
-              </button>
+          {/* Add student — published classes (live) or completed ones (retroactive fix); matches backend rule */}
+          {cls.status === 'PUBLISHED' || cls.status === 'COMPLETED' ? (
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-[var(--text-muted)]">
+                {translate('attendance.addStudent')}
+              </p>
+              <div className="flex gap-2">
+                <select
+                  value={addStudentId}
+                  onChange={(e) => setAddStudentId(e.target.value)}
+                  className="flex-1 rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
+                >
+                  <option value="">—</option>
+                  {eligibleMembers.map((m) => (
+                    <option key={m.user.id} value={m.user.id}>
+                      {m.user.name} {m.user.secondName ?? ''}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleAddStudent}
+                  disabled={!addStudentId || registerMutation.isPending}
+                  className="rounded-lg bg-[var(--text-primary)] px-3 py-2 text-sm font-medium text-[var(--bg-page)] hover:opacity-90 disabled:opacity-50"
+                >
+                  {registerMutation.isPending ? (
+                    <LoaderIcon size={14} className="inline animate-spin" />
+                  ) : (
+                    translate('attendance.add')
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
+          ) : cls.status === 'DRAFT' ? (
+            <p className="text-xs text-[var(--text-muted)]">
+              {translate('attendance.draftNotice')}
+            </p>
+          ) : null}
 
           {/* Close class */}
           {cls.status === 'PUBLISHED' && (

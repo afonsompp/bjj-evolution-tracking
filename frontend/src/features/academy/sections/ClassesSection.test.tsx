@@ -9,9 +9,10 @@ const templatesState = vi.hoisted(() => ({ value: {} as { data: unknown; isLoadi
 vi.mock('../hooks/useClasses', () => ({ useClasses: () => classesState.value }))
 vi.mock('../hooks/useTemplates', () => ({ useTemplates: () => templatesState.value }))
 vi.mock('../hooks/useClassMutations', () => ({ useCancelClass: () => ({ mutate: vi.fn(), isPending: false }) }))
+const genMut = vi.hoisted(() => ({ mutate: vi.fn() }))
 vi.mock('../hooks/useTemplateMutations', () => ({
   useDeleteTemplate: () => ({ mutate: vi.fn(), isPending: false }),
-  useGenerateFromTemplate: () => ({ mutate: vi.fn(), isPending: false }),
+  useGenerateFromTemplate: () => ({ mutate: genMut.mutate, isPending: false }),
 }))
 vi.mock('../components/AttendanceModal', () => ({ AttendanceModal: () => <div>attendance-modal</div> }))
 
@@ -80,5 +81,43 @@ describe('ClassesSection', () => {
     renderWithProviders(<ClassesSection academyId="a1" />)
     await user.click(screen.getByRole('button', { name: 'Templates' }))
     expect(screen.getByText('No templates yet')).toBeInTheDocument()
+  })
+
+  it('generates classes with the chosen draft status', async () => {
+    const user = userEvent.setup()
+    templatesState.value = {
+      data: {
+        content: [
+          {
+            id: 't1',
+            name: 'Weekly Fundamentals',
+            instructor: { id: 'i1', name: 'Coach' },
+            durationMinutes: 60,
+            classType: 'REGULAR',
+            trainingType: 'GI',
+            techniques: [],
+            recurrenceRules: [{ dayOfWeek: 'MONDAY', startTime: '19:00:00' }],
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    }
+    renderWithProviders(<ClassesSection academyId="a1" />)
+
+    await user.click(screen.getByRole('button', { name: 'Templates' }))
+    await user.click(screen.getByRole('button', { name: 'Generate Classes' }))
+
+    await user.selectOptions(screen.getByRole('combobox'), 'DRAFT')
+    const confirmButtons = screen.getAllByRole('button', { name: 'Generate Classes' })
+    await user.click(confirmButtons[confirmButtons.length - 1])
+
+    expect(genMut.mutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        templateId: 't1',
+        body: expect.objectContaining({ status: 'DRAFT' }),
+      }),
+      expect.anything(),
+    )
   })
 })

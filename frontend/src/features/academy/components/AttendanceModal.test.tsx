@@ -107,6 +107,16 @@ describe('AttendanceModal', () => {
     expect(m.register).toHaveBeenCalledWith('u3', expect.anything())
   })
 
+  it('hides the add-student control and shows a notice for a draft class', () => {
+    const draftCls = { ...cls, status: 'DRAFT' } as unknown as ScheduledClassResponse
+    membersState.value = { data: { content: [{ user: { id: 'u3', name: 'Carla', secondName: null } }] } }
+    renderWithProviders(<AttendanceModal academyId="a1" cls={draftCls} onClose={vi.fn()} />)
+
+    expect(screen.queryByRole('button', { name: 'Add' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    expect(screen.getByText('Publish this class to register attendance.')).toBeInTheDocument()
+  })
+
   it('runs the close-class confirmation flow', async () => {
     const user = userEvent.setup()
     renderWithProviders(<AttendanceModal academyId="a1" cls={cls} onClose={vi.fn()} />)

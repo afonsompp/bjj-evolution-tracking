@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from '../lib/i18n/I18nContext'
 import { useAcademyMembers } from '../features/academy/hooks/useAcademyMembers'
@@ -40,18 +40,21 @@ export default function ClassFormPage() {
   const [techniqueIds, setTechniqueIds] = useState<number[]>([])
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    if (existingClass) {
-      setInstructorId(existingClass.instructor.id)
-      const dt = new Date(existingClass.startTime)
-      setStartDateTime(dt.toISOString().slice(0, 16))
-      setDurationMinutes(existingClass.durationMinutes)
-      setClassType(existingClass.classType)
-      setTrainingType(existingClass.trainingType)
-      setStatus(existingClass.status)
-      setTechniqueIds(existingClass.scheduledTechniques.map((t) => t.id))
-    }
-  }, [existingClass])
+  // Hydrate the form when the fetched class first arrives (or changes identity
+  // on refetch). Done while rendering, keyed on the source object, instead of in
+  // an effect — the React-endorsed "adjust state during render" pattern.
+  const [hydratedFrom, setHydratedFrom] = useState<typeof existingClass>(undefined)
+  if (existingClass && existingClass !== hydratedFrom) {
+    setHydratedFrom(existingClass)
+    setInstructorId(existingClass.instructor.id)
+    const dt = new Date(existingClass.startTime)
+    setStartDateTime(dt.toISOString().slice(0, 16))
+    setDurationMinutes(existingClass.durationMinutes)
+    setClassType(existingClass.classType)
+    setTrainingType(existingClass.trainingType)
+    setStatus(existingClass.status)
+    setTechniqueIds(existingClass.scheduledTechniques.map((t) => t.id))
+  }
 
   const isPending = createMutation.isPending || updateMutation.isPending
 

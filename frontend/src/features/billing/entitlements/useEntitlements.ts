@@ -6,6 +6,7 @@ interface EntitlementState {
 
 export function useEntitlements(): EntitlementState {
   return {
-    hasFeature: (_feature: Feature) => true,
+    // Placeholder: every feature is currently unlocked.
+    hasFeature: () => true,
   }
 }

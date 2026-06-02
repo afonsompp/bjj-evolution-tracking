@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
-import type { Locale } from './translations'
+import type { Locale, TranslationKey } from './translations'
 import { t } from './translations'
 
 interface I18nContextType {
@@ -28,7 +28,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const translate = useCallback(
-    (key: string, params?: Record<string, string | number>) => t(locale, key as any, params),
+    (key: string, params?: Record<string, string | number>) => t(locale, key as TranslationKey, params),
     [locale],
   )
 
@@ -39,6 +39,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// Colocated with the provider by design; this hook isn't a component, so the
+// fast-refresh rule (HMR only) doesn't apply.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTranslation() {
   const ctx = useContext(I18nContext)
   if (!ctx) throw new Error('useTranslation must be used within I18nProvider')

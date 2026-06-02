@@ -15,6 +15,7 @@ import {
   SearchIcon,
   PlusIcon,
 } from '../assets/icons'
+import { apiErrorMessage } from '../lib/apiError'
 
 // ── Technique creation options ───────────────────────────
 const TECHNIQUE_TYPE_OPTIONS: { value: TechniqueType; label: string }[] = [
@@ -64,8 +65,8 @@ function TechniqueEditModal({
 
   const submit = (data: { name: string; type: TechniqueType; target: TechniqueTarget }) => {
     const onSuccess = () => onClose()
-    const onError = (err: any) =>
-      setError(err?.response?.data?.message ?? `Failed to ${isNew ? 'create' : 'update'} technique.`)
+    const onError = (err: unknown) =>
+      setError(apiErrorMessage(err) ?? `Failed to ${isNew ? 'create' : 'update'} technique.`)
     if (isNew) create.mutate(data, { onSuccess, onError })
     else update.mutate({ id: technique!.id, body: data }, { onSuccess, onError })
   }

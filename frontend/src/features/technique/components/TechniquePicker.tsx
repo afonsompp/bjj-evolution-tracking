@@ -4,12 +4,12 @@ import { useTechniqueSearch } from '../hooks/useTechniques'
 import { CheckIcon, LoaderIcon, SearchIcon, XIcon } from '../../../assets/icons'
 import type { TechniqueResponse, TechniqueType } from '../../../types/api'
 
-export const TECHNIQUE_TYPE_ORDER: TechniqueType[] = [
+const TECHNIQUE_TYPE_ORDER: TechniqueType[] = [
   'SUBMISSION', 'POSITION', 'GUARD_POSITION', 'GUARD_PASS',
   'SWEEP', 'TAKEDOWN', 'PIN', 'SCAPE', 'GRIP',
 ]
 
-export const TECHNIQUE_TYPE_LABELS: Record<TechniqueType, string> = {
+const TECHNIQUE_TYPE_LABELS: Record<TechniqueType, string> = {
   SUBMISSION: 'form.techType.SUBMISSION',
   POSITION: 'form.techType.POSITION',
   GUARD_POSITION: 'form.techType.GUARD_POSITION',

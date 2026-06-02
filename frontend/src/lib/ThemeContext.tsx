@@ -41,6 +41,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// Colocated with the provider by design; this hook isn't a component, so the
+// fast-refresh rule (HMR only) doesn't apply.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTheme() {
   const ctx = useContext(ThemeContext)
   if (!ctx) throw new Error('useTheme must be used within ThemeProvider')

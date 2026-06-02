@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '../lib/i18n/I18nContext'
 import { BELT_GROUPS, beltKey } from '../lib/i18n/belts'
 import type { ProfileRequest, Belt } from '../types/api'
+import { apiErrorMessage } from '../lib/apiError'
 import { useProfile, useUpsertProfile, useUploadPhoto, useRemovePhoto } from '../features/profile/useProfile'
 import { GraduationHistorySection } from '../features/academy/sections/GraduationHistorySection'
 import { AttendanceHistorySection } from '../features/academy/sections/AttendanceHistorySection'
@@ -220,7 +221,7 @@ export default function ProfilePage() {
         {mutation.isError && (
           <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3">
             <p className="text-sm text-rose-400">
-              {(mutation.error as any)?.response?.data?.message ?? translate('profile.failed')}
+              {apiErrorMessage(mutation.error) ?? translate('profile.failed')}
             </p>
           </div>
         )}

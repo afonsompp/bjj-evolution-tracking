@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { AcademyMenberClassViewResponse } from '../../../types/api'
 import { useTranslation } from '../../../lib/i18n/I18nContext'
@@ -193,19 +193,24 @@ export function ScheduleSection({ academyId }: Props) {
   const [pastPage, setPastPage] = useState(0)
   const [pastSize, setPastSize] = useState(25)
 
-  useEffect(() => {
-    if (isApplicableRange(upcomingCustomStart, upcomingCustomEnd)) {
-      setAppliedUpcomingStart(upcomingCustomStart)
-      setAppliedUpcomingEnd(upcomingCustomEnd)
-    }
-  }, [upcomingCustomStart, upcomingCustomEnd])
+  // Promote each edited range to its "applied" range once valid. Done while
+  // rendering (guarded so it only fires on an actual change) instead of in an
+  // effect — the React-endorsed "adjust state during render" pattern.
+  if (
+    isApplicableRange(upcomingCustomStart, upcomingCustomEnd) &&
+    (upcomingCustomStart !== appliedUpcomingStart || upcomingCustomEnd !== appliedUpcomingEnd)
+  ) {
+    setAppliedUpcomingStart(upcomingCustomStart)
+    setAppliedUpcomingEnd(upcomingCustomEnd)
+  }
 
-  useEffect(() => {
-    if (isApplicableRange(pastCustomStart, pastCustomEnd)) {
-      setAppliedPastStart(pastCustomStart)
-      setAppliedPastEnd(pastCustomEnd)
-    }
-  }, [pastCustomStart, pastCustomEnd])
+  if (
+    isApplicableRange(pastCustomStart, pastCustomEnd) &&
+    (pastCustomStart !== appliedPastStart || pastCustomEnd !== appliedPastEnd)
+  ) {
+    setAppliedPastStart(pastCustomStart)
+    setAppliedPastEnd(pastCustomEnd)
+  }
 
   const upcomingRange = futureWindow(upcomingPreset, appliedUpcomingStart, appliedUpcomingEnd)
   const pastRange = pastWindow(pastPreset, appliedPastStart, appliedPastEnd)
@@ -232,7 +237,7 @@ export function ScheduleSection({ academyId }: Props) {
   const selfCheckIn = useSelfCheckIn(academyId)
   const cancelCheckIn = useCancelMyCheckIn(academyId)
 
-  const nowMs = Date.now()
+  const nowMs = new Date().getTime()
   const upcomingClasses =
     upcomingPageData?.content.filter(
       (c) => c.status === 'PUBLISHED' && new Date(c.startTime).getTime() > nowMs,

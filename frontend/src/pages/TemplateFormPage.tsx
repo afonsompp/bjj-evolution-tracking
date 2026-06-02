@@ -7,7 +7,9 @@ import {
   useCreateTemplate,
   useUpdateTemplate,
 } from '../features/academy/hooks/useTemplateMutations'
+import { useProfile } from '../features/profile/useProfile'
 import { TechniquePicker } from '../features/technique/components/TechniquePicker'
+import { CreateTechniqueModal } from '../features/technique/components/CreateTechniqueModal'
 import { ChevronLeftIcon, LoaderIcon, PlusIcon, TrashIcon } from '../assets/icons'
 import type { ClassType, ClassRecurrenceRule, DayOfWeek, TrainingType } from '../types/api'
 
@@ -42,6 +44,15 @@ export default function TemplateFormPage() {
   ])
   const [techniqueIds, setTechniqueIds] = useState<number[]>([])
   const [error, setError] = useState('')
+  const [showCreateTechnique, setShowCreateTechnique] = useState(false)
+
+  const { data: profile } = useProfile()
+  const canCreateTechnique = profile?.role === 'ADMIN' || profile?.role === 'PLATFORM_MANAGER'
+
+  const handleCreatedTechnique = (id: number) => {
+    setTechniqueIds((prev) => [...prev, id])
+    setShowCreateTechnique(false)
+  }
 
   // Hydrate the form when the fetched template first arrives (or changes
   // identity on refetch). Done while rendering, keyed on the source object,
@@ -210,11 +221,24 @@ export default function TemplateFormPage() {
         </div>
 
         {/* Techniques */}
-        <TechniquePicker
-          selectedIds={techniqueIds}
-          onChange={setTechniqueIds}
-          label={translate('template.techniques')}
-        />
+        <div className="space-y-2">
+          {canCreateTechnique && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowCreateTechnique(true)}
+                className="rounded-lg bg-[var(--text-primary)] px-3 py-1.5 text-xs font-medium text-[var(--bg-page)] hover:opacity-90"
+              >
+                + {translate('form.newTechnique')}
+              </button>
+            </div>
+          )}
+          <TechniquePicker
+            selectedIds={techniqueIds}
+            onChange={setTechniqueIds}
+            label={translate('template.techniques')}
+          />
+        </div>
 
         {/* Recurrence Rules */}
         <div className="space-y-3">
@@ -284,6 +308,13 @@ export default function TemplateFormPage() {
           </button>
         </div>
       </form>
+
+      {showCreateTechnique && (
+        <CreateTechniqueModal
+          onClose={() => setShowCreateTechnique(false)}
+          onCreated={handleCreatedTechnique}
+        />
+      )}
     </div>
   )
 }

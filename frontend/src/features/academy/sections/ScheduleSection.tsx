@@ -77,6 +77,7 @@ function PresetFilter({
   onCustomEnd: (v: string) => void
   errorMessage?: string
 }) {
+  const { translate } = useTranslation()
   const invalid = !!errorMessage
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -90,7 +91,7 @@ function PresetFilter({
               : 'border border-[var(--border-card)] text-[var(--text-muted)] hover:border-[var(--border-card-hover)] hover:text-[var(--text-primary)]'
           }`}
         >
-          {label}
+          {key === 'all' ? translate('filter.all') : key === 'custom' ? translate('filter.custom') : label}
         </button>
       ))}
       {value === 'custom' && (
@@ -125,6 +126,7 @@ function PresetFilter({
 }
 
 function PageSizeSelector({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const { translate } = useTranslation()
   return (
     <select
       value={value}
@@ -132,7 +134,7 @@ function PageSizeSelector({ value, onChange }: { value: number; onChange: (v: nu
       className="rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-1.5 text-xs text-[var(--text-muted)] outline-none"
     >
       {[10, 25, 50].map((s) => (
-        <option key={s} value={s}>{s} per page</option>
+        <option key={s} value={s}>{translate('filter.perPage', { count: s })}</option>
       ))}
     </select>
   )
@@ -372,14 +374,7 @@ export function ScheduleSection({ academyId }: Props) {
                         </span>
                       )
                     }
-                    if (att?.status === 'CANCELED') {
-                      return (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-zinc-500/10 px-2 py-0.5 text-xs text-zinc-400">
-                          {translate('attendance.status.CANCELED')}
-                        </span>
-                      )
-                    }
-                    return (
+                    const checkInButton = (
                       <button
                         onClick={() => selfCheckIn.mutate(c.id)}
                         disabled={selfCheckIn.isPending && selfCheckIn.variables === c.id}
@@ -393,6 +388,17 @@ export function ScheduleSection({ academyId }: Props) {
                         {translate('attendance.checkIn')}
                       </button>
                     )
+                    if (att?.status === 'CANCELED') {
+                      return (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-zinc-500/10 px-2 py-0.5 text-xs text-zinc-400">
+                            {translate('attendance.status.CANCELED')}
+                          </span>
+                          {checkInButton}
+                        </span>
+                      )
+                    }
+                    return checkInButton
                   })()}
                 </div>
               </div>

@@ -69,4 +69,15 @@ describe('ScheduleSection', () => {
     expect(screen.getByText('Confirmed')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Check in' })).not.toBeInTheDocument()
   })
+
+  it('lets a member check in again after canceling', async () => {
+    const user = userEvent.setup()
+    scheduleState.value = { data: { content: [futureClass], totalPages: 1 }, isLoading: false }
+    myAttendances.value = { data: { content: [{ scheduledClass: { id: 5 }, status: 'CANCELED' }] } }
+    renderWithProviders(<ScheduleSection academyId="a1" />)
+
+    expect(screen.getByText('Canceled')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Check in' }))
+    expect(checkIn).toHaveBeenCalledWith(5)
+  })
 })

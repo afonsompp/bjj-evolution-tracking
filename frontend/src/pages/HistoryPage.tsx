@@ -191,27 +191,27 @@ function TrainingCard({
       {/* ── Quick Stats Bar (always visible) ── */}
       <div className="flex flex-wrap gap-6 border-t border-[var(--border-row)] px-5 py-2 text-xs text-[var(--text-muted)]">
         <span className="flex items-center gap-1">
-          <span className="text-rose-500"><HeartIcon size={16} /></span> Cardio {training.cardioRating}/5
+          <span className="text-rose-500"><HeartIcon size={16} /></span> {translate('history.statCardio', { value: training.cardioRating })}
         </span>
         <span className="flex items-center gap-1">
-          <span className="text-yellow-500"><ZapIcon size={16} /></span> Intensity {training.intensityRating}/5
+          <span className="text-yellow-500"><ZapIcon size={16} /></span> {translate('history.statIntensity', { value: training.intensityRating })}
         </span>
         <span className="flex items-center gap-1">
-          <CrosshairIcon size={16} /> {training.totalRolls} rolls
+          <CrosshairIcon size={16} /> {translate('history.statRolls', { count: training.totalRolls })}
         </span>
         {training.taps > 0 && (
           <span className="flex items-center gap-1">
-            <TrophyIcon size={16} className="text-rose-500" /> {training.taps} taps
+            <TrophyIcon size={16} className="text-rose-500" /> {translate('history.statTaps', { count: training.taps })}
           </span>
         )}
         {training.submissions > 0 && (
           <span className="flex items-center gap-1">
-            <TrophyIcon size={16} className="text-yellow-500" /> {training.submissions} subs
+            <TrophyIcon size={16} className="text-yellow-500" /> {translate('history.statSubs', { count: training.submissions })}
           </span>
         )}
         {training.escapes > 0 && (
           <span className="flex items-center gap-1">
-            <ShieldIcon size={16} /> {training.escapes} escapes
+            <ShieldIcon size={16} /> {translate('history.statEscapes', { count: training.escapes })}
           </span>
         )}
       </div>
@@ -352,6 +352,7 @@ function PageSizeSelector({
   value: number
   onChange: (v: number) => void
 }) {
+  const { translate } = useTranslation()
   return (
     <select
       value={value}
@@ -359,7 +360,7 @@ function PageSizeSelector({
       className="rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-1.5 text-xs text-[var(--text-muted)] outline-none"
     >
       {[10, 25, 50].map((s) => (
-        <option key={s} value={s}>{s} per page</option>
+        <option key={s} value={s}>{translate('filter.perPage', { count: s })}</option>
       ))}
     </select>
   )
@@ -474,7 +475,7 @@ export default function HistoryPage() {
                 : 'border border-[var(--border-card)] text-[var(--text-muted)] hover:border-[var(--border-card-hover)] hover:text-[var(--text-primary)]'
             }`}
           >
-            {label}
+            {key === 'all' ? translate('filter.all') : key === 'custom' ? translate('filter.custom') : label}
           </button>
         ))}
         {preset === 'custom' && (

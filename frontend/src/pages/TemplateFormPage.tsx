@@ -7,6 +7,7 @@ import {
   useCreateTemplate,
   useUpdateTemplate,
 } from '../features/academy/hooks/useTemplateMutations'
+import { TechniquePicker } from '../features/technique/components/TechniquePicker'
 import { ChevronLeftIcon, LoaderIcon, PlusIcon, TrashIcon } from '../assets/icons'
 import type { ClassType, ClassRecurrenceRule, DayOfWeek, TrainingType } from '../types/api'
 
@@ -39,6 +40,7 @@ export default function TemplateFormPage() {
   const [rules, setRules] = useState<ClassRecurrenceRule[]>([
     { dayOfWeek: 'MONDAY', startTime: '19:00:00' },
   ])
+  const [techniqueIds, setTechniqueIds] = useState<number[]>([])
   const [error, setError] = useState('')
 
   // Hydrate the form when the fetched template first arrives (or changes
@@ -54,6 +56,7 @@ export default function TemplateFormPage() {
     setClassType(existing.classType)
     setTrainingType(existing.trainingType)
     if (existing.recurrenceRules.length > 0) setRules(existing.recurrenceRules)
+    setTechniqueIds(existing.techniques.map((t) => t.id))
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending
@@ -81,6 +84,7 @@ export default function TemplateFormPage() {
       durationMinutes,
       classType,
       trainingType,
+      techniqueIds,
       recurrenceRules: rules,
     }
 
@@ -204,6 +208,13 @@ export default function TemplateFormPage() {
             </select>
           </div>
         </div>
+
+        {/* Techniques */}
+        <TechniquePicker
+          selectedIds={techniqueIds}
+          onChange={setTechniqueIds}
+          label={translate('template.techniques')}
+        />
 
         {/* Recurrence Rules */}
         <div className="space-y-3">

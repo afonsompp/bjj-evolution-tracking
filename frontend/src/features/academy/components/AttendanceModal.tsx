@@ -145,8 +145,8 @@ export function AttendanceModal({ academyId, cls, onClose }: Props) {
 
         {/* Footer: add student + close class */}
         <div className="shrink-0 space-y-3 border-t border-[var(--border-card)] p-5">
-          {/* Add student — check-in is only allowed on published classes (matches backend rule) */}
-          {cls.status === 'PUBLISHED' ? (
+          {/* Add student — published classes (live) or completed ones (retroactive fix); matches backend rule */}
+          {cls.status === 'PUBLISHED' || cls.status === 'COMPLETED' ? (
             <div>
               <p className="mb-1.5 text-xs font-medium text-[var(--text-muted)]">
                 {translate('attendance.addStudent')}

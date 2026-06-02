@@ -41,7 +41,7 @@ public class ClassAttendanceController {
             @Valid @RequestBody CheckInRequest request) {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(service.
-                register(academyId, classId, request.studentId()));
+                register(academyId, classId, request.studentId(), true));
     }
 
     @PatchMapping("/classes/{classId}/attendances/{studentId}/confirm")

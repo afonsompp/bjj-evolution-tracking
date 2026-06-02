@@ -117,6 +117,14 @@ describe('AttendanceModal', () => {
     expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument()
   })
 
+  it('offers the add-student control for a completed class (retroactive add)', () => {
+    const completedCls = { ...cls, status: 'COMPLETED' } as unknown as ScheduledClassResponse
+    membersState.value = { data: { content: [{ user: { id: 'u3', name: 'Carla', secondName: null } }] } }
+    renderWithProviders(<AttendanceModal academyId="a1" cls={completedCls} onClose={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox')).toBeInTheDocument()
+  })
+
   it('hides the add-student control and shows a notice for a draft class', () => {
     const draftCls = { ...cls, status: 'DRAFT' } as unknown as ScheduledClassResponse
     membersState.value = { data: { content: [{ user: { id: 'u3', name: 'Carla', secondName: null } }] } }

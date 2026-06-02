@@ -122,18 +122,20 @@ public class ClassTemplateService {
         template.setDurationMinutes(request.durationMinutes());
         template.setClassType(request.classType());
         template.setTrainingType(request.trainingType());
-        template.setDefaultTechniques(request.techniqueIds() != null
-                ? techniqueRepository.findAllById(request.techniqueIds())
-                : List.of());
+        if (request.techniqueIds() != null) {
+            template.setDefaultTechniques(new ArrayList<>(techniqueRepository.findAllById(request.techniqueIds())));
+        }
 
-        template.getRecurrenceRules().clear();
-        request.recurrenceRules().forEach(ruleReq -> {
-            ClassRecurrenceRule rule = new ClassRecurrenceRule();
-            rule.setTemplate(template);
-            rule.setDayOfWeek(ruleReq.dayOfWeek());
-            rule.setStartTime(ruleReq.startTime());
-            template.getRecurrenceRules().add(rule);
-        });
+        if (request.recurrenceRules() != null) {
+            template.getRecurrenceRules().clear();
+            request.recurrenceRules().forEach(ruleReq -> {
+                ClassRecurrenceRule rule = new ClassRecurrenceRule();
+                rule.setTemplate(template);
+                rule.setDayOfWeek(ruleReq.dayOfWeek());
+                rule.setStartTime(ruleReq.startTime());
+                template.getRecurrenceRules().add(rule);
+            });
+        }
 
         ClassTemplate saved = repository.save(template);
         log.info("Class template updated: id={} name='{}'", saved.getId(), saved.getName());

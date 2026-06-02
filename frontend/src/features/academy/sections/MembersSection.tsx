@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from '../../../lib/i18n/I18nContext'
+import { ALL_BELTS, beltKey } from '../../../lib/i18n/belts'
 import { useAuth } from '../../auth/AuthContext'
 import { useAcademyMembers } from '../hooks/useAcademyMembers'
 import { useAcademyPermissions } from '../permissions/useAcademyPermissions'
@@ -25,26 +26,6 @@ import {
   ChevronUpIcon,
 } from '../../../assets/icons'
 
-const BELT_OPTIONS: { value: Belt; label: string }[] = [
-  { value: 'WHITE', label: 'White' },
-  { value: 'BLUE', label: 'Blue' },
-  { value: 'PURPLE', label: 'Purple' },
-  { value: 'BROWN', label: 'Brown' },
-  { value: 'BLACK', label: 'Black' },
-  { value: 'GRAY_WHITE', label: 'Gray/White' },
-  { value: 'GRAY', label: 'Gray' },
-  { value: 'GRAY_BLACK', label: 'Gray/Black' },
-  { value: 'YELLOW_WHITE', label: 'Yellow/White' },
-  { value: 'YELLOW', label: 'Yellow' },
-  { value: 'YELLOW_BLACK', label: 'Yellow/Black' },
-  { value: 'ORANGE_WHITE', label: 'Orange/White' },
-  { value: 'ORANGE', label: 'Orange' },
-  { value: 'ORANGE_BLACK', label: 'Orange/Black' },
-  { value: 'GREEN_WHITE', label: 'Green/White' },
-  { value: 'GREEN', label: 'Green' },
-  { value: 'GREEN_BLACK', label: 'Green/Black' },
-]
-
 const ROLE_OPTIONS: { value: MemberRole; label: string }[] = [
   { value: 'STUDENT', label: 'Student' },
   { value: 'INSTRUCTOR', label: 'Instructor' },
@@ -65,10 +46,6 @@ function beltBadgeClass(belt: Belt | undefined): string {
       return 'bg-green-500/20 text-green-400'
     default: return 'bg-zinc-200/20 text-zinc-400'
   }
-}
-
-function beltLabel(belt: Belt | undefined): string {
-  return BELT_OPTIONS.find((b) => b.value === belt)?.label ?? belt ?? '—'
 }
 
 function roleBadgeClass(role: MemberRole): string {
@@ -273,7 +250,7 @@ export function MembersSection({ academyId }: Props) {
 
                   <div className="hidden shrink-0 items-center gap-2 sm:flex">
                     <span className={`rounded px-2 py-0.5 text-xs font-medium ${beltBadgeClass(member.belt)}`}>
-                      {beltLabel(member.belt)}
+                      {member.belt ? translate(beltKey(member.belt)) : '—'}
                       {member.beltStripe != null && member.beltStripe > 0
                         ? ` · ${member.beltStripe}`
                         : ''}
@@ -421,8 +398,8 @@ export function MembersSection({ academyId }: Props) {
                 onChange={(e) => setGraduateBelt(e.target.value as Belt)}
                 className={selectClass}
               >
-                {BELT_OPTIONS.map((b) => (
-                  <option key={b.value} value={b.value}>{b.label}</option>
+                {ALL_BELTS.map((b) => (
+                  <option key={b} value={b}>{translate(beltKey(b))}</option>
                 ))}
               </select>
             </div>

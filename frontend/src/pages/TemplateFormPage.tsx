@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from '../lib/i18n/I18nContext'
 import { useAcademyMembers } from '../features/academy/hooks/useAcademyMembers'
@@ -41,16 +41,20 @@ export default function TemplateFormPage() {
   ])
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    if (existing) {
-      setName(existing.name)
-      setInstructorId(existing.instructor.id)
-      setDurationMinutes(existing.durationMinutes)
-      setClassType(existing.classType)
-      setTrainingType(existing.trainingType)
-      if (existing.recurrenceRules.length > 0) setRules(existing.recurrenceRules)
-    }
-  }, [existing])
+  // Hydrate the form when the fetched template first arrives (or changes
+  // identity on refetch). Done while rendering, keyed on the source object,
+  // instead of in an effect — the React-endorsed "adjust state during render"
+  // pattern.
+  const [hydratedFrom, setHydratedFrom] = useState<typeof existing>(undefined)
+  if (existing && existing !== hydratedFrom) {
+    setHydratedFrom(existing)
+    setName(existing.name)
+    setInstructorId(existing.instructor.id)
+    setDurationMinutes(existing.durationMinutes)
+    setClassType(existing.classType)
+    setTrainingType(existing.trainingType)
+    if (existing.recurrenceRules.length > 0) setRules(existing.recurrenceRules)
+  }
 
   const isPending = createMutation.isPending || updateMutation.isPending
 

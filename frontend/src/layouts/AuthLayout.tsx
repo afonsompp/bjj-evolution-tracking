@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom'
 import { useTheme } from '../lib/ThemeContext'
 import { SunIcon, MoonIcon } from '../assets/icons'
+import { Logo } from '../components/Logo'
 
 export default function AuthLayout() {
   const { theme, toggle } = useTheme()
@@ -9,6 +10,7 @@ export default function AuthLayout() {
     <div className="flex min-h-screen items-center justify-center bg-[var(--bg-page)] px-4 transition-colors">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
+          <Logo variant="icon" className="mx-auto mb-3 h-12" />
           <div className="flex items-center justify-center gap-2">
             <h1 className="text-2xl font-bold text-[var(--text-primary)]">BJJ Evolution</h1>
             <button

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '../lib/i18n/I18nContext'
 import { MAX_DATE, hasYearOverflow, isApplicableRange, isOutOfOrderRange } from '../lib/dateValidation'
@@ -106,7 +106,7 @@ function TrainingCard({
 
   const typeLabel =
     training.trainingType === 'GI' ? translate('history.gi') : translate('history.noGi')
-  const classLabel = translate(`history.classType.${training.classType}` as any) ?? training.classType
+  const classLabel = translate(`history.classType.${training.classType}`) ?? training.classType
 
   return (
     <div className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] shadow-sm transition-colors">
@@ -398,12 +398,16 @@ export default function HistoryPage() {
   const [appliedCustomEnd, setAppliedCustomEnd] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<TrainingResponse | null>(null)
 
-  useEffect(() => {
-    if (isApplicableRange(customStart, customEnd)) {
-      setAppliedCustomStart(customStart)
-      setAppliedCustomEnd(customEnd)
-    }
-  }, [customStart, customEnd])
+  // Promote the edited range to the "applied" range once it's valid. Done while
+  // rendering (guarded so it only fires on an actual change) instead of in an
+  // effect — the React-endorsed "adjust state during render" pattern.
+  if (
+    isApplicableRange(customStart, customEnd) &&
+    (customStart !== appliedCustomStart || customEnd !== appliedCustomEnd)
+  ) {
+    setAppliedCustomStart(customStart)
+    setAppliedCustomEnd(customEnd)
+  }
 
   const hasError = preset === 'custom' && isOutOfOrderRange(customStart, customEnd)
 

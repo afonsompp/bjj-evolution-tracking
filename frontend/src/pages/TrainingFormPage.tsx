@@ -14,6 +14,7 @@ import {
   StarIcon,
   ChevronLeftIcon,
 } from '../assets/icons'
+import { apiErrorMessage } from '../lib/apiError'
 
 // ── Constants ────────────────────────────────────────────
 const CLASS_TYPES: { value: ClassType; key: string }[] = [
@@ -132,8 +133,8 @@ function CreateTechniqueModal({
   const submit = (data: { name: string; type: TechniqueType; target: TechniqueTarget }) =>
     mutation.mutate(data, {
       onSuccess: (created) => onCreated(created.id),
-      onError: (err: any) =>
-        setError(err?.response?.data?.message ?? translate('technique.failedCreate')),
+      onError: (err: unknown) =>
+        setError(apiErrorMessage(err) ?? translate('technique.failedCreate')),
     })
 
   return (
@@ -237,13 +238,15 @@ export default function TrainingFormPage() {
   const { data: existing } = useTraining(id, isEdit)
 
   // ── Class import state (from location.state when navigating from schedule) ──
-  const fromClass = (location.state as any)?.fromClass as {
-    classType: string
-    trainingType: string
-    durationMinutes: number
-    startTime: string
-    techniqueIds: number[]
-  } | undefined
+  const fromClass = (location.state as {
+    fromClass?: {
+      classType: string
+      trainingType: string
+      durationMinutes: number
+      startTime: string
+      techniqueIds: number[]
+    }
+  } | null)?.fromClass
 
   // ── Form state ─────────────────────────────────────────
   const today = new Date().toISOString().slice(0, 10)
@@ -274,8 +277,12 @@ export default function TrainingFormPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
 
   // ── Populate form on edit load ──────────────────────────
-  useEffect(() => {
-    if (!existing) return
+  // Hydrate when the fetched training first arrives (or changes identity on
+  // refetch). Done while rendering, keyed on the source object, instead of in an
+  // effect — the React-endorsed "adjust state during render" pattern.
+  const [hydratedFrom, setHydratedFrom] = useState<typeof existing>(undefined)
+  if (existing && existing !== hydratedFrom) {
+    setHydratedFrom(existing)
     const d = new Date(existing.sessionDate)
     setSessionDate(d.toISOString().slice(0, 10))
     setSessionTime(d.toTimeString().slice(0, 5))
@@ -297,7 +304,7 @@ export default function TrainingFormPage() {
     setTaps(existing.taps)
     setEscapes(existing.escapes)
     setDescription(existing.description ?? '')
-  }, [existing])
+  }
 
   // ── Validation ─────────────────────────────────────────
   const validate = (): boolean => {
@@ -327,8 +334,8 @@ export default function TrainingFormPage() {
   const save = (data: TrainingRequest) =>
     mutation.mutate(data, {
       onSuccess: () => navigate(isEdit ? '/' : '/training'),
-      onError: (err: any) =>
-        setErrors({ form: err?.response?.data?.message ?? 'Failed to save training.' }),
+      onError: (err: unknown) =>
+        setErrors({ form: apiErrorMessage(err) ?? 'Failed to save training.' }),
     })
 
   const handleSubmit = (e: React.FormEvent) => {

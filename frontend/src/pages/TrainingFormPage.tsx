@@ -15,6 +15,9 @@ import {
   ChevronLeftIcon,
 } from '../assets/icons'
 import { apiErrorMessage } from '../lib/apiError'
+import {
+  TECHNIQUE_TYPES, TECHNIQUE_TARGETS, techniqueTypeKey, techniqueTargetKey,
+} from '../lib/i18n/technique'
 
 // ── Constants ────────────────────────────────────────────
 const CLASS_TYPES: { value: ClassType; key: string }[] = [
@@ -30,43 +33,6 @@ const CLASS_TYPES: { value: ClassType; key: string }[] = [
 const TRAINING_TYPES: { value: TrainingType; key: string }[] = [
   { value: 'GI', key: 'form.gi' },
   { value: 'NO_GI', key: 'form.noGi' },
-]
-
-// ── Technique creation options ───────────────────────────
-const TECHNIQUE_TYPE_OPTIONS: { value: TechniqueType; label: string }[] = [
-  { value: 'SUBMISSION', label: 'Submission' },
-  { value: 'POSITION', label: 'Position' },
-  { value: 'GUARD_POSITION', label: 'Guard Position' },
-  { value: 'GUARD_PASS', label: 'Guard Pass' },
-  { value: 'SWEEP', label: 'Sweep' },
-  { value: 'TAKEDOWN', label: 'Takedown' },
-  { value: 'PIN', label: 'Pin' },
-  { value: 'SCAPE', label: 'Escape' },
-  { value: 'GRIP', label: 'Grip' },
-]
-
-const TECHNIQUE_TARGET_OPTIONS: { value: TechniqueTarget; label: string }[] = [
-  { value: 'HEAD', label: 'Head' },
-  { value: 'NECK', label: 'Neck' },
-  { value: 'SHOULDER', label: 'Shoulder' },
-  { value: 'TORSO', label: 'Torso' },
-  { value: 'LEG', label: 'Leg' },
-  { value: 'FOOT', label: 'Foot' },
-  { value: 'ANKLE', label: 'Ankle' },
-  { value: 'KNEE', label: 'Knee' },
-  { value: 'HIP', label: 'Hip' },
-  { value: 'BACK', label: 'Back' },
-  { value: 'SPINE', label: 'Spine' },
-  { value: 'ARM', label: 'Arm' },
-  { value: 'ELBOW', label: 'Elbow' },
-  { value: 'WRIST', label: 'Wrist' },
-  { value: 'HAND', label: 'Hand' },
-  { value: 'GUARD_PASS', label: 'Guard Pass' },
-  { value: 'GUARD_POSITION', label: 'Guard Position' },
-  { value: 'PIN', label: 'Pin' },
-  { value: 'TAKEDOWN', label: 'Takedown' },
-  { value: 'SWEEP', label: 'Sweep' },
-  { value: 'ESCAPE', label: 'Escape' },
 ]
 
 // ── Star Rating Component ────────────────────────────────
@@ -169,8 +135,8 @@ function CreateTechniqueModal({
               onChange={(e) => setType(e.target.value as TechniqueType)}
               className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
             >
-              {TECHNIQUE_TYPE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              {TECHNIQUE_TYPES.map((value) => (
+                <option key={value} value={value}>{translate(techniqueTypeKey(value))}</option>
               ))}
             </select>
           </div>
@@ -181,8 +147,8 @@ function CreateTechniqueModal({
               onChange={(e) => setTarget(e.target.value as TechniqueTarget)}
               className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
             >
-              {TECHNIQUE_TARGET_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              {TECHNIQUE_TARGETS.map((value) => (
+                <option key={value} value={value}>{translate(techniqueTargetKey(value))}</option>
               ))}
             </select>
           </div>

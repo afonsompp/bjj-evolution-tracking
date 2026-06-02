@@ -43,8 +43,8 @@ describe('TechniqueManagePage', () => {
     techState.value = { data: { content: [technique], totalElements: 1, totalPages: 1 }, isLoading: false, isError: false }
     renderWithProviders(<TechniqueManagePage />)
     expect(screen.getByText('Armbar')).toBeInTheDocument()
-    expect(screen.getByText('SUBMISSION')).toBeInTheDocument()
-    expect(screen.getByText('ARM')).toBeInTheDocument()
+    expect(screen.getByText('Submission')).toBeInTheDocument()
+    expect(screen.getByText('Arm')).toBeInTheDocument()
   })
 
   it('opens the create modal', async () => {

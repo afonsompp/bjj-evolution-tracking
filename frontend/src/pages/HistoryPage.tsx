@@ -352,6 +352,7 @@ function PageSizeSelector({
   value: number
   onChange: (v: number) => void
 }) {
+  const { translate } = useTranslation()
   return (
     <select
       value={value}
@@ -359,7 +360,7 @@ function PageSizeSelector({
       className="rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-1.5 text-xs text-[var(--text-muted)] outline-none"
     >
       {[10, 25, 50].map((s) => (
-        <option key={s} value={s}>{s} per page</option>
+        <option key={s} value={s}>{translate('filter.perPage', { count: s })}</option>
       ))}
     </select>
   )
@@ -474,7 +475,7 @@ export default function HistoryPage() {
                 : 'border border-[var(--border-card)] text-[var(--text-muted)] hover:border-[var(--border-card-hover)] hover:text-[var(--text-primary)]'
             }`}
           >
-            {label}
+            {key === 'all' ? translate('filter.all') : key === 'custom' ? translate('filter.custom') : label}
           </button>
         ))}
         {preset === 'custom' && (

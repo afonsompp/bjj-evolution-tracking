@@ -374,14 +374,7 @@ export function ScheduleSection({ academyId }: Props) {
                         </span>
                       )
                     }
-                    if (att?.status === 'CANCELED') {
-                      return (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-zinc-500/10 px-2 py-0.5 text-xs text-zinc-400">
-                          {translate('attendance.status.CANCELED')}
-                        </span>
-                      )
-                    }
-                    return (
+                    const checkInButton = (
                       <button
                         onClick={() => selfCheckIn.mutate(c.id)}
                         disabled={selfCheckIn.isPending && selfCheckIn.variables === c.id}
@@ -395,6 +388,17 @@ export function ScheduleSection({ academyId }: Props) {
                         {translate('attendance.checkIn')}
                       </button>
                     )
+                    if (att?.status === 'CANCELED') {
+                      return (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-zinc-500/10 px-2 py-0.5 text-xs text-zinc-400">
+                            {translate('attendance.status.CANCELED')}
+                          </span>
+                          {checkInButton}
+                        </span>
+                      )
+                    }
+                    return checkInButton
                   })()}
                 </div>
               </div>

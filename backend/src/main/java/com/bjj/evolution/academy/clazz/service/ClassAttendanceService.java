@@ -84,7 +84,12 @@ public class ClassAttendanceService {
 
     @Transactional
     public CheckInResponse confirm(UUID academyId, Long classId, UUID studentId) {
-        getScheduledClassAndValidateAcademy(academyId, classId);
+        ScheduledClass scheduledClass = getScheduledClassAndValidateAcademy(academyId, classId);
+
+        if (scheduledClass.getStatus() == ClassStatus.CANCELED) {
+            log.warn("Check-in confirmation denied: class is canceled classId={} student={}", classId, studentId);
+            throw new BusinessRuleException("Cannot confirm attendance for a canceled class.");
+        }
 
         ClassAttendance attendance = attendanceRepository.findByScheduledClassIdAndStudentId(classId, studentId)
                 .orElseThrow(() -> {

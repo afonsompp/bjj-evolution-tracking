@@ -120,7 +120,7 @@ export function AttendanceModal({ academyId, cls, onClose }: Props) {
                     {translate(`attendance.status.${a.status}`)}
                   </span>
                   <div className="flex gap-1">
-                    {a.status === 'REGISTERED' && (
+                    {a.status === 'REGISTERED' && cls.status !== 'CANCELED' && (
                       <button
                         onClick={() => confirmMutation.mutate(a.student.id)}
                         disabled={confirmMutation.isPending}

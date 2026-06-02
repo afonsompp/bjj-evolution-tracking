@@ -425,6 +425,23 @@ class ClassAttendanceServiceTest {
         }
 
         @Test
+        @DisplayName("should throw BusinessRuleException when the class itself is canceled")
+        void shouldThrow_whenClassCanceled() {
+            var ac = createAcademy(academyId, "Gracie Barra");
+            var instructor = createInstructor();
+            var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.CANCELED);
+
+            when(scheduledClassRepository.findById(classId)).thenReturn(Optional.of(sClass));
+
+            assertThatThrownBy(() -> service.confirm(academyId, classId, studentId))
+                    .isInstanceOf(BusinessRuleException.class)
+                    .hasMessageContaining("canceled class");
+
+            verify(attendanceRepository, never()).findByScheduledClassIdAndStudentId(any(), any());
+            verify(attendanceRepository, never()).save(any());
+        }
+
+        @Test
         @DisplayName("should throw BusinessRuleException when class belongs to a different academy")
         void shouldThrow_whenAcademyMismatch() {
             var wrongAcademy = createAcademy(UUID.randomUUID(), "Wrong Academy");

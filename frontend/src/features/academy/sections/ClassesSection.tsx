@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from '../../../lib/i18n/I18nContext'
 import { MAX_DATE, hasYearOverflow, isApplicableRange, isOutOfOrderRange } from '../../../lib/dateValidation'
 import { useClasses } from '../hooks/useClasses'
@@ -84,8 +84,17 @@ type Props = { academyId: string }
 export function ClassesSection({ academyId }: Props) {
   const { translate } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  const [subTab, setSubTab] = useState<SubTab>('classes')
+  // The active sub-tab is URL-driven (?sub=templates) so deep links and
+  // post-save redirects can land directly on the templates view.
+  const subTab: SubTab = searchParams.get('sub') === 'templates' ? 'templates' : 'classes'
+  const setSubTab = (t: SubTab) => {
+    const next = new URLSearchParams(searchParams)
+    if (t === 'templates') next.set('sub', 'templates')
+    else next.delete('sub')
+    setSearchParams(next, { replace: true })
+  }
 
   const now = new Date()
   const today = toLocalDateInput(now)

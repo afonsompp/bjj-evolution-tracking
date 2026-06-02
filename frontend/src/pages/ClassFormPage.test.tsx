@@ -15,6 +15,9 @@ vi.mock('../features/academy/hooks/useClassMutations', () => ({
 }))
 vi.mock('../features/technique/components/TechniquePicker', () => ({ TechniquePicker: () => <div>technique-picker</div> }))
 
+const profileState = vi.hoisted(() => ({ value: { data: undefined as unknown } }))
+vi.mock('../features/profile/useProfile', () => ({ useProfile: () => profileState.value }))
+
 const { navigate } = vi.hoisted(() => ({ navigate: vi.fn() }))
 vi.mock('react-router-dom', async (orig) => ({
   ...(await orig<typeof import('react-router-dom')>()),
@@ -29,6 +32,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   membersState.value = { data: { content: [instructorMember] } }
   classState.value = { data: undefined }
+  profileState.value = { data: { role: 'CUSTOMER' } }
 })
 
 describe('ClassFormPage (create)', () => {
@@ -37,6 +41,15 @@ describe('ClassFormPage (create)', () => {
   it('renders the new-class title', () => {
     renderWithProviders(<ClassFormPage />, opts)
     expect(screen.getByRole('heading', { name: 'New Class' })).toBeInTheDocument()
+  })
+
+  it('hides the new-technique button for customers and shows it for managers', () => {
+    const { rerender } = renderWithProviders(<ClassFormPage />, opts)
+    expect(screen.queryByRole('button', { name: '+ New Technique' })).not.toBeInTheDocument()
+
+    profileState.value = { data: { role: 'PLATFORM_MANAGER' } }
+    rerender(<ClassFormPage />)
+    expect(screen.getByRole('button', { name: '+ New Technique' })).toBeInTheDocument()
   })
 
   it('submits a new class and navigates back to the list', async () => {

@@ -4,7 +4,9 @@ import { useTranslation } from '../lib/i18n/I18nContext'
 import { useAcademyMembers } from '../features/academy/hooks/useAcademyMembers'
 import { useCreateClass, useUpdateClass } from '../features/academy/hooks/useClassMutations'
 import { useClass } from '../features/academy/hooks/useClasses'
+import { useProfile } from '../features/profile/useProfile'
 import { TechniquePicker } from '../features/technique/components/TechniquePicker'
+import { CreateTechniqueModal } from '../features/technique/components/CreateTechniqueModal'
 import { ChevronLeftIcon, LoaderIcon } from '../assets/icons'
 import type { ClassType, ClassStatus, TrainingType } from '../types/api'
 
@@ -39,6 +41,15 @@ export default function ClassFormPage() {
   const [status, setStatus] = useState<ClassStatus>('PUBLISHED')
   const [techniqueIds, setTechniqueIds] = useState<number[]>([])
   const [error, setError] = useState('')
+  const [showCreateTechnique, setShowCreateTechnique] = useState(false)
+
+  const { data: profile } = useProfile()
+  const canCreateTechnique = profile?.role === 'ADMIN' || profile?.role === 'PLATFORM_MANAGER'
+
+  const handleCreatedTechnique = (id: number) => {
+    setTechniqueIds((prev) => [...prev, id])
+    setShowCreateTechnique(false)
+  }
 
   // Hydrate the form when the fetched class first arrives (or changes identity
   // on refetch). Done while rendering, keyed on the source object, instead of in
@@ -194,11 +205,24 @@ export default function ClassFormPage() {
         </div>
 
         {/* Techniques */}
-        <TechniquePicker
-          selectedIds={techniqueIds}
-          onChange={setTechniqueIds}
-          label={translate('form.techniquesPracticed')}
-        />
+        <div className="space-y-2">
+          {canCreateTechnique && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowCreateTechnique(true)}
+                className="rounded-lg bg-[var(--text-primary)] px-3 py-1.5 text-xs font-medium text-[var(--bg-page)] hover:opacity-90"
+              >
+                + {translate('form.newTechnique')}
+              </button>
+            </div>
+          )}
+          <TechniquePicker
+            selectedIds={techniqueIds}
+            onChange={setTechniqueIds}
+            label={translate('form.techniquesPracticed')}
+          />
+        </div>
 
         {/* Status */}
         <div className="space-y-1.5">
@@ -238,6 +262,13 @@ export default function ClassFormPage() {
           </button>
         </div>
       </form>
+
+      {showCreateTechnique && (
+        <CreateTechniqueModal
+          onClose={() => setShowCreateTechnique(false)}
+          onCreated={handleCreatedTechnique}
+        />
+      )}
     </div>
   )
 }

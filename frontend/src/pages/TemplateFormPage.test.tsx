@@ -15,6 +15,9 @@ vi.mock('../features/academy/hooks/useTemplateMutations', () => ({
 }))
 vi.mock('../features/technique/components/TechniquePicker', () => ({ TechniquePicker: () => <div>technique-picker</div> }))
 
+const profileState = vi.hoisted(() => ({ value: { data: undefined as unknown } }))
+vi.mock('../features/profile/useProfile', () => ({ useProfile: () => profileState.value }))
+
 const { navigate } = vi.hoisted(() => ({ navigate: vi.fn() }))
 vi.mock('react-router-dom', async (orig) => ({
   ...(await orig<typeof import('react-router-dom')>()),
@@ -29,6 +32,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   membersState.value = { data: { content: [instructorMember] } }
   templateState.value = { data: undefined }
+  profileState.value = { data: { role: 'CUSTOMER' } }
 })
 
 describe('TemplateFormPage (create)', () => {
@@ -37,6 +41,15 @@ describe('TemplateFormPage (create)', () => {
   it('renders the new-template title', () => {
     renderWithProviders(<TemplateFormPage />, opts)
     expect(screen.getByRole('heading', { name: 'New Template' })).toBeInTheDocument()
+  })
+
+  it('hides the new-technique button for customers and shows it for managers', () => {
+    const { rerender } = renderWithProviders(<TemplateFormPage />, opts)
+    expect(screen.queryByRole('button', { name: '+ New Technique' })).not.toBeInTheDocument()
+
+    profileState.value = { data: { role: 'PLATFORM_MANAGER' } }
+    rerender(<TemplateFormPage />)
+    expect(screen.getByRole('button', { name: '+ New Technique' })).toBeInTheDocument()
   })
 
   it('submits a new template with the default recurrence rule', async () => {

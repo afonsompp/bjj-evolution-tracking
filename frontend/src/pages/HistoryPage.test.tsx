@@ -27,7 +27,7 @@ const training = {
   durationMinutes: 90,
   roundLengthMinutes: 5, restLengthMinutes: 1, totalRolls: 6,
   cardioRating: 3, intensityRating: 4,
-  techniques: [], submissionTechniques: [], submissionTechniquesAllowed: [],
+  techniques: [], appliedTechniques: [], sufferedTechniques: [],
   sweeps: 0, takedowns: 0, guardPasses: 0, submissions: 0, taps: 0, escapes: 0,
   description: '',
 }

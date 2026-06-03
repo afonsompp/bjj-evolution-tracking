@@ -32,21 +32,18 @@ public record TrainingRequest(
 
         List<Long> techniqueIds,
 
-        List<Long> submissionTechniqueIds,
+        List<Long> appliedTechniqueIds,
 
-        List<Long> submissionTechniqueAllowedIds,
+        List<Long> sufferedTechniqueIds,
 
-        @NotNull
         @PositiveOrZero
         Integer totalRolls,
 
         String description,
 
-        @NotNull
         @PositiveOrZero
         Integer roundLengthMinutes,
 
-        @NotNull
         @PositiveOrZero
         Integer restLengthMinutes,
 
@@ -60,14 +57,14 @@ public record TrainingRequest(
         @Max(5)
         Integer intensityRating,
 
-        @NotNull @PositiveOrZero Integer taps,
-        @NotNull @PositiveOrZero Integer submissions,
-        @NotNull @PositiveOrZero Integer escapes,
-        @NotNull @PositiveOrZero Integer sweeps,
-        @NotNull @PositiveOrZero Integer takedowns,
-        @NotNull @PositiveOrZero Integer guardPasses) {
+        @PositiveOrZero Integer taps,
+        @PositiveOrZero Integer submissions,
+        @PositiveOrZero Integer escapes,
+        @PositiveOrZero Integer sweeps,
+        @PositiveOrZero Integer takedowns,
+        @PositiveOrZero Integer guardPasses) {
 
-        public Training toEntity(Long id, List<Technique> techniques, List<Technique> submissionTechniques, List<Technique> submissionTechniqueAllowed,UserProfile profile) {
+        public Training toEntity(Long id, List<Technique> techniques, List<Technique> appliedTechniques, List<Technique> sufferedTechniques,UserProfile profile) {
                 return Training.builder()
                         .id(id)
                         .userProfile(profile)
@@ -87,13 +84,13 @@ public record TrainingRequest(
                         .sweeps(sweeps)
                         .takedowns(takedowns)
                         .guardPasses(guardPasses)
-                        .submissionsTechniques(submissionTechniques)
-                        .submissionsTechniquesAllowed(submissionTechniqueAllowed)
+                        .appliedTechniques(appliedTechniques)
+                        .sufferedTechniques(sufferedTechniques)
                         .description(description)
                         .build();
         }
 
-        public Training toEntity(List<Technique> techniques, List<Technique> submissionTechniques, List<Technique> submissionTechniquesAllowed, UserProfile profile) {
-                return toEntity(null, techniques, submissionTechniques, submissionTechniquesAllowed, profile);
+        public Training toEntity(List<Technique> techniques, List<Technique> appliedTechniques, List<Technique> sufferedTechniques, UserProfile profile) {
+                return toEntity(null, techniques, appliedTechniques, sufferedTechniques, profile);
         }
 }

@@ -45,12 +45,9 @@ public class Training {
             inverseJoinColumns = @JoinColumn(name = "technique_id")
     )
     private List<Technique> technique;
-    @Column(nullable = false)
     private Integer totalRolls;
-    @Column(nullable = false)
-    private int roundLengthMinutes;
-    @Column(nullable = false)
-    private int restLengthMinutes;
+    private Integer roundLengthMinutes;
+    private Integer restLengthMinutes;
     @Embedded
     @AttributeOverride(
             name = "value",
@@ -63,35 +60,29 @@ public class Training {
             column = @Column(name = "intensity_rating")
     )
     private Rating intensityRating;
-    @Column(nullable = false)
     private Integer taps;
-    @Column(nullable = false)
     private Integer submissions;
-    @Column(nullable = false)
     private Integer escapes;
-    @Column(nullable = false)
     private Integer sweeps;
-    @Column(nullable = false)
     private Integer takedowns;
-    @Column(nullable = false)
     private Integer guardPasses;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_profile_id", nullable = false)
     private UserProfile userProfile;
     @ManyToMany
     @JoinTable(
-            name = "training_submission_technique",
+            name = "training_applied_technique",
             joinColumns = @JoinColumn(name = "training_id"),
             inverseJoinColumns = @JoinColumn(name = "technique_id")
     )
-    private List<Technique> submissionTechniques;
+    private List<Technique> appliedTechniques;
     @ManyToMany
     @JoinTable(
-            name = "training_submission_technique_allowed",
+            name = "training_suffered_technique",
             joinColumns = @JoinColumn(name = "training_id"),
             inverseJoinColumns = @JoinColumn(name = "technique_id")
     )
-    private List<Technique> submissionTechniquesAllowed;
+    private List<Technique> sufferedTechniques;
     private String description;
 
     public Training() {
@@ -125,11 +116,11 @@ public class Training {
         return totalRolls;
     }
 
-    public int getRoundLengthMinutes() {
+    public Integer getRoundLengthMinutes() {
         return roundLengthMinutes;
     }
 
-    public int getRestLengthMinutes() {
+    public Integer getRestLengthMinutes() {
         return restLengthMinutes;
     }
 
@@ -169,16 +160,16 @@ public class Training {
         return userProfile;
     }
 
-    public List<Technique> getSubmissionTechniques() {
-        return submissionTechniques;
+    public List<Technique> getAppliedTechniques() {
+        return appliedTechniques;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public List<Technique> getSubmissionTechniquesAllowed() {
-        return submissionTechniquesAllowed;
+    public List<Technique> getSufferedTechniques() {
+        return sufferedTechniques;
     }
     private Training(Builder builder) {
         this.id = builder.id;
@@ -199,8 +190,8 @@ public class Training {
         this.takedowns = builder.takedowns;
         this.guardPasses = builder.guardPasses;
         this.userProfile = builder.userProfile;
-        this.submissionTechniques = builder.submissionTechniques;
-        this.submissionTechniquesAllowed = builder.submissionTechniquesAllowed;
+        this.appliedTechniques = builder.appliedTechniques;
+        this.sufferedTechniques = builder.sufferedTechniques;
         this.description = builder.description;
     }
 
@@ -215,11 +206,11 @@ public class Training {
         private Instant sessionDate;
         private int durationMinutes;
         private List<Technique> technique;
-        private List<Technique> submissionTechniques;
-        private List<Technique> submissionTechniquesAllowed;
+        private List<Technique> appliedTechniques;
+        private List<Technique> sufferedTechniques;
         private Integer totalRolls;
-        private int roundLengthMinutes;
-        private int restLengthMinutes;
+        private Integer roundLengthMinutes;
+        private Integer restLengthMinutes;
         private Rating cardioRating;
         private Rating intensityRating;
         private Integer taps;
@@ -271,12 +262,12 @@ public class Training {
             return this;
         }
 
-        public Builder roundLengthMinutes(int roundLengthMinutes) {
+        public Builder roundLengthMinutes(Integer roundLengthMinutes) {
             this.roundLengthMinutes = roundLengthMinutes;
             return this;
         }
 
-        public Builder restLengthMinutes(int restLengthMinutes) {
+        public Builder restLengthMinutes(Integer restLengthMinutes) {
             this.restLengthMinutes = restLengthMinutes;
             return this;
         }
@@ -321,13 +312,13 @@ public class Training {
             return this;
         }
 
-        public Builder submissionsTechniques(List<Technique> submissionTechniques) {
-            this.submissionTechniques = submissionTechniques;
+        public Builder appliedTechniques(List<Technique> appliedTechniques) {
+            this.appliedTechniques = appliedTechniques;
             return this;
         }
 
-        public Builder submissionsTechniquesAllowed(List<Technique> submissionTechniquesAllowed) {
-            this.submissionTechniquesAllowed = submissionTechniquesAllowed;
+        public Builder sufferedTechniques(List<Technique> sufferedTechniques) {
+            this.sufferedTechniques = sufferedTechniques;
             return this;
         }
 

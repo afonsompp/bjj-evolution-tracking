@@ -38,8 +38,8 @@ const existingTraining = {
   cardioRating: 4,
   intensityRating: 4,
   techniques: [],
-  submissionTechniques: [],
-  submissionTechniquesAllowed: [],
+  appliedTechniques: [],
+  sufferedTechniques: [],
   sweeps: 1, takedowns: 2, guardPasses: 3, submissions: 4, taps: 0, escapes: 1,
   description: 'good session',
 }

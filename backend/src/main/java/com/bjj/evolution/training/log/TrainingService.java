@@ -53,14 +53,14 @@ public class TrainingService {
                 });
 
         List<Technique> techniques = resolveTechniques(request.techniqueIds());
-        List<Technique> submissionTechniques = resolveTechniques(request.submissionTechniqueIds());
-        List<Technique> submissionTechniquesAllowed = resolveTechniques(request.submissionTechniqueAllowedIds());
+        List<Technique> appliedTechniques = resolveTechniques(request.appliedTechniqueIds());
+        List<Technique> sufferedTechniques = resolveTechniques(request.sufferedTechniqueIds());
 
-        log.debug("Techniques resolved for training: positions={} submissions={} allowed={}",
-                techniques.size(), submissionTechniques.size(), submissionTechniquesAllowed.size());
+        log.debug("Techniques resolved for training: positions={} applied={} suffered={}",
+                techniques.size(), appliedTechniques.size(), sufferedTechniques.size());
 
         Training saved = trainingRepository.save(
-                request.toEntity(techniques, submissionTechniques, submissionTechniquesAllowed, profile));
+                request.toEntity(techniques, appliedTechniques, sufferedTechniques, profile));
         log.info("Training created: id={} user={} date={}", saved.getId(), userId, saved.getSessionDate());
         return TrainingResponse.fromEntity(saved);
     }
@@ -105,11 +105,11 @@ public class TrainingService {
 
         UserProfile profile = existingTraining.getUserProfile();
         List<Technique> techniques = resolveTechniques(request.techniqueIds());
-        List<Technique> subTechniques = resolveTechniques(request.submissionTechniqueIds());
-        List<Technique> subTechniquesAllowed = resolveTechniques(request.submissionTechniqueAllowedIds());
+        List<Technique> appliedTechniques = resolveTechniques(request.appliedTechniqueIds());
+        List<Technique> sufferedTechniques = resolveTechniques(request.sufferedTechniqueIds());
 
         Training updated = trainingRepository.save(
-                request.toEntity(id, techniques, subTechniques, subTechniquesAllowed, profile));
+                request.toEntity(id, techniques, appliedTechniques, sufferedTechniques, profile));
         log.info("Training updated: id={} user={}", id, userId);
         return TrainingResponse.fromEntity(updated);
     }

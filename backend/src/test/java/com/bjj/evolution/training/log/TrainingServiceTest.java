@@ -78,8 +78,8 @@ class TrainingServiceTest {
                 Instant.parse("2026-06-01T10:00:00Z"),
                 90,
                 List.of(1L),                // techniqueIds
-                List.of(2L),                // submissionTechniqueIds
-                List.of(3L),                // submissionTechniqueAllowedIds
+                List.of(2L),                // appliedTechniqueIds
+                List.of(3L),                // sufferedTechniqueIds
                 5,                          // totalRolls
                 "Good session",             // description
                 7,                          // roundLengthMinutes
@@ -169,8 +169,8 @@ class TrainingServiceTest {
                 .sessionDate(Instant.parse("2026-06-01T10:00:00Z"))
                 .durationMinutes(90)
                 .technique(List.of())
-                .submissionsTechniques(List.of())
-                .submissionsTechniquesAllowed(List.of())
+                .appliedTechniques(List.of())
+                .sufferedTechniques(List.of())
                 .totalRolls(5)
                 .roundLengthMinutes(7)
                 .restLengthMinutes(2)
@@ -191,8 +191,8 @@ class TrainingServiceTest {
         assertNotNull(result);
         assertEquals(trainingId, result.id());
         assertTrue(result.techniques().isEmpty());
-        assertTrue(result.submissionTechniques().isEmpty());
-        assertTrue(result.submissionTechniquesAllowed().isEmpty());
+        assertTrue(result.appliedTechniques().isEmpty());
+        assertTrue(result.sufferedTechniques().isEmpty());
     }
 
     // -------------------------------------------------------
@@ -420,8 +420,8 @@ class TrainingServiceTest {
                 .sessionDate(Instant.parse("2026-06-01T10:00:00Z"))
                 .durationMinutes(90)
                 .technique(List.of(technique))
-                .submissionsTechniques(List.of(technique))
-                .submissionsTechniquesAllowed(List.of(technique))
+                .appliedTechniques(List.of(technique))
+                .sufferedTechniques(List.of(technique))
                 .totalRolls(5)
                 .roundLengthMinutes(7)
                 .restLengthMinutes(2)

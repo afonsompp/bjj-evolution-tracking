@@ -15,6 +15,7 @@ import {
   ChevronLeftIcon,
 } from '../assets/icons'
 import { apiErrorMessage } from '../lib/apiError'
+import { handleIntInput } from '../lib/numericInput'
 
 // ── Constants ────────────────────────────────────────────
 const CLASS_TYPES: { value: ClassType; key: string }[] = [
@@ -121,21 +122,23 @@ export default function TrainingFormPage() {
   const [sessionTime, setSessionTime] = useState(importTime)
   const [trainingType, setTrainingType] = useState<TrainingType>((fromClass?.trainingType as TrainingType) ?? 'GI')
   const [classType, setClassType] = useState<ClassType>((fromClass?.classType as ClassType) ?? 'REGULAR')
-  const [durationMinutes, setDurationMinutes] = useState(fromClass?.durationMinutes ?? 90)
-  const [roundLengthMinutes, setRoundLengthMinutes] = useState(5)
-  const [restLengthMinutes, setRestLengthMinutes] = useState(1)
-  const [totalRolls, setTotalRolls] = useState(0)
+  const [durationMinutes, setDurationMinutes] = useState<number | null>(fromClass?.durationMinutes ?? 90)
+  // The per-session metrics below default to null ("not recorded") rather than 0,
+  // so an explicit 0 the user types is a real data point that counts in stats.
+  const [roundLengthMinutes, setRoundLengthMinutes] = useState<number | null>(null)
+  const [restLengthMinutes, setRestLengthMinutes] = useState<number | null>(null)
+  const [totalRolls, setTotalRolls] = useState<number | null>(null)
   const [cardioRating, setCardioRating] = useState(3)
   const [intensityRating, setIntensityRating] = useState(3)
   const [techniqueIds, setTechniqueIds] = useState<number[]>(fromClass?.techniqueIds ?? [])
-  const [submissionTechniqueIds, setSubmissionTechniqueIds] = useState<number[]>([])
-  const [submissionTechniqueAllowedIds, setSubmissionTechniqueAllowedIds] = useState<number[]>([])
-  const [sweeps, setSweeps] = useState(0)
-  const [takedowns, setTakedowns] = useState(0)
-  const [guardPasses, setGuardPasses] = useState(0)
-  const [submissions, setSubmissions] = useState(0)
-  const [taps, setTaps] = useState(0)
-  const [escapes, setEscapes] = useState(0)
+  const [appliedTechniqueIds, setAppliedTechniqueIds] = useState<number[]>([])
+  const [sufferedTechniqueIds, setSufferedTechniqueIds] = useState<number[]>([])
+  const [sweeps, setSweeps] = useState<number | null>(null)
+  const [takedowns, setTakedowns] = useState<number | null>(null)
+  const [guardPasses, setGuardPasses] = useState<number | null>(null)
+  const [submissions, setSubmissions] = useState<number | null>(null)
+  const [taps, setTaps] = useState<number | null>(null)
+  const [escapes, setEscapes] = useState<number | null>(null)
   const [description, setDescription] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -159,8 +162,8 @@ export default function TrainingFormPage() {
     setCardioRating(existing.cardioRating)
     setIntensityRating(existing.intensityRating)
     setTechniqueIds(existing.techniques.map((t) => t.id))
-    setSubmissionTechniqueIds(existing.submissionTechniques.map((t) => t.id))
-    setSubmissionTechniqueAllowedIds(existing.submissionTechniquesAllowed.map((t) => t.id))
+    setAppliedTechniqueIds(existing.appliedTechniques.map((t) => t.id))
+    setSufferedTechniqueIds(existing.sufferedTechniques.map((t) => t.id))
     setSweeps(existing.sweeps)
     setTakedowns(existing.takedowns)
     setGuardPasses(existing.guardPasses)
@@ -173,18 +176,19 @@ export default function TrainingFormPage() {
   // ── Validation ─────────────────────────────────────────
   const validate = (): boolean => {
     const e: Record<string, string> = {}
-    if (durationMinutes < 1) e.durationMinutes = translate('form.errorDuration')
-    if (roundLengthMinutes < 1) e.roundLengthMinutes = translate('form.errorRoundLength')
-    if (restLengthMinutes < 0) e.restLengthMinutes = translate('form.errorRestLength')
-    if (totalRolls < 0) e.totalRolls = translate('form.errorTotalRolls')
+    // Null means "not recorded" and is always valid; only validate entered values.
+    if (durationMinutes == null || durationMinutes < 1) e.durationMinutes = translate('form.errorDuration')
+    if (roundLengthMinutes != null && roundLengthMinutes < 1) e.roundLengthMinutes = translate('form.errorRoundLength')
+    if (restLengthMinutes != null && restLengthMinutes < 0) e.restLengthMinutes = translate('form.errorRestLength')
+    if (totalRolls != null && totalRolls < 0) e.totalRolls = translate('form.errorTotalRolls')
     if (cardioRating < 1 || cardioRating > 5) e.cardioRating = translate('form.errorCardioRange')
     if (intensityRating < 1 || intensityRating > 5) e.intensityRating = translate('form.errorIntensityRange')
-    if (sweeps < 0) e.sweeps = translate('form.errorCannotBeNegative')
-    if (takedowns < 0) e.takedowns = translate('form.errorCannotBeNegative')
-    if (guardPasses < 0) e.guardPasses = translate('form.errorCannotBeNegative')
-    if (submissions < 0) e.submissions = translate('form.errorCannotBeNegative')
-    if (taps < 0) e.taps = translate('form.errorCannotBeNegative')
-    if (escapes < 0) e.escapes = translate('form.errorCannotBeNegative')
+    if (sweeps != null && sweeps < 0) e.sweeps = translate('form.errorCannotBeNegative')
+    if (takedowns != null && takedowns < 0) e.takedowns = translate('form.errorCannotBeNegative')
+    if (guardPasses != null && guardPasses < 0) e.guardPasses = translate('form.errorCannotBeNegative')
+    if (submissions != null && submissions < 0) e.submissions = translate('form.errorCannotBeNegative')
+    if (taps != null && taps < 0) e.taps = translate('form.errorCannotBeNegative')
+    if (escapes != null && escapes < 0) e.escapes = translate('form.errorCannotBeNegative')
 
     setErrors(e)
     return Object.keys(e).length === 0
@@ -211,15 +215,16 @@ export default function TrainingFormPage() {
       sessionDate: localDate.toISOString(),
       trainingType,
       classType,
-      durationMinutes,
+      // validate() guarantees durationMinutes is non-null before we reach here.
+      durationMinutes: durationMinutes ?? 0,
       roundLengthMinutes,
       restLengthMinutes,
       totalRolls,
       cardioRating,
       intensityRating,
       techniqueIds,
-      submissionTechniqueIds,
-      submissionTechniqueAllowedIds: submissionTechniqueAllowedIds,
+      appliedTechniqueIds,
+      sufferedTechniqueIds: sufferedTechniqueIds,
       sweeps,
       takedowns,
       guardPasses,
@@ -299,8 +304,8 @@ export default function TrainingFormPage() {
               <input
                 type="number"
                 min={1}
-                value={durationMinutes}
-                onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                value={durationMinutes ?? ''}
+                onChange={(e) => handleIntInput(e, setDurationMinutes)}
                 className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
               />
             </Field>
@@ -308,8 +313,8 @@ export default function TrainingFormPage() {
               <input
                 type="number"
                 min={0}
-                value={totalRolls}
-                onChange={(e) => setTotalRolls(Number(e.target.value))}
+                value={totalRolls ?? ''}
+                onChange={(e) => handleIntInput(e, setTotalRolls)}
                 className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
               />
             </Field>
@@ -317,8 +322,8 @@ export default function TrainingFormPage() {
               <input
                 type="number"
                 min={1}
-                value={roundLengthMinutes}
-                onChange={(e) => setRoundLengthMinutes(Number(e.target.value))}
+                value={roundLengthMinutes ?? ''}
+                onChange={(e) => handleIntInput(e, setRoundLengthMinutes)}
                 className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
               />
             </Field>
@@ -326,8 +331,8 @@ export default function TrainingFormPage() {
               <input
                 type="number"
                 min={0}
-                value={restLengthMinutes}
-                onChange={(e) => setRestLengthMinutes(Number(e.target.value))}
+                value={restLengthMinutes ?? ''}
+                onChange={(e) => handleIntInput(e, setRestLengthMinutes)}
                 className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
               />
             </Field>
@@ -372,16 +377,14 @@ export default function TrainingFormPage() {
               label={translate('form.techniquesPracticed')}
             />
             <TechniquePicker
-              selectedIds={submissionTechniqueIds}
-              onChange={setSubmissionTechniqueIds}
+              selectedIds={appliedTechniqueIds}
+              onChange={setAppliedTechniqueIds}
               label={translate('form.submissionTechniques')}
-              typeFilter={['SUBMISSION']}
             />
             <TechniquePicker
-              selectedIds={submissionTechniqueAllowedIds}
-              onChange={setSubmissionTechniqueAllowedIds}
+              selectedIds={sufferedTechniqueIds}
+              onChange={setSufferedTechniqueIds}
               label={translate('form.submissionsAllowed')}
-              typeFilter={['SUBMISSION']}
             />
           </div>
         </section>
@@ -394,8 +397,8 @@ export default function TrainingFormPage() {
               <input
                 type="number"
                 min={0}
-                value={submissions}
-                onChange={(e) => setSubmissions(Number(e.target.value))}
+                value={submissions ?? ''}
+                onChange={(e) => handleIntInput(e, setSubmissions)}
                 className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
               />
             </Field>
@@ -403,8 +406,8 @@ export default function TrainingFormPage() {
               <input
                 type="number"
                 min={0}
-                value={taps}
-                onChange={(e) => setTaps(Number(e.target.value))}
+                value={taps ?? ''}
+                onChange={(e) => handleIntInput(e, setTaps)}
                 className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
               />
             </Field>
@@ -412,8 +415,8 @@ export default function TrainingFormPage() {
               <input
                 type="number"
                 min={0}
-                value={escapes}
-                onChange={(e) => setEscapes(Number(e.target.value))}
+                value={escapes ?? ''}
+                onChange={(e) => handleIntInput(e, setEscapes)}
                 className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
               />
             </Field>
@@ -421,8 +424,8 @@ export default function TrainingFormPage() {
               <input
                 type="number"
                 min={0}
-                value={takedowns}
-                onChange={(e) => setTakedowns(Number(e.target.value))}
+                value={takedowns ?? ''}
+                onChange={(e) => handleIntInput(e, setTakedowns)}
                 className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
               />
             </Field>
@@ -430,8 +433,8 @@ export default function TrainingFormPage() {
               <input
                 type="number"
                 min={0}
-                value={sweeps}
-                onChange={(e) => setSweeps(Number(e.target.value))}
+                value={sweeps ?? ''}
+                onChange={(e) => handleIntInput(e, setSweeps)}
                 className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
               />
             </Field>
@@ -439,8 +442,8 @@ export default function TrainingFormPage() {
               <input
                 type="number"
                 min={0}
-                value={guardPasses}
-                onChange={(e) => setGuardPasses(Number(e.target.value))}
+                value={guardPasses ?? ''}
+                onChange={(e) => handleIntInput(e, setGuardPasses)}
                 className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
               />
             </Field>

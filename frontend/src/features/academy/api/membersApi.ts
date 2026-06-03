@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { apiClient } from '../../../api/client'
 import type {
   AcademyMemberRequest,
@@ -29,10 +30,18 @@ export const membersApi = {
       })
       .then((r) => r.data),
 
-  get: (academyId: string, userId: string) =>
+  // Returns null when the user has no membership (404) so callers can treat
+  // "not a member" as a normal state instead of a query error. This also lets
+  // the membership query update after leaving/being removed, where the GET
+  // starts returning 404.
+  get: (academyId: string, userId: string): Promise<AcademyMemberResponse | null> =>
     apiClient
       .get<AcademyMemberResponse>(`/academies/${academyId}/members/${userId}`)
-      .then((r) => r.data),
+      .then((r) => r.data)
+      .catch((error) => {
+        if (axios.isAxiosError(error) && error.response?.status === 404) return null
+        throw error
+      }),
 
   join: (academyId: string) =>
     apiClient

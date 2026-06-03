@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,6 +21,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 @RestController
@@ -151,7 +155,14 @@ public class AcademyMemberController {
             @PathVariable UUID academyId,
             @PathVariable UUID userId,
             @RequestParam(required = false) CheckInStatus status,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(attendanceService.findClassViewsByStudentAndAcademy(academyId, userId, status, pageable));
+        Instant start = startDate != null ? startDate.atStartOfDay(ZoneOffset.UTC).toInstant() : null;
+        Instant end = endDate != null ? endDate.atTime(23, 59, 59).toInstant(ZoneOffset.UTC) : null;
+        return ResponseEntity.ok(
+                attendanceService.findClassViewsByStudentAndAcademy(academyId, userId, status, start, end, pageable));
     }
 }

@@ -19,12 +19,12 @@ describe('useMemberAttendances', () => {
   it("fetches one member's history within an academy", async () => {
     listMemberAttendances.mockResolvedValue({ content: [] })
     const { result, client } = renderHookWithClient(() =>
-      useMemberAttendances('a1', 'u9', 2, 10),
+      useMemberAttendances('a1', 'u9', { page: 2, size: 10, startDate: '2026-06-01', endDate: '2026-06-30' }),
     )
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(listMemberAttendances).toHaveBeenCalledWith('a1', 'u9', 2, 10)
+    expect(listMemberAttendances).toHaveBeenCalledWith('a1', 'u9', 2, 10, '2026-06-01', '2026-06-30')
     const keys = client.getQueryCache().getAll().map((q) => q.queryKey)
-    expect(keys).toContainEqual(attendanceKeys.byMember('a1', 'u9', 2))
+    expect(keys).toContainEqual(attendanceKeys.byMember('a1', 'u9', 2, 10, '2026-06-01', '2026-06-30'))
   })
 
   it('does not fetch without academy or user id', () => {
@@ -39,11 +39,13 @@ describe('useMemberAttendances', () => {
 describe('useMyAllAttendances', () => {
   it('fetches across all academies (no academy id) for the user', async () => {
     getMyAttendances.mockResolvedValue({ content: [] })
-    const { result, client } = renderHookWithClient(() => useMyAllAttendances('u9', 1, 25))
+    const { result, client } = renderHookWithClient(() =>
+      useMyAllAttendances('u9', { page: 1, size: 25 }),
+    )
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(getMyAttendances).toHaveBeenCalledWith(undefined, 1, 25)
+    expect(getMyAttendances).toHaveBeenCalledWith(undefined, 1, 25, undefined, undefined)
     const keys = client.getQueryCache().getAll().map((q) => q.queryKey)
-    expect(keys).toContainEqual(attendanceKeys.myAll('u9', 1))
+    expect(keys).toContainEqual(attendanceKeys.myAll('u9', 1, 25))
   })
 
   it('does not fetch without a user id', () => {

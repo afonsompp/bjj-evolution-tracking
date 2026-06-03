@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '../lib/i18n/I18nContext'
-import { MAX_DATE, hasYearOverflow, isApplicableRange, isOutOfOrderRange } from '../lib/dateValidation'
+import { MAX_DATE, hasYearOverflow, isValidDateRange, isOutOfOrderRange } from '../lib/dateValidation'
 import { useTrainings } from '../features/training/hooks/useTrainings'
 import { useDeleteTraining } from '../features/training/hooks/useManageTraining'
 import type { TrainingResponse } from '../types/api'
@@ -104,8 +104,7 @@ function TrainingCard({
   const navigate = useNavigate()
   const [expanded, setExpanded] = useState(false)
 
-  const typeLabel =
-    training.trainingType === 'GI' ? translate('history.gi') : translate('history.noGi')
+  const typeLabel = translate(`trainingType.${training.trainingType}`)
   const classLabel = translate(`history.classType.${training.classType}`) ?? training.classType
 
   return (
@@ -357,7 +356,7 @@ function PageSizeSelector({
     <select
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-1.5 text-xs text-[var(--text-muted)] outline-none"
+      className="shrink-0 rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-1.5 text-xs text-[var(--text-muted)] outline-none"
     >
       {[10, 25, 50].map((s) => (
         <option key={s} value={s}>{translate('filter.perPage', { count: s })}</option>
@@ -399,34 +398,43 @@ export default function HistoryPage() {
   const [appliedCustomEnd, setAppliedCustomEnd] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<TrainingResponse | null>(null)
 
-  // Promote the edited range to the "applied" range once it's valid. Done while
-  // rendering (guarded so it only fires on an actual change) instead of in an
-  // effect — the React-endorsed "adjust state during render" pattern.
-  if (
-    isApplicableRange(customStart, customEnd) &&
+  // Custom ranges are only searched once the user clicks "Apply": the edited
+  // draft is promoted to the "applied" range that drives the query. canApply
+  // gates the button to valid, not-yet-applied ranges.
+  const canApply =
+    isValidDateRange(customStart, customEnd) &&
     (customStart !== appliedCustomStart || customEnd !== appliedCustomEnd)
-  ) {
+
+  const applyCustom = () => {
+    if (!canApply) return
     setAppliedCustomStart(customStart)
     setAppliedCustomEnd(customEnd)
+    setPage(0)
   }
 
   const hasError = preset === 'custom' && isOutOfOrderRange(customStart, customEnd)
+
+  // "custom" with nothing applied yet shouldn't trigger a search — wait for the
+  // user to pick a range and click Apply.
+  const customPending = preset === 'custom' && !appliedCustomStart && !appliedCustomEnd
 
   const { startDate, endDate } = preset === 'custom'
     ? { startDate: appliedCustomStart, endDate: appliedCustomEnd }
     : presetToDates(preset)
 
-  const { data, isLoading, isError } = useTrainings(page, size, startDate || undefined, endDate || undefined)
+  const { data, isLoading, isError } = useTrainings(
+    page, size, startDate || undefined, endDate || undefined, !customPending,
+  )
   const deleteMutation = useDeleteTraining()
 
   const handlePreset = (p: Preset) => { setPreset(p); setPage(0) }
   const handleCustomStart = (v: string) => {
     if (hasYearOverflow(v)) return
-    setCustomStart(v); setPage(0)
+    setCustomStart(v)
   }
   const handleCustomEnd = (v: string) => {
     if (hasYearOverflow(v)) return
-    setCustomEnd(v); setPage(0)
+    setCustomEnd(v)
   }
 
   const handleDelete = () => {
@@ -463,21 +471,25 @@ export default function HistoryPage() {
       </div>
 
       {/* Time range filter */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-        {PRESETS.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => handlePreset(key)}
-            className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-              preset === key
-                ? 'bg-[var(--text-primary)] text-[var(--bg-page)]'
-                : 'border border-[var(--border-card)] text-[var(--text-muted)] hover:border-[var(--border-card-hover)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            {key === 'all' ? translate('filter.all') : key === 'custom' ? translate('filter.custom') : label}
-          </button>
-        ))}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+            {PRESETS.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => handlePreset(key)}
+                className={`shrink-0 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                  preset === key
+                    ? 'bg-[var(--text-primary)] text-[var(--bg-page)]'
+                    : 'border border-[var(--border-card)] text-[var(--text-muted)] hover:border-[var(--border-card-hover)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                {key === 'all' ? translate('filter.all') : key === 'custom' ? translate('filter.custom') : label}
+              </button>
+            ))}
+          </div>
+          <PageSizeSelector value={size} onChange={(s) => { setSize(s); setPage(0) }} />
+        </div>
         {preset === 'custom' && (
           <div className="flex flex-wrap items-center gap-1.5">
             <input
@@ -500,6 +512,13 @@ export default function HistoryPage() {
                 hasError ? 'border-rose-500' : 'border-[var(--border-select)]'
               }`}
             />
+            <button
+              onClick={applyCustom}
+              disabled={!canApply}
+              className="rounded-md bg-[var(--text-primary)] px-3 py-1 text-xs font-medium text-[var(--bg-page)] transition-opacity hover:opacity-90 disabled:opacity-40"
+            >
+              {translate('filter.apply')}
+            </button>
             {hasError && (
               <span className="text-xs text-rose-500">
                 {translate('filter.invalidRange')}
@@ -507,9 +526,14 @@ export default function HistoryPage() {
             )}
           </div>
         )}
-        </div>
-        <PageSizeSelector value={size} onChange={(s) => { setSize(s); setPage(0) }} />
       </div>
+
+      {/* Custom range not applied yet */}
+      {customPending && (
+        <div className="rounded-xl border-2 border-dashed border-[var(--border-card)] p-10 text-center">
+          <p className="text-sm text-[var(--text-muted)]">{translate('filter.customPrompt')}</p>
+        </div>
+      )}
 
       {/* Loading */}
       {isLoading && (
@@ -531,7 +555,7 @@ export default function HistoryPage() {
       )}
 
       {/* Empty state */}
-      {!isLoading && !isError && trainings.length === 0 && (
+      {!isLoading && !isError && !customPending && trainings.length === 0 && (
         <div className="rounded-xl border-2 border-dashed border-[var(--border-card)] p-16 text-center">
           <div className="mb-4 inline-flex rounded-full bg-[var(--bg-subtle)] p-4 text-[var(--text-muted)]">
             <ActivityIcon size={16} />
@@ -546,7 +570,7 @@ export default function HistoryPage() {
       )}
 
       {/* Training list */}
-      {!isLoading && trainings.length > 0 && (
+      {!isLoading && !customPending && trainings.length > 0 && (
         <div className="space-y-3">
           {trainings.map((training) => (
             <TrainingCard
@@ -561,7 +585,7 @@ export default function HistoryPage() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {!customPending && totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 pt-2">
           <button
             onClick={() => setPage(Math.max(0, page - 1))}

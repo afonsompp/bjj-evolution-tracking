@@ -110,20 +110,24 @@ export const academyApi = {
       .post<CheckInResponse>(`/academies/${academyId}/classes/${classId}/attendances`, { studentId })
       .then((r) => r.data),
 
-  getMyAttendances: (academyId?: string, page = 0, size = 100) =>
+  getMyAttendances: (
+    academyId?: string, page = 0, size = 100, startDate?: string, endDate?: string,
+  ) =>
     apiClient
       .get<Page<AcademyMenberClassViewResponse>>('/attendances', {
-        params: { academyId, page, size },
+        params: { academyId, page, size, startDate, endDate },
       })
       .then((r) => r.data),
 
   // Attendance history of a specific member within an academy
   // (instructors/owners, or the member themselves).
-  listMemberAttendances: (academyId: string, userId: string, page = 0, size = 20) =>
+  listMemberAttendances: (
+    academyId: string, userId: string, page = 0, size = 20, startDate?: string, endDate?: string,
+  ) =>
     apiClient
       .get<Page<AcademyMenberClassViewResponse>>(
         `/academies/${academyId}/members/${userId}/attendances`,
-        { params: { page, size } },
+        { params: { page, size, startDate, endDate } },
       )
       .then((r) => r.data),
 

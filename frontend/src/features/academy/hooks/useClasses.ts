@@ -7,16 +7,17 @@ interface UseClassesOptions {
   endDate?: string
   page?: number
   size?: number
+  enabled?: boolean
 }
 
 export function useClasses(academyId: string | undefined, opts: UseClassesOptions = {}) {
-  const { startDate, endDate, page = 0, size = 30 } = opts
+  const { startDate, endDate, page = 0, size = 30, enabled = true } = opts
   return useQuery({
     queryKey: academyId
       ? [...academyKeys.classes(academyId), startDate, endDate, page]
       : ['__none__'],
     queryFn: () => academyApi.listClasses(academyId!, startDate, endDate, page, size),
-    enabled: !!academyId,
+    enabled: !!academyId && enabled,
   })
 }
 

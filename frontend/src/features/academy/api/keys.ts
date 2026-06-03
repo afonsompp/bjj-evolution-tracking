@@ -16,10 +16,15 @@ export const attendanceKeys = {
   myAttendances: (academyId?: string) =>
     ['attendance', 'mine', academyId ?? 'all'] as const,
   // Paginated attendance history (mirrors graduation history keys).
-  byMember: (academyId: string, userId: string, page: number) =>
-    ['attendance', 'history', academyId, userId, page] as const,
-  myAll: (userId: string, page: number) =>
-    ['attendance', 'history', 'mine-all', userId, page] as const,
+  byMember: (
+    academyId: string, userId: string, page: number, size: number,
+    startDate?: string, endDate?: string,
+  ) =>
+    ['attendance', 'history', academyId, userId, page, size, startDate ?? '', endDate ?? ''] as const,
+  myAll: (
+    userId: string, page: number, size: number, startDate?: string, endDate?: string,
+  ) =>
+    ['attendance', 'history', 'mine-all', userId, page, size, startDate ?? '', endDate ?? ''] as const,
 }
 
 export const memberKeys = {

@@ -105,7 +105,7 @@ class UserAttendanceControllerTest {
     void getAll_withoutStatus_shouldReturnPage() throws Exception {
         Page<AcademyMenberClassViewResponse> page = new PageImpl<>(
                 List.of(sampleAttendance), PageRequest.of(0, 20), 1);
-        when(classAttendanceService.findClassViewsByStudent(eq(userId), isNull(), any()))
+        when(classAttendanceService.findClassViewsByStudent(eq(userId), isNull(), isNull(), isNull(), any()))
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/v1/attendances")
@@ -119,7 +119,7 @@ class UserAttendanceControllerTest {
                 .andExpect(jsonPath("$.content[0].scheduledClass.instructor.nickname").value("carlos_gracie"))
                 .andExpect(jsonPath("$.totalElements").value(1));
 
-        verify(classAttendanceService).findClassViewsByStudent(eq(userId), isNull(), any());
+        verify(classAttendanceService).findClassViewsByStudent(eq(userId), isNull(), isNull(), isNull(), any());
     }
 
     @Test
@@ -127,7 +127,7 @@ class UserAttendanceControllerTest {
     void getAll_withStatusFilter_shouldReturnFilteredPage() throws Exception {
         Page<AcademyMenberClassViewResponse> page = new PageImpl<>(
                 List.of(sampleAttendance), PageRequest.of(0, 20), 1);
-        when(classAttendanceService.findClassViewsByStudent(eq(userId), eq(CheckInStatus.CONFIRMED), any()))
+        when(classAttendanceService.findClassViewsByStudent(eq(userId), eq(CheckInStatus.CONFIRMED), isNull(), isNull(), any()))
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/v1/attendances")
@@ -137,7 +137,7 @@ class UserAttendanceControllerTest {
                 .andExpect(jsonPath("$.content[0].status").value("CONFIRMED"))
                 .andExpect(jsonPath("$.totalElements").value(1));
 
-        verify(classAttendanceService).findClassViewsByStudent(eq(userId), eq(CheckInStatus.CONFIRMED), any());
+        verify(classAttendanceService).findClassViewsByStudent(eq(userId), eq(CheckInStatus.CONFIRMED), isNull(), isNull(), any());
     }
 
     @Test
@@ -145,7 +145,7 @@ class UserAttendanceControllerTest {
     void getAll_shouldReturnEmptyPage() throws Exception {
         Page<AcademyMenberClassViewResponse> emptyPage = new PageImpl<>(
                 List.of(), PageRequest.of(0, 20), 0);
-        when(classAttendanceService.findClassViewsByStudent(eq(userId), isNull(), any()))
+        when(classAttendanceService.findClassViewsByStudent(eq(userId), isNull(), isNull(), isNull(), any()))
                 .thenReturn(emptyPage);
 
         mockMvc.perform(get("/api/v1/attendances")
@@ -154,7 +154,7 @@ class UserAttendanceControllerTest {
                 .andExpect(jsonPath("$.content").isEmpty())
                 .andExpect(jsonPath("$.totalElements").value(0));
 
-        verify(classAttendanceService).findClassViewsByStudent(eq(userId), isNull(), any());
+        verify(classAttendanceService).findClassViewsByStudent(eq(userId), isNull(), isNull(), isNull(), any());
     }
 
     @Test
@@ -163,6 +163,6 @@ class UserAttendanceControllerTest {
         mockMvc.perform(get("/api/v1/attendances"))
                 .andExpect(status().isUnauthorized());
 
-        verify(classAttendanceService, never()).findClassViewsByStudent(any(), any(), any());
+        verify(classAttendanceService, never()).findClassViewsByStudent(any(), any(), any(), any(), any());
     }
 }

@@ -2,10 +2,17 @@ import { useQuery } from '@tanstack/react-query'
 import { trainingApi } from '../api/trainingApi'
 import { trainingKeys } from '../api/keys'
 
-export function useTrainings(page: number, size: number, startDate?: string, endDate?: string) {
+export function useTrainings(
+  page: number,
+  size: number,
+  startDate?: string,
+  endDate?: string,
+  enabled = true,
+) {
   return useQuery({
     queryKey: trainingKeys.list(page, size, startDate, endDate),
     queryFn: () => trainingApi.list(page, size, startDate, endDate),
+    enabled,
   })
 }
 

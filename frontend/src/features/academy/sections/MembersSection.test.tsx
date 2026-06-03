@@ -6,7 +6,7 @@ import { renderWithProviders } from '../../../test/renderWithProviders'
 const activeState = vi.hoisted(() => ({ value: {} as { data: unknown; isLoading: boolean; isError: boolean } }))
 const pendingState = vi.hoisted(() => ({ value: { data: { totalElements: 0 } } as { data: unknown } }))
 const perms = vi.hoisted(() => ({ value: { canManageMembers: true, canEditAcademy: false } }))
-const mut = vi.hoisted(() => ({ reject: vi.fn(), graduate: vi.fn(), changeRole: vi.fn() }))
+const mut = vi.hoisted(() => ({ remove: vi.fn(), graduate: vi.fn(), changeRole: vi.fn() }))
 
 vi.mock('../../auth/AuthContext', () => ({ useAuth: () => ({ user: { id: 'me' } }) }))
 vi.mock('../hooks/useAcademyMembers', () => ({
@@ -15,7 +15,7 @@ vi.mock('../hooks/useAcademyMembers', () => ({
 }))
 vi.mock('../permissions/useAcademyPermissions', () => ({ useAcademyPermissions: () => perms.value }))
 vi.mock('../hooks/useManageMember', () => ({
-  useRejectMember: () => ({ mutate: mut.reject, isPending: false }),
+  useRemoveMember: () => ({ mutate: mut.remove, isPending: false }),
   useGraduateMember: () => ({ mutate: mut.graduate, isPending: false }),
   useChangeRole: () => ({ mutate: mut.changeRole, isPending: false }),
 }))
@@ -91,7 +91,7 @@ describe('MembersSection', () => {
     // Two buttons named "Remove" now exist (row icon + modal confirm); the modal's is last.
     const removeButtons = screen.getAllByRole('button', { name: 'Remove' })
     await user.click(removeButtons[removeButtons.length - 1])
-    expect(mut.reject).toHaveBeenCalledWith('u1', expect.anything())
+    expect(mut.remove).toHaveBeenCalledWith('u1', expect.anything())
   })
 
   it('graduates a member with the chosen belt', async () => {

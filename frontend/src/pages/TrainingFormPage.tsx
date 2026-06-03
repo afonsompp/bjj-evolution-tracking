@@ -28,8 +28,8 @@ const CLASS_TYPES: { value: ClassType; key: string }[] = [
 ]
 
 const TRAINING_TYPES: { value: TrainingType; key: string }[] = [
-  { value: 'GI', key: 'form.gi' },
-  { value: 'NO_GI', key: 'form.noGi' },
+  { value: 'GI', key: 'trainingType.GI' },
+  { value: 'NO_GI', key: 'trainingType.NO_GI' },
 ]
 
 // ── Star Rating Component ────────────────────────────────
@@ -68,9 +68,11 @@ function Field({ label, error, children }: {
   children: React.ReactNode
 }) {
   return (
-    <div>
+    <div className="flex h-full flex-col">
       <label className="mb-1.5 block text-sm font-medium text-[var(--text-muted)]">{label}</label>
-      {children}
+      {/* mt-auto keeps the input pinned to the bottom of the grid cell so rows
+          stay aligned even when a sibling's label wraps to two lines. */}
+      <div className="mt-auto">{children}</div>
       {error && (
         <p className="mt-1 text-xs text-rose-400">{error}</p>
       )}

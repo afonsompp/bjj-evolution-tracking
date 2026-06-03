@@ -221,6 +221,26 @@ class TrainingControllerTest {
         verify(trainingService).create(any(TrainingRequest.class), any(UUID.class));
     }
 
+    @Test
+    @DisplayName("POST /trainings should return 500 with a generic message and no stack trace on unexpected error")
+    void create_whenUnexpectedError_shouldReturn500WithoutStackTrace() throws Exception {
+        when(trainingService.create(any(TrainingRequest.class), any(UUID.class)))
+                .thenThrow(new RuntimeException("NullPointerException at com.bjj.internal.Secret.line(42)"));
+
+        mockMvc.perform(post("/api/v1/trainings")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_TRAINING_JSON))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.status").value(500))
+                .andExpect(jsonPath("$.error").value("Internal Server Error"))
+                .andExpect(jsonPath("$.message").value("An unexpected error occurred. Please try again later."))
+                // the original exception message / stack trace must never reach the client
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Secret"))))
+                .andExpect(jsonPath("$.trace").doesNotExist())
+                .andExpect(jsonPath("$.exception").doesNotExist());
+    }
+
     // -------------------------------------------------------
     // GET /trainings — list my trainings
     // -------------------------------------------------------

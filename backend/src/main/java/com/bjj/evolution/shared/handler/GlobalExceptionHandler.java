@@ -5,18 +5,27 @@ import com.bjj.evolution.shared.exception.ConflictException;
 import com.bjj.evolution.shared.exception.ForbiddenException;
 import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.List;
 
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     // 404 — our domain-specific not-found
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -60,9 +69,14 @@ public class GlobalExceptionHandler {
                 .body(ApiError.of(403, "Forbidden", "You do not have permission to perform this action."));
     }
 
-    // 400 — @Valid / @Validated constraint violations
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex) {
+    // 400 — @Valid / @Validated constraint violations. Overrides the framework
+    // handler so we keep our ApiError shape with per-field violations.
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
         List<ApiError.FieldViolation> violations = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -71,5 +85,16 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiError.of(400, "Bad Request", "Validation failed.", violations));
+    }
+
+    // 500 — catch-all for anything unhandled. The full stack trace is logged
+    // server-side for diagnosis, but never leaked to the client: the response is
+    // a generic ApiError with a safe message.
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiError> handleUnexpected(Exception ex, HttpServletRequest request) {
+        log.error("Unhandled exception on {} {}", request.getMethod(), request.getRequestURI(), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiError.of(500, "Internal Server Error",
+                        "An unexpected error occurred. Please try again later."));
     }
 }

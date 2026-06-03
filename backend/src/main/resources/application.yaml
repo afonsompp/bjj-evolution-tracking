@@ -29,6 +29,16 @@ spring:
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
 
+# Error responses — never leak internals to clients. These are Spring's secure
+# defaults, made explicit so the /error fallback (which handles exceptions thrown
+# in filters, before @RestControllerAdvice) also keeps stack traces server-side.
+server:
+  error:
+    include-stacktrace: never
+    include-exception: false
+    include-message: never
+    include-binding-errors: never
+
 # File storage (Supabase Storage via S3-compatible API). Leave STORAGE_ENDPOINT
 # unset to disable uploads (the app boots with a DisabledFileStorage fallback).
 #   STORAGE_ENDPOINT        https://<project-ref>.supabase.co/storage/v1/s3

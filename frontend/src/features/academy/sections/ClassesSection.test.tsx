@@ -8,13 +8,19 @@ const templatesState = vi.hoisted(() => ({ value: {} as { data: unknown; isLoadi
 
 vi.mock('../hooks/useClasses', () => ({ useClasses: () => classesState.value }))
 vi.mock('../hooks/useTemplates', () => ({ useTemplates: () => templatesState.value }))
-vi.mock('../hooks/useClassMutations', () => ({ useCancelClass: () => ({ mutate: vi.fn(), isPending: false }) }))
+const updateMut = vi.hoisted(() => ({ mutate: vi.fn() }))
+vi.mock('../hooks/useClassMutations', () => ({
+  useCancelClass: () => ({ mutate: vi.fn(), isPending: false }),
+  useUpdateClass: () => ({ mutate: updateMut.mutate, isPending: false }),
+}))
 const genMut = vi.hoisted(() => ({ mutate: vi.fn() }))
 vi.mock('../hooks/useTemplateMutations', () => ({
   useDeleteTemplate: () => ({ mutate: vi.fn(), isPending: false }),
   useGenerateFromTemplate: () => ({ mutate: genMut.mutate, isPending: false }),
 }))
-vi.mock('../components/AttendanceModal', () => ({ AttendanceModal: () => <div>attendance-modal</div> }))
+vi.mock('../components/ClassDetailsPanel', () => ({
+  ClassDetailsPanel: ({ cls }: { cls: { id: number } }) => <div>class-details-{cls.id}</div>,
+}))
 
 const { navigate } = vi.hoisted(() => ({ navigate: vi.fn() }))
 vi.mock('react-router-dom', async (orig) => ({
@@ -26,13 +32,17 @@ import { ClassesSection } from './ClassesSection'
 
 const scheduledClass = {
   id: 5,
+  academyId: 'a1',
   classType: 'REGULAR',
   trainingType: 'GI',
   status: 'PUBLISHED',
   startTime: '2026-06-01T19:00:00Z',
   durationMinutes: 60,
   instructor: { id: 'i1', name: 'Coach' },
+  scheduledTechniques: [],
 }
+
+const draftClass = { ...scheduledClass, id: 6, status: 'DRAFT' }
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -59,14 +69,35 @@ describe('ClassesSection', () => {
     expect(screen.getByText('Published')).toBeInTheDocument()
   })
 
-  it('opens the attendance modal for a class', async () => {
+  it('expands a class row to reveal its details panel', async () => {
     const user = userEvent.setup()
     classesState.value = { data: { content: [scheduledClass], totalPages: 1 }, isLoading: false, isError: false }
     renderWithProviders(<ClassesSection academyId="a1" />)
 
-    expect(screen.queryByText('attendance-modal')).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Attendance' }))
-    expect(screen.getByText('attendance-modal')).toBeInTheDocument()
+    expect(screen.queryByText('class-details-5')).not.toBeInTheDocument()
+    await user.click(screen.getByText(/Regular · GI/))
+    expect(screen.getByText('class-details-5')).toBeInTheDocument()
+  })
+
+  it('shows a Publish shortcut only for draft classes and publishes with status PUBLISHED', async () => {
+    const user = userEvent.setup()
+    classesState.value = { data: { content: [draftClass], totalPages: 1 }, isLoading: false, isError: false }
+    renderWithProviders(<ClassesSection academyId="a1" />)
+
+    await user.click(screen.getByRole('button', { name: 'Publish' }))
+    expect(updateMut.mutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        classId: 6,
+        body: expect.objectContaining({ status: 'PUBLISHED' }),
+      }),
+      expect.anything(),
+    )
+  })
+
+  it('does not show a Publish shortcut for a published class', () => {
+    classesState.value = { data: { content: [scheduledClass], totalPages: 1 }, isLoading: false, isError: false }
+    renderWithProviders(<ClassesSection academyId="a1" />)
+    expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument()
   })
 
   it('navigates to the new-class page', async () => {

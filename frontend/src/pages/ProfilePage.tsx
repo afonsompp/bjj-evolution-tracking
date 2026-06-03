@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useEffect, useRef, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '../lib/i18n/I18nContext'
 import { BELT_GROUPS, beltKey } from '../lib/i18n/belts'
@@ -34,9 +34,12 @@ function toRequest(data: FormValues): ProfileRequest {
   }
 }
 
+type Tab = 'profile' | 'attendances' | 'graduations'
+
 export default function ProfilePage() {
   const navigate = useNavigate()
   const { translate } = useTranslation()
+  const [tab, setTab] = useState<Tab>('profile')
 
   const { data: profile, isLoading, isError: profileError } = useProfile()
 
@@ -82,8 +85,40 @@ export default function ProfilePage() {
     )
   }
 
+  const tabs: { key: Tab; label: string }[] = [
+    { key: 'profile', label: translate('nav.profile') },
+    { key: 'attendances', label: translate('academy.tab.attendances') },
+    { key: 'graduations', label: translate('academy.tab.graduations') },
+  ]
+
   return (
     <div className="mx-auto max-w-lg pb-20">
+      <div className="no-scrollbar mb-6 flex gap-1 overflow-x-auto border-b border-[var(--border-header)] sm:gap-2">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`shrink-0 whitespace-nowrap px-3 py-2 text-sm font-medium transition-colors sm:px-4 ${
+              tab === t.key
+                ? 'border-b-2 border-[var(--text-primary)] text-[var(--text-primary)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'attendances' && profile && (
+        <AttendanceHistorySection variant="mine-all" userId={profile.id} />
+      )}
+
+      {tab === 'graduations' && profile && (
+        <GraduationHistorySection variant="mine-all" userId={profile.id} />
+      )}
+
+      {tab !== 'profile' ? null : (
+      <>
       <h1 className="mb-8 text-2xl font-bold tracking-tight text-[var(--text-primary)]">
         {translate('profile.title')}
       </h1>
@@ -241,17 +276,7 @@ export default function ProfilePage() {
           {mutation.isPending ? translate('profile.saving') : translate('profile.save')}
         </button>
       </form>
-
-      {profile && (
-        <div className="mt-10">
-          <GraduationHistorySection variant="mine-all" userId={profile.id} />
-        </div>
-      )}
-
-      {profile && (
-        <div className="mt-10">
-          <AttendanceHistorySection variant="mine-all" userId={profile.id} />
-        </div>
+      </>
       )}
     </div>
   )

@@ -1,23 +1,23 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from '../../../lib/i18n/I18nContext'
-import { MAX_DATE, hasYearOverflow, isApplicableRange, isOutOfOrderRange } from '../../../lib/dateValidation'
+import { MAX_DATE, hasYearOverflow, isValidDateRange, isOutOfOrderRange } from '../../../lib/dateValidation'
 import { useClasses } from '../hooks/useClasses'
-import { useCancelClass } from '../hooks/useClassMutations'
+import { useCancelClass, useUpdateClass } from '../hooks/useClassMutations'
 import { useTemplates } from '../hooks/useTemplates'
 import {
   useDeleteTemplate,
   useGenerateFromTemplate,
 } from '../hooks/useTemplateMutations'
-import { AttendanceModal } from '../components/AttendanceModal'
+import { ClassDetailsPanel } from '../components/ClassDetailsPanel'
 import {
   CalendarIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
   LoaderIcon,
   PencilIcon,
   PlusIcon,
   TrashIcon,
-  UsersIcon,
-  XIcon,
 } from '../../../assets/icons'
 import type { ClassTemplateResponse, ScheduledClassResponse } from '../../../types/api'
 
@@ -108,18 +108,25 @@ export function ClassesSection({ academyId }: Props) {
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(25)
 
-  // Promote the edited range to the "applied" range once it's valid. Done while
-  // rendering (guarded so it only fires on an actual change) instead of in an
-  // effect — the React-endorsed "adjust state during render" pattern.
-  if (
-    isApplicableRange(customStart, customEnd) &&
+  // Custom ranges are only searched once the user clicks "Apply": the edited
+  // draft is promoted to the "applied" range that drives the query. canApply
+  // gates the button to valid, not-yet-applied ranges.
+  const canApply =
+    isValidDateRange(customStart, customEnd) &&
     (customStart !== appliedCustomStart || customEnd !== appliedCustomEnd)
-  ) {
+
+  const applyCustom = () => {
+    if (!canApply) return
     setAppliedCustomStart(customStart)
     setAppliedCustomEnd(customEnd)
+    setPage(0)
   }
 
   const hasError = preset === 'custom' && isOutOfOrderRange(customStart, customEnd)
+
+  // "custom" with nothing applied yet shouldn't trigger a search — wait for the
+  // user to pick a range and click Apply.
+  const customPending = preset === 'custom' && !appliedCustomStart && !appliedCustomEnd
 
   const { startDate, endDate } = preset === 'custom'
     ? { startDate: appliedCustomStart, endDate: appliedCustomEnd }
@@ -127,7 +134,7 @@ export function ClassesSection({ academyId }: Props) {
 
   const { data: classesPage, isLoading: classesLoading, isError: classesError } = useClasses(
     academyId,
-    { startDate: startDate || undefined, endDate: endDate || undefined, page, size },
+    { startDate: startDate || undefined, endDate: endDate || undefined, page, size, enabled: !customPending },
   )
   const classes = classesPage?.content ?? []
   const totalPages = classesPage?.totalPages ?? 0
@@ -135,15 +142,18 @@ export function ClassesSection({ academyId }: Props) {
   const handlePreset = (p: Preset) => { setPreset(p); setPage(0) }
   const handleCustomStart = (v: string) => {
     if (hasYearOverflow(v)) return
-    setCustomStart(v); setPage(0)
+    setCustomStart(v)
   }
   const handleCustomEnd = (v: string) => {
     if (hasYearOverflow(v)) return
-    setCustomEnd(v); setPage(0)
+    setCustomEnd(v)
   }
   const cancelMutation = useCancelClass(academyId)
+  const updateMutation = useUpdateClass(academyId)
   const [cancelTarget, setCancelTarget] = useState<ScheduledClassResponse | null>(null)
-  const [attendanceTarget, setAttendanceTarget] = useState<ScheduledClassResponse | null>(null)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [publishingId, setPublishingId] = useState<number | null>(null)
+  const [publishErrorId, setPublishErrorId] = useState<number | null>(null)
 
   const { data: templatesPage, isLoading: templatesLoading, isError: templatesError } =
     useTemplates(academyId)
@@ -163,6 +173,35 @@ export function ClassesSection({ academyId }: Props) {
       onSuccess: () => setCancelTarget(null),
     })
   }
+
+  // No dedicated publish endpoint — the class update accepts a status, so publish
+  // = update the existing class with status PUBLISHED.
+  const handlePublish = (c: ScheduledClassResponse) => {
+    setPublishingId(c.id)
+    setPublishErrorId(null)
+    updateMutation.mutate(
+      {
+        classId: c.id,
+        body: {
+          academyId: c.academyId,
+          instructorId: c.instructor.id,
+          startTime: c.startTime,
+          durationMinutes: c.durationMinutes,
+          classType: c.classType,
+          trainingType: c.trainingType,
+          techniqueIds: c.scheduledTechniques.map((t) => t.id),
+          status: 'PUBLISHED',
+        },
+      },
+      {
+        onError: () => setPublishErrorId(c.id),
+        onSettled: () => setPublishingId(null),
+      },
+    )
+  }
+
+  const toggleExpand = (id: number) =>
+    setExpandedId((cur) => (cur === id ? null : id))
 
   const handleDeleteTemplate = () => {
     if (!deleteTarget) return
@@ -193,7 +232,7 @@ export function ClassesSection({ academyId }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-2 border-b border-[var(--border-header)]">
-        <div className="flex min-w-0 gap-1 overflow-x-auto sm:gap-2">
+        <div className="no-scrollbar flex min-w-0 gap-1 overflow-x-auto sm:gap-2">
           {(['classes', 'templates'] as SubTab[]).map((t) => (
             <button
               key={t}
@@ -230,61 +269,76 @@ export function ClassesSection({ academyId }: Props) {
 
       {subTab === 'classes' && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              {PRESETS.map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => handlePreset(key)}
-                  className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                    preset === key
-                      ? 'bg-[var(--text-primary)] text-[var(--bg-page)]'
-                      : 'border border-[var(--border-card)] text-[var(--text-muted)] hover:border-[var(--border-card-hover)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  {key === 'all' ? translate('filter.all') : key === 'custom' ? translate('filter.custom') : label}
-                </button>
-              ))}
-              {preset === 'custom' && (
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <input
-                    type="date"
-                    value={customStart}
-                    max={customEnd || MAX_DATE}
-                    onChange={(e) => handleCustomStart(e.target.value)}
-                    className={`rounded-md border bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)] ${
-                      hasError ? 'border-rose-500' : 'border-[var(--border-select)]'
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+                {PRESETS.map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => handlePreset(key)}
+                    className={`shrink-0 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                      preset === key
+                        ? 'bg-[var(--text-primary)] text-[var(--bg-page)]'
+                        : 'border border-[var(--border-card)] text-[var(--text-muted)] hover:border-[var(--border-card-hover)] hover:text-[var(--text-primary)]'
                     }`}
-                  />
-                  <span className="text-xs text-[var(--text-subtle)]">—</span>
-                  <input
-                    type="date"
-                    value={customEnd}
-                    min={customStart || undefined}
-                    max={MAX_DATE}
-                    onChange={(e) => handleCustomEnd(e.target.value)}
-                    className={`rounded-md border bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)] ${
-                      hasError ? 'border-rose-500' : 'border-[var(--border-select)]'
-                    }`}
-                  />
-                  {hasError && (
-                    <span className="text-xs text-rose-500">
-                      {translate('filter.invalidRange')}
-                    </span>
-                  )}
-                </div>
-              )}
+                  >
+                    {key === 'all' ? translate('filter.all') : key === 'custom' ? translate('filter.custom') : label}
+                  </button>
+                ))}
+              </div>
+              <select
+                value={size}
+                onChange={(e) => { setSize(Number(e.target.value)); setPage(0) }}
+                className="shrink-0 rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-1.5 text-xs text-[var(--text-muted)] outline-none"
+              >
+                {[10, 25, 50].map((s) => (
+                  <option key={s} value={s}>{translate('filter.perPage', { count: s })}</option>
+                ))}
+              </select>
             </div>
-            <select
-              value={size}
-              onChange={(e) => { setSize(Number(e.target.value)); setPage(0) }}
-              className="rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-1.5 text-xs text-[var(--text-muted)] outline-none"
-            >
-              {[10, 25, 50].map((s) => (
-                <option key={s} value={s}>{translate('filter.perPage', { count: s })}</option>
-              ))}
-            </select>
+            {preset === 'custom' && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <input
+                  type="date"
+                  value={customStart}
+                  max={customEnd || MAX_DATE}
+                  onChange={(e) => handleCustomStart(e.target.value)}
+                  className={`rounded-md border bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)] ${
+                    hasError ? 'border-rose-500' : 'border-[var(--border-select)]'
+                  }`}
+                />
+                <span className="text-xs text-[var(--text-subtle)]">—</span>
+                <input
+                  type="date"
+                  value={customEnd}
+                  min={customStart || undefined}
+                  max={MAX_DATE}
+                  onChange={(e) => handleCustomEnd(e.target.value)}
+                  className={`rounded-md border bg-[var(--bg-select)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)] ${
+                    hasError ? 'border-rose-500' : 'border-[var(--border-select)]'
+                  }`}
+                />
+                <button
+                  onClick={applyCustom}
+                  disabled={!canApply}
+                  className="rounded-md bg-[var(--text-primary)] px-3 py-1 text-xs font-medium text-[var(--bg-page)] transition-opacity hover:opacity-90 disabled:opacity-40"
+                >
+                  {translate('filter.apply')}
+                </button>
+                {hasError && (
+                  <span className="text-xs text-rose-500">
+                    {translate('filter.invalidRange')}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
+
+          {customPending && (
+            <div className="rounded-xl border-2 border-dashed border-[var(--border-card)] p-10 text-center">
+              <p className="text-sm text-[var(--text-muted)]">{translate('filter.customPrompt')}</p>
+            </div>
+          )}
 
           {classesLoading && (
             <div className="flex justify-center py-12">
@@ -298,7 +352,7 @@ export function ClassesSection({ academyId }: Props) {
             </div>
           )}
 
-          {!classesLoading && classes.length === 0 && (
+          {!classesLoading && !customPending && classes.length === 0 && (
             <div className="rounded-xl border-2 border-dashed border-[var(--border-card)] p-12 text-center">
               <CalendarIcon size={28} className="mx-auto mb-2 text-[var(--text-subtle)]" />
               <p className="text-sm font-medium text-[var(--text-primary)]">
@@ -310,62 +364,73 @@ export function ClassesSection({ academyId }: Props) {
             </div>
           )}
 
-          {!classesLoading && classes.length > 0 && (
+          {!classesLoading && !customPending && classes.length > 0 && (
             <div className="space-y-2">
-              {classes.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center gap-4 rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] px-4 py-3"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-medium text-[var(--text-primary)]">
-                        {translate(`form.classType.${c.classType}`)} · {c.trainingType}
-                      </span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[c.status] ?? ''}`}
-                      >
-                        {translate(`class.status.${c.status}`)}
+              {classes.map((c) => {
+                const isExpanded = expandedId === c.id
+                return (
+                  <div
+                    key={c.id}
+                    className="overflow-hidden rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)]"
+                  >
+                    <div
+                      onClick={() => toggleExpand(c.id)}
+                      className="flex cursor-pointer items-center gap-3 px-4 py-3 hover:bg-[var(--bg-subtle)]"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-medium text-[var(--text-primary)]">
+                            {translate(`form.classType.${c.classType}`)} · {translate(`trainingType.${c.trainingType}`)}
+                          </span>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[c.status] ?? ''}`}
+                          >
+                            {translate(`class.status.${c.status}`)}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+                          {new Date(c.startTime).toLocaleString()} · {c.durationMinutes}{' '}
+                          {translate('form.minutes')} · {c.instructor.name}
+                        </p>
+                        {publishErrorId === c.id && (
+                          <p className="mt-1 text-xs text-rose-400">
+                            {translate('class.publishError')}
+                          </p>
+                        )}
+                      </div>
+                      {c.status === 'DRAFT' && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handlePublish(c) }}
+                          disabled={publishingId === c.id}
+                          className="shrink-0 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50"
+                        >
+                          {publishingId === c.id
+                            ? translate('class.publishing')
+                            : translate('class.publish')}
+                        </button>
+                      )}
+                      <span className="shrink-0 text-[var(--text-subtle)]">
+                        {isExpanded ? <ChevronUpIcon size={16} /> : <ChevronDownIcon size={16} />}
                       </span>
                     </div>
-                    <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                      {new Date(c.startTime).toLocaleString()} · {c.durationMinutes}{' '}
-                      {translate('form.minutes')} · {c.instructor.name}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 gap-1">
-                    <button
-                      onClick={() => setAttendanceTarget(c)}
-                      className="rounded-lg border border-[var(--border-card)] bg-[var(--bg-page)] p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                      title={translate('attendance.attendance')}
-                    >
-                      <UsersIcon size={13} />
-                    </button>
-                    {c.status !== 'COMPLETED' && c.status !== 'CANCELED' && (
-                      <>
-                        <button
-                          onClick={() =>
-                            navigate(`/academies/${academyId}/classes/${c.id}/edit`)
-                          }
-                          className="rounded-lg border border-[var(--border-card)] bg-[var(--bg-page)] p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                        >
-                          <PencilIcon size={13} />
-                        </button>
-                        <button
-                          onClick={() => setCancelTarget(c)}
-                          className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-1.5 text-rose-400 hover:bg-rose-500/20"
-                        >
-                          <XIcon size={13} />
-                        </button>
-                      </>
+
+                    {isExpanded && (
+                      <div className="border-t border-[var(--border-card)]">
+                        <ClassDetailsPanel
+                          academyId={academyId}
+                          cls={c}
+                          onEdit={() => navigate(`/academies/${academyId}/classes/${c.id}/edit`)}
+                          onRequestCancel={() => setCancelTarget(c)}
+                        />
+                      </div>
                     )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
 
-          {totalPages > 1 && (
+          {!customPending && totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 pt-2">
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
@@ -429,7 +494,7 @@ export function ClassesSection({ academyId }: Props) {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-[var(--text-primary)]">{t.name}</p>
                       <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                        {translate(`form.classType.${t.classType}`)} · {t.trainingType} ·{' '}
+                        {translate(`form.classType.${t.classType}`)} · {translate(`trainingType.${t.trainingType}`)} ·{' '}
                         {t.durationMinutes} {translate('form.minutes')} · {t.instructor.name}
                       </p>
                       {recurrenceSummary && (
@@ -472,14 +537,6 @@ export function ClassesSection({ academyId }: Props) {
             </div>
           )}
         </div>
-      )}
-
-      {attendanceTarget && (
-        <AttendanceModal
-          academyId={academyId}
-          cls={attendanceTarget}
-          onClose={() => setAttendanceTarget(null)}
-        />
       )}
 
       {cancelTarget && (

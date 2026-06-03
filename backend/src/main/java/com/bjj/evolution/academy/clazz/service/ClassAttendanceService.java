@@ -12,14 +12,19 @@ import com.bjj.evolution.shared.exception.BusinessRuleException;
 import com.bjj.evolution.shared.exception.ResourceNotFoundException;
 import com.bjj.evolution.user.UserProfileRepository;
 import com.bjj.evolution.user.domain.UserProfile;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -174,24 +179,47 @@ public class ClassAttendanceService {
         log.info("Attendance deleted: classId={} student={} academy={}", classId, studentId, academyId);
     }
 
-    public Page<AcademyMenberClassViewResponse> findClassViewsByStudent(UUID studentId, CheckInStatus status, Pageable pageable) {
-        log.debug("Finding class views for student={} status={} page={} size={}", studentId, status, pageable.getPageNumber(), pageable.getPageSize());
-        if (status != null) {
-            return attendanceRepository.findByStudentIdAndStatus(studentId, status, pageable)
-                    .map(AcademyMenberClassViewResponse::fromEntity);
-        }
-        return attendanceRepository.findByStudentId(studentId, pageable)
+    public Page<AcademyMenberClassViewResponse> findClassViewsByStudent(
+            UUID studentId, CheckInStatus status, Instant start, Instant end, Pageable pageable) {
+        log.debug("Finding class views for student={} status={} start={} end={} page={} size={}",
+                studentId, status, start, end, pageable.getPageNumber(), pageable.getPageSize());
+        return attendanceRepository.findAll(historySpec(studentId, null, status, start, end), pageable)
                 .map(AcademyMenberClassViewResponse::fromEntity);
     }
 
-    public Page<AcademyMenberClassViewResponse> findClassViewsByStudentAndAcademy(UUID academyId, UUID studentId, CheckInStatus status, Pageable pageable) {
-        log.debug("Finding class views for student={} academy={} status={} page={} size={}", studentId, academyId, status, pageable.getPageNumber(), pageable.getPageSize());
-        if (status != null) {
-            return attendanceRepository.findByStudentIdAndScheduledClassAcademyIdAndStatus(studentId, academyId, status, pageable)
-                    .map(AcademyMenberClassViewResponse::fromEntity);
-        }
-        return attendanceRepository.findByStudentIdAndScheduledClassAcademyId(studentId, academyId, pageable)
+    public Page<AcademyMenberClassViewResponse> findClassViewsByStudentAndAcademy(
+            UUID academyId, UUID studentId, CheckInStatus status, Instant start, Instant end, Pageable pageable) {
+        log.debug("Finding class views for student={} academy={} status={} start={} end={} page={} size={}",
+                studentId, academyId, status, start, end, pageable.getPageNumber(), pageable.getPageSize());
+        return attendanceRepository.findAll(historySpec(studentId, academyId, status, start, end), pageable)
                 .map(AcademyMenberClassViewResponse::fromEntity);
+    }
+
+    /**
+     * Builds a student attendance-history query, adding only the predicates whose
+     * argument is non-null. Done with the Criteria API rather than a JPQL
+     * "(:p IS NULL OR …)" so PostgreSQL can always infer each bind's type.
+     */
+    private Specification<ClassAttendance> historySpec(
+            UUID studentId, UUID academyId, CheckInStatus status, Instant start, Instant end) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("student").get("id"), studentId));
+            Path<Object> scheduledClass = root.get("scheduledClass");
+            if (academyId != null) {
+                predicates.add(cb.equal(scheduledClass.get("academy").get("id"), academyId));
+            }
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+            if (start != null) {
+                predicates.add(cb.greaterThanOrEqualTo(scheduledClass.<Instant>get("startTime"), start));
+            }
+            if (end != null) {
+                predicates.add(cb.lessThanOrEqualTo(scheduledClass.<Instant>get("startTime"), end));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
     }
 
     private ScheduledClass getScheduledClassAndValidateAcademy(UUID academyId, Long classId) {

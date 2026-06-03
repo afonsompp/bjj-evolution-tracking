@@ -213,7 +213,7 @@ export default function TemplateFormPage() {
             >
               {TRAINING_TYPES.map((t) => (
                 <option key={t} value={t}>
-                  {t}
+                  {translate(`trainingType.${t}`)}
                 </option>
               ))}
             </select>

@@ -25,6 +25,17 @@ export function useRejectMember(academyId: string | undefined) {
   })
 }
 
+export function useRemoveMember(academyId: string | undefined) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (userId: string) => membersApi.remove(academyId!, userId),
+    onSuccess: () => {
+      if (!academyId) return
+      qc.invalidateQueries({ queryKey: memberKeys.byAcademy(academyId) })
+    },
+  })
+}
+
 export function useGraduateMember(academyId: string | undefined) {
   const qc = useQueryClient()
   return useMutation({

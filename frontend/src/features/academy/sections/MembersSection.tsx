@@ -9,7 +9,7 @@ import { GraduationHistorySection } from './GraduationHistorySection'
 import { AttendanceHistorySection } from './AttendanceHistorySection'
 import { Avatar } from '../../../components/Avatar'
 import {
-  useRejectMember,
+  useRemoveMember,
   useGraduateMember,
   useChangeRole,
 } from '../hooks/useManageMember'
@@ -95,7 +95,7 @@ export function MembersSection({ academyId }: Props) {
 
   const { canManageMembers, canEditAcademy } = useAcademyPermissions(academyId)
 
-  const removeMutation = useRejectMember(academyId)
+  const removeMutation = useRemoveMember(academyId)
   const graduateMutation = useGraduateMember(academyId)
   const changeRoleMutation = useChangeRole(academyId)
 

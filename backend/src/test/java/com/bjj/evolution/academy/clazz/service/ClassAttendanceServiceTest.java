@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -25,6 +26,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.Instant;
 import java.util.List;
@@ -34,6 +36,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -842,7 +846,7 @@ class ClassAttendanceServiceTest {
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Attendance record not found");
 
-            verify(attendanceRepository, never()).delete(any());
+            verify(attendanceRepository, never()).delete(any(ClassAttendance.class));
         }
 
         @Test
@@ -855,7 +859,7 @@ class ClassAttendanceServiceTest {
                     .hasMessageContaining("Class");
 
             verify(attendanceRepository, never()).findByScheduledClassIdAndStudentId(any(), any());
-            verify(attendanceRepository, never()).delete(any());
+            verify(attendanceRepository, never()).delete(any(ClassAttendance.class));
         }
 
         @Test
@@ -872,7 +876,7 @@ class ClassAttendanceServiceTest {
                     .hasMessageContaining("academy");
 
             verify(attendanceRepository, never()).findByScheduledClassIdAndStudentId(any(), any());
-            verify(attendanceRepository, never()).delete(any());
+            verify(attendanceRepository, never()).delete(any(ClassAttendance.class));
         }
     }
 
@@ -885,8 +889,8 @@ class ClassAttendanceServiceTest {
     class FindClassViewsByStudentTests {
 
         @Test
-        @DisplayName("should return paginated results without status filter")
-        void shouldReturnPageWithoutStatus() {
+        @DisplayName("should map paginated results from the spec query")
+        void shouldReturnPage() {
             var ac = createAcademy(academyId, "Gracie Barra");
             var instructor = createInstructor();
             var student = createStudent();
@@ -895,38 +899,31 @@ class ClassAttendanceServiceTest {
             Pageable pageable = PageRequest.of(0, 20);
             Page<ClassAttendance> page = new PageImpl<>(List.of(attendance), pageable, 1);
 
-            when(attendanceRepository.findByStudentId(studentId, pageable)).thenReturn(page);
+            when(attendanceRepository.findAll(ArgumentMatchers.<Specification<ClassAttendance>>any(), eq(pageable)))
+                    .thenReturn(page);
 
-            var result = service.findClassViewsByStudent(studentId, null, pageable);
+            var result = service.findClassViewsByStudent(studentId, null, null, null, pageable);
 
             assertThat(result.getTotalElements()).isEqualTo(1);
             assertThat(result.getContent().get(0).status()).isEqualTo(CheckInStatus.REGISTERED);
 
-            verify(attendanceRepository).findByStudentId(studentId, pageable);
-            verify(attendanceRepository, never()).findByStudentIdAndStatus(any(), any(), any());
+            verify(attendanceRepository).findAll(ArgumentMatchers.<Specification<ClassAttendance>>any(), eq(pageable));
         }
 
         @Test
-        @DisplayName("should return paginated results with status filter")
-        void shouldReturnPageWithStatus() {
-            var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createInstructor();
-            var student = createStudent();
-            var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
-            var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, Instant.now());
+        @DisplayName("should query through the spec when status + date range are given")
+        void shouldQueryWithFilters() {
+            Instant start = Instant.parse("2026-06-01T00:00:00Z");
+            Instant end = Instant.parse("2026-06-30T23:59:59Z");
             Pageable pageable = PageRequest.of(0, 20);
-            Page<ClassAttendance> page = new PageImpl<>(List.of(attendance), pageable, 1);
+            Page<ClassAttendance> emptyPage = new PageImpl<>(List.of(), pageable, 0);
 
-            when(attendanceRepository.findByStudentIdAndStatus(studentId, CheckInStatus.CONFIRMED, pageable))
-                    .thenReturn(page);
+            when(attendanceRepository.findAll(ArgumentMatchers.<Specification<ClassAttendance>>any(), eq(pageable)))
+                    .thenReturn(emptyPage);
 
-            var result = service.findClassViewsByStudent(studentId, CheckInStatus.CONFIRMED, pageable);
+            service.findClassViewsByStudent(studentId, CheckInStatus.CONFIRMED, start, end, pageable);
 
-            assertThat(result.getTotalElements()).isEqualTo(1);
-            assertThat(result.getContent().get(0).status()).isEqualTo(CheckInStatus.CONFIRMED);
-
-            verify(attendanceRepository).findByStudentIdAndStatus(studentId, CheckInStatus.CONFIRMED, pageable);
-            verify(attendanceRepository, never()).findByStudentId(any(), any());
+            verify(attendanceRepository).findAll(ArgumentMatchers.<Specification<ClassAttendance>>any(), eq(pageable));
         }
 
         @Test
@@ -935,24 +932,10 @@ class ClassAttendanceServiceTest {
             Pageable pageable = PageRequest.of(0, 20);
             Page<ClassAttendance> emptyPage = new PageImpl<>(List.of(), pageable, 0);
 
-            when(attendanceRepository.findByStudentId(studentId, pageable)).thenReturn(emptyPage);
-
-            var result = service.findClassViewsByStudent(studentId, null, pageable);
-
-            assertThat(result.getTotalElements()).isZero();
-            assertThat(result.getContent()).isEmpty();
-        }
-
-        @Test
-        @DisplayName("should return empty page with status filter when no matching attendances")
-        void shouldReturnEmptyPage_withStatus() {
-            Pageable pageable = PageRequest.of(0, 20);
-            Page<ClassAttendance> emptyPage = new PageImpl<>(List.of(), pageable, 0);
-
-            when(attendanceRepository.findByStudentIdAndStatus(studentId, CheckInStatus.CONFIRMED, pageable))
+            when(attendanceRepository.findAll(ArgumentMatchers.<Specification<ClassAttendance>>any(), eq(pageable)))
                     .thenReturn(emptyPage);
 
-            var result = service.findClassViewsByStudent(studentId, CheckInStatus.CONFIRMED, pageable);
+            var result = service.findClassViewsByStudent(studentId, null, null, null, pageable);
 
             assertThat(result.getTotalElements()).isZero();
             assertThat(result.getContent()).isEmpty();
@@ -968,8 +951,8 @@ class ClassAttendanceServiceTest {
     class FindClassViewsByStudentAndAcademyTests {
 
         @Test
-        @DisplayName("should return paginated results without status filter")
-        void shouldReturnPageWithoutStatus() {
+        @DisplayName("should map paginated results from the spec query")
+        void shouldReturnPage() {
             var ac = createAcademy(academyId, "Gracie Barra");
             var instructor = createInstructor();
             var student = createStudent();
@@ -978,41 +961,31 @@ class ClassAttendanceServiceTest {
             Pageable pageable = PageRequest.of(0, 20);
             Page<ClassAttendance> page = new PageImpl<>(List.of(attendance), pageable, 1);
 
-            when(attendanceRepository.findByStudentIdAndScheduledClassAcademyId(studentId, academyId, pageable))
+            when(attendanceRepository.findAll(ArgumentMatchers.<Specification<ClassAttendance>>any(), eq(pageable)))
                     .thenReturn(page);
 
-            var result = service.findClassViewsByStudentAndAcademy(academyId, studentId, null, pageable);
+            var result = service.findClassViewsByStudentAndAcademy(academyId, studentId, null, null, null, pageable);
 
             assertThat(result.getTotalElements()).isEqualTo(1);
             assertThat(result.getContent().get(0).status()).isEqualTo(CheckInStatus.REGISTERED);
 
-            verify(attendanceRepository).findByStudentIdAndScheduledClassAcademyId(studentId, academyId, pageable);
-            verify(attendanceRepository, never()).findByStudentIdAndScheduledClassAcademyIdAndStatus(any(), any(), any(), any());
+            verify(attendanceRepository).findAll(ArgumentMatchers.<Specification<ClassAttendance>>any(), eq(pageable));
         }
 
         @Test
-        @DisplayName("should return paginated results with status filter")
-        void shouldReturnPageWithStatus() {
-            var ac = createAcademy(academyId, "Gracie Barra");
-            var instructor = createInstructor();
-            var student = createStudent();
-            var sClass = createScheduledClass(classId, ac, instructor, ClassStatus.PUBLISHED);
-            var attendance = createAttendance(sClass, student, CheckInStatus.CONFIRMED, Instant.now());
+        @DisplayName("should query through the spec when status + date range are given")
+        void shouldQueryWithFilters() {
+            Instant start = Instant.parse("2026-06-01T00:00:00Z");
+            Instant end = Instant.parse("2026-06-30T23:59:59Z");
             Pageable pageable = PageRequest.of(0, 20);
-            Page<ClassAttendance> page = new PageImpl<>(List.of(attendance), pageable, 1);
+            Page<ClassAttendance> emptyPage = new PageImpl<>(List.of(), pageable, 0);
 
-            when(attendanceRepository.findByStudentIdAndScheduledClassAcademyIdAndStatus(
-                    studentId, academyId, CheckInStatus.CONFIRMED, pageable))
-                    .thenReturn(page);
+            when(attendanceRepository.findAll(ArgumentMatchers.<Specification<ClassAttendance>>any(), eq(pageable)))
+                    .thenReturn(emptyPage);
 
-            var result = service.findClassViewsByStudentAndAcademy(academyId, studentId, CheckInStatus.CONFIRMED, pageable);
+            service.findClassViewsByStudentAndAcademy(academyId, studentId, CheckInStatus.CONFIRMED, start, end, pageable);
 
-            assertThat(result.getTotalElements()).isEqualTo(1);
-            assertThat(result.getContent().get(0).status()).isEqualTo(CheckInStatus.CONFIRMED);
-
-            verify(attendanceRepository).findByStudentIdAndScheduledClassAcademyIdAndStatus(
-                    studentId, academyId, CheckInStatus.CONFIRMED, pageable);
-            verify(attendanceRepository, never()).findByStudentIdAndScheduledClassAcademyId(any(), any(), any());
+            verify(attendanceRepository).findAll(ArgumentMatchers.<Specification<ClassAttendance>>any(), eq(pageable));
         }
 
         @Test
@@ -1021,10 +994,10 @@ class ClassAttendanceServiceTest {
             Pageable pageable = PageRequest.of(0, 20);
             Page<ClassAttendance> emptyPage = new PageImpl<>(List.of(), pageable, 0);
 
-            when(attendanceRepository.findByStudentIdAndScheduledClassAcademyId(studentId, academyId, pageable))
+            when(attendanceRepository.findAll(ArgumentMatchers.<Specification<ClassAttendance>>any(), eq(pageable)))
                     .thenReturn(emptyPage);
 
-            var result = service.findClassViewsByStudentAndAcademy(academyId, studentId, null, pageable);
+            var result = service.findClassViewsByStudentAndAcademy(academyId, studentId, null, null, null, pageable);
 
             assertThat(result.getTotalElements()).isZero();
             assertThat(result.getContent()).isEmpty();

@@ -22,15 +22,27 @@ vi.mock('../hooks/useAttendanceMutations', () => ({
   useCloseClass: () => ({ mutate: m.close, isPending: false }),
 }))
 
-import { AttendanceModal } from './AttendanceModal'
+import { ClassDetailsPanel } from './ClassDetailsPanel'
 
 const cls = {
   id: 7,
   classType: 'REGULAR',
   status: 'PUBLISHED',
   startTime: '2026-06-01T19:00:00Z',
-  instructor: { id: 'inst-1' },
+  durationMinutes: 60,
+  instructor: { id: 'inst-1', name: 'Coach' },
+  scheduledTechniques: [{ id: 1, name: 'Armbar' }],
 } as unknown as ScheduledClassResponse
+
+const render = (override?: Partial<ScheduledClassResponse>) =>
+  renderWithProviders(
+    <ClassDetailsPanel
+      academyId="a1"
+      cls={{ ...cls, ...override }}
+      onEdit={vi.fn()}
+      onRequestCancel={vi.fn()}
+    />,
+  )
 
 const attendee = (id: string, name: string, status: string) => ({
   id: `att-${id}`,
@@ -45,9 +57,15 @@ beforeEach(() => {
   membersState.value = { data: { content: [] } }
 })
 
-describe('AttendanceModal', () => {
+describe('ClassDetailsPanel', () => {
+  it('shows class details (instructor + techniques)', () => {
+    render()
+    expect(screen.getByText('Coach')).toBeInTheDocument()
+    expect(screen.getByText('Armbar')).toBeInTheDocument()
+  })
+
   it('shows the empty state when there are no attendees', () => {
-    renderWithProviders(<AttendanceModal academyId="a1" cls={cls} onClose={vi.fn()} />)
+    render()
     expect(screen.getByText('No attendees yet.')).toBeInTheDocument()
   })
 
@@ -56,7 +74,7 @@ describe('AttendanceModal', () => {
       data: { content: [attendee('u1', 'Ana', 'CONFIRMED'), attendee('u2', 'Bruno', 'REGISTERED')] },
       isLoading: false,
     }
-    renderWithProviders(<AttendanceModal academyId="a1" cls={cls} onClose={vi.fn()} />)
+    render()
     expect(screen.getByText('Ana')).toBeInTheDocument()
     expect(screen.getByText('Confirmed')).toBeInTheDocument()
     expect(screen.getByText('Registered')).toBeInTheDocument()
@@ -68,8 +86,7 @@ describe('AttendanceModal', () => {
       data: { content: [attendee('u2', 'Bruno', 'REGISTERED')] },
       isLoading: false,
     }
-    renderWithProviders(<AttendanceModal academyId="a1" cls={cls} onClose={vi.fn()} />)
-
+    render()
     await user.click(screen.getByRole('button', { name: 'Confirm' }))
     expect(m.confirm).toHaveBeenCalledWith('u2')
   })
@@ -79,7 +96,7 @@ describe('AttendanceModal', () => {
       data: { content: [attendee('u1', 'Ana', 'CONFIRMED')] },
       isLoading: false,
     }
-    renderWithProviders(<AttendanceModal academyId="a1" cls={cls} onClose={vi.fn()} />)
+    render()
     expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument()
   })
 
@@ -95,7 +112,7 @@ describe('AttendanceModal', () => {
         ],
       },
     }
-    renderWithProviders(<AttendanceModal academyId="a1" cls={cls} onClose={vi.fn()} />)
+    render()
 
     const select = screen.getByRole('combobox')
     const options = Array.from(select.querySelectorAll('option')).map((o) => o.textContent?.trim())
@@ -108,27 +125,24 @@ describe('AttendanceModal', () => {
   })
 
   it('does not offer Confirm for a canceled class', () => {
-    const canceledCls = { ...cls, status: 'CANCELED' } as unknown as ScheduledClassResponse
     attendanceState.value = {
       data: { content: [attendee('u2', 'Bruno', 'REGISTERED')] },
       isLoading: false,
     }
-    renderWithProviders(<AttendanceModal academyId="a1" cls={canceledCls} onClose={vi.fn()} />)
+    render({ status: 'CANCELED' })
     expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument()
   })
 
   it('offers the add-student control for a completed class (retroactive add)', () => {
-    const completedCls = { ...cls, status: 'COMPLETED' } as unknown as ScheduledClassResponse
     membersState.value = { data: { content: [{ user: { id: 'u3', name: 'Carla', secondName: null } }] } }
-    renderWithProviders(<AttendanceModal academyId="a1" cls={completedCls} onClose={vi.fn()} />)
+    render({ status: 'COMPLETED' })
     expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument()
     expect(screen.getByRole('combobox')).toBeInTheDocument()
   })
 
   it('hides the add-student control and shows a notice for a draft class', () => {
-    const draftCls = { ...cls, status: 'DRAFT' } as unknown as ScheduledClassResponse
     membersState.value = { data: { content: [{ user: { id: 'u3', name: 'Carla', secondName: null } }] } }
-    renderWithProviders(<AttendanceModal academyId="a1" cls={draftCls} onClose={vi.fn()} />)
+    render({ status: 'DRAFT' })
 
     expect(screen.queryByRole('button', { name: 'Add' })).not.toBeInTheDocument()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
@@ -137,7 +151,7 @@ describe('AttendanceModal', () => {
 
   it('runs the close-class confirmation flow', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<AttendanceModal academyId="a1" cls={cls} onClose={vi.fn()} />)
+    render()
 
     // First click reveals the confirmation; the mutation only fires on confirm.
     await user.click(screen.getByRole('button', { name: 'Close class' }))
@@ -146,5 +160,15 @@ describe('AttendanceModal', () => {
     const buttons = screen.getAllByRole('button', { name: 'Close class' })
     await user.click(buttons[buttons.length - 1])
     expect(m.close).toHaveBeenCalledWith(7, expect.anything())
+  })
+
+  it('triggers cancel via the cancel action', async () => {
+    const user = userEvent.setup()
+    const onRequestCancel = vi.fn()
+    renderWithProviders(
+      <ClassDetailsPanel academyId="a1" cls={cls} onEdit={vi.fn()} onRequestCancel={onRequestCancel} />,
+    )
+    await user.click(screen.getByRole('button', { name: 'Cancel Class' }))
+    expect(onRequestCancel).toHaveBeenCalled()
   })
 })

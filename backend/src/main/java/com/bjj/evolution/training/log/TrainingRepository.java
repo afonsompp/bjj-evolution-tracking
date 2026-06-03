@@ -42,7 +42,7 @@ public interface TrainingRepository extends JpaRepository<Training, Long> {
                           @Param("endDate") Instant endDate);
 
     @Query("SELECT t.name, COUNT(t) FROM Training tr " +
-           "JOIN tr.submissionTechniques t " +
+           "JOIN tr.appliedTechniques t " +
            "WHERE tr.userProfile.id = :userId " +
            "AND tr.sessionDate >= COALESCE(:startDate, tr.sessionDate) " +
            "AND tr.sessionDate <= COALESCE(:endDate, tr.sessionDate) " +
@@ -52,7 +52,7 @@ public interface TrainingRepository extends JpaRepository<Training, Long> {
                                             @Param("endDate") Instant endDate);
 
     @Query("SELECT t.name, COUNT(t) FROM Training tr " +
-           "JOIN tr.submissionTechniquesAllowed t " +
+           "JOIN tr.sufferedTechniques t " +
            "WHERE tr.userProfile.id = :userId " +
            "AND tr.sessionDate >= COALESCE(:startDate, tr.sessionDate) " +
            "AND tr.sessionDate <= COALESCE(:endDate, tr.sessionDate) " +

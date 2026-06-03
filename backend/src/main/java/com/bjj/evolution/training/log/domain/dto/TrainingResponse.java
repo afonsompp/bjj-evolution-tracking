@@ -15,11 +15,11 @@ public record TrainingResponse(
         Instant sessionDate,
         long durationMinutes,
         List<TechniqueSummaryResponse> techniques,
-        List<TechniqueSummaryResponse> submissionTechniques,
-        List<TechniqueSummaryResponse> submissionTechniquesAllowed,
+        List<TechniqueSummaryResponse> appliedTechniques,
+        List<TechniqueSummaryResponse> sufferedTechniques,
         Integer totalRolls,
-        long roundLengthMinutes,
-        long restLengthMinutes,
+        Integer roundLengthMinutes,
+        Integer restLengthMinutes,
         Integer cardioRating,
         Integer intensityRating,
         Integer taps,
@@ -41,10 +41,10 @@ public record TrainingResponse(
                         entity.getTechnique().stream()
                                 .map(TechniqueSummaryResponse::fromEntity)
                                 .toList(),
-                        entity.getSubmissionTechniques().stream()
+                        entity.getAppliedTechniques().stream()
                                 .map(TechniqueSummaryResponse::fromEntity)
                                 .toList(),
-                        entity.getSubmissionTechniquesAllowed().stream()
+                        entity.getSufferedTechniques().stream()
                                 .map(TechniqueSummaryResponse::fromEntity)
                                 .toList(),
                         entity.getTotalRolls(),

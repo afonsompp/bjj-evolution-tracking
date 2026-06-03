@@ -89,8 +89,8 @@ class TrainingControllerTest {
                 List.of(armbar),
                 List.of(),
                 3,
-                5L,
-                1L,
+                5,
+                1,
                 4,
                 4,
                 0, 1, 2, 1, 0, 3,
@@ -121,8 +121,8 @@ class TrainingControllerTest {
                                     "sessionDate": "2025-05-17T10:00:00Z",
                                     "durationMinutes": 60,
                                     "techniqueIds": [1],
-                                    "submissionTechniqueIds": [2],
-                                    "submissionTechniqueAllowedIds": [],
+                                    "appliedTechniqueIds": [2],
+                                    "sufferedTechniqueIds": [],
                                     "totalRolls": 3,
                                     "roundLengthMinutes": 5,
                                     "restLengthMinutes": 1,
@@ -143,7 +143,7 @@ class TrainingControllerTest {
                 .andExpect(jsonPath("$.trainingType").value("GI"))
                 .andExpect(jsonPath("$.durationMinutes").value(60))
                 .andExpect(jsonPath("$.techniques[0].name").value("Closed Guard"))
-                .andExpect(jsonPath("$.submissionTechniques[0].name").value("Armbar"))
+                .andExpect(jsonPath("$.appliedTechniques[0].name").value("Armbar"))
                 .andExpect(jsonPath("$.totalRolls").value(3))
                 .andExpect(jsonPath("$.cardioRating").value(4))
                 .andExpect(jsonPath("$.intensityRating").value(4))
@@ -332,8 +332,8 @@ class TrainingControllerTest {
                                     "sessionDate": "2025-05-17T10:00:00Z",
                                     "durationMinutes": 90,
                                     "techniqueIds": [1],
-                                    "submissionTechniqueIds": [2],
-                                    "submissionTechniqueAllowedIds": [],
+                                    "appliedTechniqueIds": [2],
+                                    "sufferedTechniqueIds": [],
                                     "totalRolls": 5,
                                     "roundLengthMinutes": 6,
                                     "restLengthMinutes": 1,
@@ -512,8 +512,8 @@ class TrainingControllerTest {
                 "sessionDate": "2025-05-17T10:00:00Z",
                 "durationMinutes": 60,
                 "techniqueIds": [1],
-                "submissionTechniqueIds": [2],
-                "submissionTechniqueAllowedIds": [],
+                "appliedTechniqueIds": [2],
+                "sufferedTechniqueIds": [],
                 "totalRolls": 3,
                 "roundLengthMinutes": 5,
                 "restLengthMinutes": 1,

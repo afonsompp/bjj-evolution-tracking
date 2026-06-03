@@ -207,19 +207,19 @@ export interface TrainingRequest {
   sessionDate: string
   durationMinutes: number
   techniqueIds?: number[]
-  submissionTechniqueIds?: number[]
-  submissionTechniqueAllowedIds?: number[]
-  totalRolls: number
-  roundLengthMinutes: number
-  restLengthMinutes: number
+  appliedTechniqueIds?: number[]
+  sufferedTechniqueIds?: number[]
+  totalRolls: number | null
+  roundLengthMinutes: number | null
+  restLengthMinutes: number | null
   cardioRating: number
   intensityRating: number
-  taps: number
-  submissions: number
-  escapes: number
-  sweeps: number
-  takedowns: number
-  guardPasses: number
+  taps: number | null
+  submissions: number | null
+  escapes: number | null
+  sweeps: number | null
+  takedowns: number | null
+  guardPasses: number | null
   description?: string
 }
 
@@ -230,19 +230,19 @@ export interface TrainingResponse {
   sessionDate: string
   durationMinutes: number
   techniques: TechniqueSummaryResponse[]
-  submissionTechniques: TechniqueSummaryResponse[]
-  submissionTechniquesAllowed: TechniqueSummaryResponse[]
-  totalRolls: number
-  roundLengthMinutes: number
-  restLengthMinutes: number
+  appliedTechniques: TechniqueSummaryResponse[]
+  sufferedTechniques: TechniqueSummaryResponse[]
+  totalRolls: number | null
+  roundLengthMinutes: number | null
+  restLengthMinutes: number | null
   cardioRating: number
   intensityRating: number
-  taps: number
-  submissions: number
-  escapes: number
-  sweeps: number
-  takedowns: number
-  guardPasses: number
+  taps: number | null
+  submissions: number | null
+  escapes: number | null
+  sweeps: number | null
+  takedowns: number | null
+  guardPasses: number | null
   profile: ProfileResponse
   description?: string
 }

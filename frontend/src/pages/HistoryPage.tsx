@@ -195,22 +195,24 @@ function TrainingCard({
         <span className="flex items-center gap-1">
           <span className="text-yellow-500"><ZapIcon size={16} /></span> {translate('history.statIntensity', { value: training.intensityRating })}
         </span>
-        <span className="flex items-center gap-1">
-          <CrosshairIcon size={16} /> {translate('history.statRolls', { count: training.totalRolls })}
-        </span>
-        {training.taps > 0 && (
+        {training.totalRolls != null && (
           <span className="flex items-center gap-1">
-            <TrophyIcon size={16} className="text-rose-500" /> {translate('history.statTaps', { count: training.taps })}
+            <CrosshairIcon size={16} /> {translate('history.statRolls', { count: training.totalRolls })}
           </span>
         )}
-        {training.submissions > 0 && (
+        {(training.taps ?? 0) > 0 && (
           <span className="flex items-center gap-1">
-            <TrophyIcon size={16} className="text-yellow-500" /> {translate('history.statSubs', { count: training.submissions })}
+            <TrophyIcon size={16} className="text-rose-500" /> {translate('history.statTaps', { count: training.taps ?? 0 })}
           </span>
         )}
-        {training.escapes > 0 && (
+        {(training.submissions ?? 0) > 0 && (
           <span className="flex items-center gap-1">
-            <ShieldIcon size={16} /> {translate('history.statEscapes', { count: training.escapes })}
+            <TrophyIcon size={16} className="text-yellow-500" /> {translate('history.statSubs', { count: training.submissions ?? 0 })}
+          </span>
+        )}
+        {(training.escapes ?? 0) > 0 && (
+          <span className="flex items-center gap-1">
+            <ShieldIcon size={16} /> {translate('history.statEscapes', { count: training.escapes ?? 0 })}
           </span>
         )}
       </div>
@@ -233,13 +235,13 @@ function TrainingCard({
           )}
 
           {/* Submissions made */}
-          {training.submissionTechniques.length > 0 && (
+          {training.appliedTechniques.length > 0 && (
             <div>
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-emerald-500">
                 {translate('history.submissionsMade')}
               </h4>
               <div className="flex flex-wrap gap-2">
-                {training.submissionTechniques.map((t) => (
+                {training.appliedTechniques.map((t) => (
                   <TechniqueBadge key={t.id} {...t} />
                 ))}
               </div>
@@ -247,13 +249,13 @@ function TrainingCard({
           )}
 
           {/* Submissions allowed */}
-          {training.submissionTechniquesAllowed.length > 0 && (
+          {training.sufferedTechniques.length > 0 && (
             <div>
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-rose-500">
                 {translate('history.submissionsAllowed')}
               </h4>
               <div className="flex flex-wrap gap-2">
-                {training.submissionTechniquesAllowed.map((t) => (
+                {training.sufferedTechniques.map((t) => (
                   <TechniqueBadge key={t.id} {...t} />
                 ))}
               </div>
@@ -261,43 +263,43 @@ function TrainingCard({
           )}
 
           {/* Combat stats grid */}
-          {(training.sweeps > 0 || training.takedowns > 0 || training.guardPasses > 0) && (
+          {((training.sweeps ?? 0) > 0 || (training.takedowns ?? 0) > 0 || (training.guardPasses ?? 0) > 0) && (
             <div>
               <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-subtle)]">
                 {translate('history.combatStats')}
               </h4>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-                {training.sweeps > 0 && (
+                {(training.sweeps ?? 0) > 0 && (
                   <div className="rounded-lg border border-[var(--border-row)] bg-[var(--bg-row)] p-3 text-center">
                     <div className="text-lg font-bold text-[var(--text-primary)]">{training.sweeps}</div>
                     <div className="text-xs text-[var(--text-subtle)]">{translate('history.sweeps')}</div>
                   </div>
                 )}
-                {training.takedowns > 0 && (
+                {(training.takedowns ?? 0) > 0 && (
                   <div className="rounded-lg border border-[var(--border-row)] bg-[var(--bg-row)] p-3 text-center">
                     <div className="text-lg font-bold text-[var(--text-primary)]">{training.takedowns}</div>
                     <div className="text-xs text-[var(--text-subtle)]">{translate('history.takedowns')}</div>
                   </div>
                 )}
-                {training.guardPasses > 0 && (
+                {(training.guardPasses ?? 0) > 0 && (
                   <div className="rounded-lg border border-[var(--border-row)] bg-[var(--bg-row)] p-3 text-center">
                     <div className="text-lg font-bold text-[var(--text-primary)]">{training.guardPasses}</div>
                     <div className="text-xs text-[var(--text-subtle)]">{translate('history.guardPasses')}</div>
                   </div>
                 )}
-                {training.submissions > 0 && (
+                {(training.submissions ?? 0) > 0 && (
                   <div className="rounded-lg border border-[var(--border-row)] bg-[var(--bg-row)] p-3 text-center">
                     <div className="text-lg font-bold text-[var(--text-primary)]">{training.submissions}</div>
                     <div className="text-xs text-[var(--text-subtle)]">{translate('history.submissions')}</div>
                   </div>
                 )}
-                {training.taps > 0 && (
+                {(training.taps ?? 0) > 0 && (
                   <div className="rounded-lg border border-[var(--border-row)] bg-[var(--bg-row)] p-3 text-center">
                     <div className="text-lg font-bold text-[var(--text-primary)]">{training.taps}</div>
                     <div className="text-xs text-[var(--text-subtle)]">{translate('history.taps')}</div>
                   </div>
                 )}
-                {training.escapes > 0 && (
+                {(training.escapes ?? 0) > 0 && (
                   <div className="rounded-lg border border-[var(--border-row)] bg-[var(--bg-row)] p-3 text-center">
                     <div className="text-lg font-bold text-[var(--text-primary)]">{training.escapes}</div>
                     <div className="text-xs text-[var(--text-subtle)]">{translate('history.escapes')}</div>
@@ -315,15 +317,15 @@ function TrainingCard({
             </div>
             <div>
               <span className="text-[var(--text-subtle)]">{translate('history.roundLength')}</span>
-              <p className="font-medium text-[var(--text-primary)]">{training.roundLengthMinutes}m</p>
+              <p className="font-medium text-[var(--text-primary)]">{training.roundLengthMinutes != null ? `${training.roundLengthMinutes}m` : '—'}</p>
             </div>
             <div>
               <span className="text-[var(--text-subtle)]">{translate('history.restLength')}</span>
-              <p className="font-medium text-[var(--text-primary)]">{training.restLengthMinutes}m</p>
+              <p className="font-medium text-[var(--text-primary)]">{training.restLengthMinutes != null ? `${training.restLengthMinutes}m` : '—'}</p>
             </div>
             <div>
               <span className="text-[var(--text-subtle)]">{translate('history.totalRolls')}</span>
-              <p className="font-medium text-[var(--text-primary)]">{training.totalRolls}</p>
+              <p className="font-medium text-[var(--text-primary)]">{training.totalRolls ?? '—'}</p>
             </div>
           </div>
 

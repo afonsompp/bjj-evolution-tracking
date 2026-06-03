@@ -8,6 +8,7 @@ import { useProfile } from '../features/profile/useProfile'
 import { TechniquePicker } from '../features/technique/components/TechniquePicker'
 import { CreateTechniqueModal } from '../features/technique/components/CreateTechniqueModal'
 import { ChevronLeftIcon, LoaderIcon } from '../assets/icons'
+import { handleIntInput } from '../lib/numericInput'
 import type { ClassType, ClassStatus, TrainingType } from '../types/api'
 
 const CLASS_TYPES: ClassType[] = ['REGULAR', 'PRIVATE', 'OPEN_MAT', 'SEMINAR', 'CAMP', 'COMPETITION', 'TEACHING']
@@ -35,7 +36,7 @@ export default function ClassFormPage() {
 
   const [instructorId, setInstructorId] = useState('')
   const [startDateTime, setStartDateTime] = useState('')
-  const [durationMinutes, setDurationMinutes] = useState(60)
+  const [durationMinutes, setDurationMinutes] = useState<number | null>(60)
   const [classType, setClassType] = useState<ClassType>('REGULAR')
   const [trainingType, setTrainingType] = useState<TrainingType>('GI')
   const [status, setStatus] = useState<ClassStatus>('PUBLISHED')
@@ -77,7 +78,8 @@ export default function ClassFormPage() {
       academyId: academyId!,
       instructorId,
       startTime: new Date(startDateTime).toISOString(),
-      durationMinutes,
+      // The required number input guarantees a value before submit.
+      durationMinutes: durationMinutes ?? 0,
       classType,
       trainingType,
       status,
@@ -162,8 +164,8 @@ export default function ClassFormPage() {
             required
             min={15}
             max={480}
-            value={durationMinutes}
-            onChange={(e) => setDurationMinutes(Number(e.target.value))}
+            value={durationMinutes ?? ''}
+            onChange={(e) => handleIntInput(e, setDurationMinutes)}
             className="w-full rounded-lg border border-[var(--border-select)] bg-[var(--bg-select)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--border-card-hover)]"
           />
         </div>
